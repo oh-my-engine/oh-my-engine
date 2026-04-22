@@ -149,10 +149,21 @@ clone_repo() {
     rm -rf "$TEMP_DIR"
 
     # Clone the repository
-    if git clone --depth 1 "$REPO_URL" "$TEMP_DIR" 2>&1 | grep -v "Cloning into"; then
+    if git clone --depth 1 "$REPO_URL" "$TEMP_DIR" > /dev/null 2>&1; then
         echo -e "${GREEN}✓${NC} Downloaded successfully"
     else
         echo -e "${RED}✗${NC} Failed to download repository"
+        echo -e "${YELLOW}ℹ${NC} This might be due to network issues or GitHub access problems"
+        echo ""
+        echo "Please try one of these alternatives:"
+        echo ""
+        echo "1. Manual installation:"
+        echo "   git clone https://github.com/oh-my-engine/oh-my-engine.git"
+        echo "   cd oh-my-engine"
+        echo "   ./install.sh --agent $AGENT_TARGET"
+        echo ""
+        echo "2. Check your network connection and try again"
+        echo ""
         exit 1
     fi
 }
