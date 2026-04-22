@@ -4,9 +4,9 @@
 
 ---
 
-> A self-evolving workflow engine with memory and learning capabilities for Claude Code
+> A self-evolving workflow engine with memory and learning capabilities for Claude Code and Codex
 
-Oh My Engine is a powerful framework that transforms Claude Code into an intelligent workflow system. It learns from your patterns, remembers your preferences, and evolves to create custom workflows automatically.
+Oh My Engine is a powerful framework that transforms Claude Code and Codex into intelligent workflow systems. It learns from your patterns, remembers your preferences, and evolves to create custom workflows automatically.
 
 ## ✨ Features
 
@@ -35,6 +35,19 @@ Or with wget:
 wget -qO- https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quick-install.sh | bash
 ```
 
+**Install for specific agent:**
+
+```bash
+# For Claude Code only
+curl -fsSL https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quick-install.sh | bash -s -- --agent claude
+
+# For Codex only
+curl -fsSL https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quick-install.sh | bash -s -- --agent codex
+
+# For both
+curl -fsSL https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quick-install.sh | bash -s -- --agent both
+```
+
 #### Method 2: Clone and Install
 
 ```bash
@@ -44,19 +57,32 @@ git clone https://github.com/oh-my-engine/oh-my-engine.git
 # Run the installation script
 cd oh-my-engine
 chmod +x install.sh
+
+# Auto-detect agent
 ./install.sh
+
+# Or specify agent
+./install.sh --agent claude   # Claude Code only
+./install.sh --agent codex    # Codex only
+./install.sh --agent both     # Both agents
 ```
 
 #### Method 3: Install with AI
 
 Copy the installation prompt from [INSTALL_WITH_AI.md](INSTALL_WITH_AI.md) and paste it to any AI assistant (Claude, ChatGPT, etc.), and the AI will guide you through the installation.
 
-The installer will copy all skills to `~/.claude/skills/` and make them available globally in Claude Code.
+The installer will copy all skills to `~/.claude/skills/` and/or `~/.codex/skills/` and make them available globally.
 
 ### Initialize a Project
 
 In your project directory:
 
+**Claude Code:**
+```bash
+/oh-my-engine-init
+```
+
+**Codex:**
 ```bash
 /oh-my-engine-init
 ```
@@ -127,7 +153,8 @@ description: Deploy application with pre-flight checks
 ## 🏗️ Architecture
 
 ```
-~/.claude/skills/           # Global skills (installed by install.sh)
+~/.claude/skills/           # Claude Code skills
+~/.codex/skills/            # Codex skills
 ├── oh-my-engine/          # Core framework
 ├── oh-my-engine-init/     # Project initialization
 ├── oh-my-engine-ui/       # UI restoration workflow
@@ -160,8 +187,8 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 ## 🙏 Acknowledgments
 
-Built for [Claude Code](https://claude.ai/code) by Anthropic.
+Built for [Claude Code](https://claude.ai/code) by Anthropic and [Codex](https://codex.dev).
 
 ---
 
-**Note**: Oh My Engine requires Claude Code to function. Make sure you have Claude Code installed and configured before using this framework.
+**Note**: Oh My Engine requires Claude Code or Codex to function. Make sure you have at least one of them installed and configured before using this framework.

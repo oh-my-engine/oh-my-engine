@@ -4,9 +4,9 @@
 
 ---
 
-> 一个具有记忆和学习能力的自我进化工作流引擎，专为 Claude Code 设计
+> 一个具有记忆和学习能力的自我进化工作流引擎，专为 Claude Code 和 Codex 设计
 
-Oh My Engine 是一个强大的框架，可以将 Claude Code 转变为智能工作流系统。它能从你的使用模式中学习，记住你的偏好，并自动进化创建定制化工作流。
+Oh My Engine 是一个强大的框架，可以将 Claude Code 和 Codex 转变为智能工作流系统。它能从你的使用模式中学习，记住你的偏好，并自动进化创建定制化工作流。
 
 ## ✨ 特性
 
@@ -35,6 +35,19 @@ curl -fsSL https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quic
 wget -qO- https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quick-install.sh | bash
 ```
 
+**为特定代理安装：**
+
+```bash
+# 仅为 Claude Code 安装
+curl -fsSL https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quick-install.sh | bash -s -- --agent claude
+
+# 仅为 Codex 安装
+curl -fsSL https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quick-install.sh | bash -s -- --agent codex
+
+# 为两者安装
+curl -fsSL https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quick-install.sh | bash -s -- --agent both
+```
+
 #### 方式 2：克隆并安装
 
 ```bash
@@ -44,14 +57,21 @@ git clone https://github.com/oh-my-engine/oh-my-engine.git
 # 运行安装脚本
 cd oh-my-engine
 chmod +x install.sh
+
+# 自动检测代理
 ./install.sh
+
+# 或指定代理
+./install.sh --agent claude   # 仅 Claude Code
+./install.sh --agent codex    # 仅 Codex
+./install.sh --agent both     # 两者
 ```
 
 #### 方式 3：使用 AI 安装
 
 复制 [INSTALL_WITH_AI.md](INSTALL_WITH_AI.md) 中的安装提示词，粘贴给任何 AI 助手（Claude、ChatGPT 等），AI 会引导你完成安装。
 
-安装程序会将所有技能复制到 `~/.claude/skills/`，使其在 Claude Code 中全局可用。
+安装程序会将所有技能复制到 `~/.claude/skills/` 和/或 `~/.codex/skills/`，使其全局可用。
 
 ### 初始化项目
 
@@ -160,8 +180,8 @@ MIT 许可证 - 详见 [LICENSE](LICENSE) 文件
 
 ## 🙏 致谢
 
-为 Anthropic 的 [Claude Code](https://claude.ai/code) 构建。
+为 Anthropic 的 [Claude Code](https://claude.ai/code) 和 [Codex](https://codex.dev) 构建。
 
 ---
 
-**注意**：Oh My Engine 需要 Claude Code 才能运行。使用此框架前请确保已安装并配置 Claude Code。
+**注意**：Oh My Engine 需要 Claude Code 或 Codex 才能运行。使用此框架前请确保已安装并配置至少其中一个。

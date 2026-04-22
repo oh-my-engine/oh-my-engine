@@ -4,9 +4,9 @@
 
 ---
 
-> メモリと学習機能を備えた自己進化型ワークフローエンジン（Claude Code 用）
+> メモリと学習機能を備えた自己進化型ワークフローエンジン（Claude Code and Codex 用）
 
-Oh My Engine は、Claude Code をインテリジェントなワークフローシステムに変換する強力なフレームワークです。使用パターンから学習し、設定を記憶し、自動的に進化してカスタムワークフローを作成します。
+Oh My Engine は、Claude Code and Codex をインテリジェントなワークフローシステムに変換する強力なフレームワークです。使用パターンから学習し、設定を記憶し、自動的に進化してカスタムワークフローを作成します。
 
 ## ✨ 機能
 
@@ -160,8 +160,8 @@ MIT ライセンス - 詳細は [LICENSE](LICENSE) ファイルを参照
 
 ## 🙏 謝辞
 
-Anthropic の [Claude Code](https://claude.ai/code) 用に構築されました。
+Anthropic の [Claude Code](https://claude.ai/code) と [Codex](https://codex.dev) 用に構築されました。
 
 ---
 
-**注意**：Oh My Engine を使用するには Claude Code が必要です。このフレームワークを使用する前に、Claude Code がインストールされ、設定されていることを確認してください。
+**注意**：Oh My Engine を使用するには Claude Code または Codex が必要です。このフレームワークを使用する前に、少なくとも一方がインストールされ、設定されていることを確認してください。

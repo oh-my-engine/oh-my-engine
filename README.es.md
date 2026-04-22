@@ -4,9 +4,9 @@
 
 ---
 
-> Un motor de flujo de trabajo auto-evolutivo con capacidades de memoria y aprendizaje para Claude Code
+> Un motor de flujo de trabajo auto-evolutivo con capacidades de memoria y aprendizaje para Claude Code y Codex
 
-Oh My Engine es un framework poderoso que transforma Claude Code en un sistema de flujo de trabajo inteligente. Aprende de tus patrones, recuerda tus preferencias y evoluciona para crear flujos de trabajo personalizados automáticamente.
+Oh My Engine es un framework poderoso que transforma Claude Code y Codex en un sistema de flujo de trabajo inteligente. Aprende de tus patrones, recuerda tus preferencias y evoluciona para crear flujos de trabajo personalizados automáticamente.
 
 ## ✨ Características
 

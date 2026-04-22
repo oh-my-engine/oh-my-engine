@@ -16,6 +16,19 @@ Or with wget:
 wget -qO- https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quick-install.sh | bash
 ```
 
+**Install for specific agent:**
+
+```bash
+# For Claude Code only
+curl -fsSL https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quick-install.sh | bash -s -- --agent claude
+
+# For Codex only
+curl -fsSL https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quick-install.sh | bash -s -- --agent codex
+
+# For both
+curl -fsSL https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quick-install.sh | bash -s -- --agent both
+```
+
 ---
 
 ## 🤖 AI-Assisted Installation
@@ -27,7 +40,7 @@ You can also install Oh My Engine by simply copying and pasting this prompt to a
 ## Installation Prompt (English)
 
 ```
-Please help me install Oh My Engine, a self-evolving workflow framework for Claude Code.
+Please help me install Oh My Engine, a self-evolving workflow framework for Claude Code and Codex.
 
 Follow these steps:
 
@@ -38,6 +51,12 @@ Follow these steps:
 2. Run the installation script:
    chmod +x install.sh
    ./install.sh
+
+   The installer will auto-detect whether I have Claude Code, Codex, or both installed.
+   If I want to specify which agent to install for, I can use:
+   ./install.sh --agent claude   # Claude Code only
+   ./install.sh --agent codex    # Codex only
+   ./install.sh --agent both     # Both agents
 
 3. After installation, initialize it in my project:
    - Navigate to my project directory

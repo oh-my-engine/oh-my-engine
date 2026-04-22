@@ -17,7 +17,9 @@ tags: [workflow, automation, evolution, learning]
 
 ### 1. 配置检测与继承
 - 检测项目级配置：`.oh-my-engine/` 目录
-- 全局默认模板：`~/.claude/skills/oh-my-engine/templates/`
+- 全局默认模板：
+  - Claude Code: `~/.claude/skills/oh-my-engine/templates/`
+  - Codex: `~/.codex/skills/oh-my-engine/templates/`
 - 配置继承：项目配置覆盖全局默认
 
 ### 2. 工作流调度
@@ -124,7 +126,10 @@ tags: [workflow, automation, evolution, learning]
     └── preferences/
 ```
 
-### 全局默认模板（~/.claude/skills/oh-my-engine/）
+### 全局默认模板
+**Claude Code**: `~/.claude/skills/oh-my-engine/`  
+**Codex**: `~/.codex/skills/oh-my-engine/`
+
 ```
 oh-my-engine/
 ├── SKILL.md              # 本文件
