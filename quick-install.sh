@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Oh My Engine Installation Script
-# Supports: macOS, Linux, Windows (Git Bash/WSL)
+# Oh My Engine Quick Installer
+# Usage: curl -fsSL https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quick-install.sh | bash
 
 set -e
 
@@ -13,15 +13,17 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
+# Configuration
+REPO_URL="https://github.com/oh-my-engine/oh-my-engine.git"
+TEMP_DIR="/tmp/oh-my-engine-install-$$"
 SKILLS_DIR="$HOME/.claude/skills"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Print banner
 print_banner() {
     echo ""
     echo -e "${CYAN}╔═══════════════════════════════════════╗${NC}"
     echo -e "${CYAN}║                                       ║${NC}"
-    echo -e "${CYAN}║        ${GREEN}Oh My Engine Installer${CYAN}        ║${NC}"
+    echo -e "${CYAN}║   ${GREEN}Oh My Engine Quick Installer${CYAN}    ║${NC}"
     echo -e "${CYAN}║                                       ║${NC}"
     echo -e "${CYAN}║   Self-Evolving Workflow Framework    ║${NC}"
     echo -e "${CYAN}║                                       ║${NC}"
@@ -40,15 +42,43 @@ detect_os() {
     echo -e "${BLUE}ℹ${NC} Detected OS: ${GREEN}$OS${NC}"
 }
 
-# Check if Claude Code is installed
+# Check dependencies
+check_dependencies() {
+    echo -e "${BLUE}ℹ${NC} Checking dependencies..."
+
+    if ! command -v git &> /dev/null; then
+        echo -e "${RED}✗${NC} Git is not installed"
+        echo ""
+        echo "Please install Git first:"
+        case "$OS" in
+            macOS)
+                echo "  brew install git"
+                ;;
+            Linux)
+                echo "  sudo apt-get install git  # Debian/Ubuntu"
+                echo "  sudo yum install git       # CentOS/RHEL"
+                ;;
+            Windows)
+                echo "  Download from: https://git-scm.com/download/win"
+                ;;
+        esac
+        exit 1
+    fi
+
+    echo -e "${GREEN}✓${NC} Git found"
+}
+
+# Check Claude Code
 check_claude_code() {
     echo -e "${BLUE}ℹ${NC} Checking Claude Code installation..."
 
     if [ ! -d "$HOME/.claude" ]; then
-        echo -e "${YELLOW}⚠️  Warning: ~/.claude directory not found.${NC}"
+        echo -e "${YELLOW}⚠️  Warning: ~/.claude directory not found${NC}"
         echo ""
+        echo "Claude Code doesn't appear to be installed."
         echo "Please install Claude Code first:"
-        echo "  • CLI: npm install -g @anthropic-ai/claude-code"
+        echo ""
+        echo "  • CLI:     npm install -g @anthropic-ai/claude-code"
         echo "  • Desktop: https://claude.ai/code"
         echo "  • VS Code: Search 'Claude Code' in extensions"
         echo ""
@@ -62,11 +92,21 @@ check_claude_code() {
     fi
 }
 
-# Create skills directory
-create_skills_dir() {
-    echo -e "${BLUE}ℹ${NC} Setting up skills directory..."
-    mkdir -p "$SKILLS_DIR"
-    echo -e "${GREEN}✓${NC} Skills directory ready: $SKILLS_DIR"
+# Clone repository
+clone_repo() {
+    echo ""
+    echo -e "${BLUE}📦 Downloading Oh My Engine...${NC}"
+
+    # Clean up any existing temp directory
+    rm -rf "$TEMP_DIR"
+
+    # Clone the repository
+    if git clone --depth 1 "$REPO_URL" "$TEMP_DIR" 2>&1 | grep -v "Cloning into"; then
+        echo -e "${GREEN}✓${NC} Downloaded successfully"
+    else
+        echo -e "${RED}✗${NC} Failed to download repository"
+        exit 1
+    fi
 }
 
 # Install skills
@@ -75,10 +115,13 @@ install_skills() {
     echo -e "${BLUE}📦 Installing skills...${NC}"
     echo ""
 
+    # Create skills directory
+    mkdir -p "$SKILLS_DIR"
+
     local installed_count=0
     local skipped_count=0
 
-    for skill_dir in "$SCRIPT_DIR/skills"/*; do
+    for skill_dir in "$TEMP_DIR/skills"/*; do
         if [ -d "$skill_dir" ]; then
             skill_name=$(basename "$skill_dir")
             target_dir="$SKILLS_DIR/$skill_name"
@@ -86,15 +129,21 @@ install_skills() {
             # Check if skill already exists
             if [ -L "$target_dir" ] || [ -d "$target_dir" ]; then
                 echo -e "${YELLOW}⚠️  $skill_name already exists${NC}"
-                read -p "   Replace it? (y/n) " -n 1 -r
-                echo
-                if [[ $REPLY =~ ^[Yy]$ ]]; then
-                    rm -rf "$target_dir"
+
+                # In non-interactive mode (piped install), auto-replace
+                if [ -t 0 ]; then
+                    read -p "   Replace it? (y/n) " -n 1 -r
+                    echo
+                    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                        echo -e "   ${YELLOW}↷${NC} Skipped $skill_name"
+                        ((skipped_count++))
+                        continue
+                    fi
                 else
-                    echo -e "   ${YELLOW}↷${NC} Skipped $skill_name"
-                    ((skipped_count++))
-                    continue
+                    echo -e "   ${GREEN}→${NC} Auto-replacing (non-interactive mode)"
                 fi
+
+                rm -rf "$target_dir"
             fi
 
             # Copy skill
@@ -110,6 +159,14 @@ install_skills() {
     if [ $skipped_count -gt 0 ]; then
         echo -e "   Skipped: ${YELLOW}$skipped_count${NC} skills"
     fi
+}
+
+# Cleanup
+cleanup() {
+    echo ""
+    echo -e "${BLUE}ℹ${NC} Cleaning up..."
+    rm -rf "$TEMP_DIR"
+    echo -e "${GREEN}✓${NC} Cleanup complete"
 }
 
 # Print usage guide
@@ -140,13 +197,26 @@ print_usage() {
     echo ""
 }
 
+# Error handler
+error_handler() {
+    echo ""
+    echo -e "${RED}✗ Installation failed${NC}"
+    cleanup
+    exit 1
+}
+
+# Set error trap
+trap error_handler ERR
+
 # Main installation flow
 main() {
     print_banner
     detect_os
+    check_dependencies
     check_claude_code
-    create_skills_dir
+    clone_repo
     install_skills
+    cleanup
     print_usage
 }
 

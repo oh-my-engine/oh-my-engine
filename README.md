@@ -1,5 +1,9 @@
 # Oh My Engine
 
+[English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Español](README.es.md) | [Français](README.fr.md)
+
+---
+
 > A self-evolving workflow engine with memory and learning capabilities for Claude Code
 
 Oh My Engine is a powerful framework that transforms Claude Code into an intelligent workflow system. It learns from your patterns, remembers your preferences, and evolves to create custom workflows automatically.
@@ -17,15 +21,35 @@ Oh My Engine is a powerful framework that transforms Claude Code into an intelli
 
 ### Installation
 
+#### Method 1: Quick Install (Recommended)
+
+One command to install everything:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quick-install.sh | bash
+```
+
+Or with wget:
+
+```bash
+wget -qO- https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quick-install.sh | bash
+```
+
+#### Method 2: Clone and Install
+
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/oh-my-engine.git
+git clone https://github.com/oh-my-engine/oh-my-engine.git
 
 # Run the installation script
 cd oh-my-engine
 chmod +x install.sh
 ./install.sh
 ```
+
+#### Method 3: Install with AI
+
+Copy the installation prompt from [INSTALL_WITH_AI.md](INSTALL_WITH_AI.md) and paste it to any AI assistant (Claude, ChatGPT, etc.), and the AI will guide you through the installation.
 
 The installer will copy all skills to `~/.claude/skills/` and make them available globally in Claude Code.
 
