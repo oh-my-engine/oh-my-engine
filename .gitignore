@@ -1,0 +1,17 @@
+# Oh My Engine
+*.log
+*.tmp
+.DS_Store
+
+# Development
+node_modules/
+.vscode/
+.idea/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Build
+dist/
+build/

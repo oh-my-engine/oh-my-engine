@@ -1,0 +1,101 @@
+{
+  "version": "1.0.0",
+  "project": {
+    "name": "Eatizen",
+    "type": "react-native",
+    "framework": "expo"
+  },
+  "workflows": {
+    "ui-restore": {
+      "enabled": true,
+      "mcp_services": ["mastergo-magic-mcp"],
+      "skills": ["eatizen-theme", "eatizen-screen", "eatizen-i18n"],
+      "rules": ["i18n", "theme", "design-tokens"],
+      "options": {
+        "outputDir": "app",
+        "languages": ["en", "zh-CN", "zh-TW", "th"],
+        "themeSystem": "ThemedStyle",
+        "designTokens": true
+      }
+    },
+    "bug-analysis": {
+      "enabled": true,
+      "skills": ["bug-decision-flow", "xdp-defect-analysis"],
+      "rules": ["code-style"],
+      "options": {
+        "searchScope": ["app/", "src/"],
+        "logPaths": ["logs/"],
+        "autoFix": false
+      }
+    },
+    "component-gen": {
+      "enabled": true,
+      "skills": ["eatizen-theme", "eatizen-screen", "eatizen-modal", "eatizen-form"],
+      "rules": ["i18n", "theme", "design-tokens"],
+      "options": {
+        "outputDir": "app/components",
+        "componentLibrary": "react-native",
+        "styleType": "ThemedStyle",
+        "generateTests": false
+      }
+    },
+    "api-integration": {
+      "enabled": true,
+      "skills": ["eatizen-api"],
+      "rules": ["code-style"],
+      "options": {
+        "outputDir": "app/services/api",
+        "baseURL": "https://api.eatizen.com",
+        "generateMocks": false,
+        "generateTests": false
+      }
+    }
+  },
+  "rules": {
+    "i18n": {
+      "languages": ["en", "zh-CN", "zh-TW", "th"],
+      "required": true,
+      "keyFormat": "module:screen.element"
+    },
+    "theme": {
+      "system": "ThemedStyle",
+      "no_hardcoded_styles": true,
+      "no_inline_styles": true
+    },
+    "design_tokens": {
+      "required": true,
+      "tokens": ["colors", "spacing", "typography", "borderRadius"]
+    },
+    "code_style": {
+      "typescript_strict": true,
+      "no_any": true,
+      "max_function_lines": 50
+    }
+  },
+  "memory": {
+    "enabled": true,
+    "auto_save": true,
+    "retention_days": 90,
+    "max_executions": 1000
+  },
+  "evolution": {
+    "enabled": true,
+    "auto_optimize": false,
+    "require_approval": true,
+    "evaluation_interval": "daily",
+    "optimization_threshold": 85
+  },
+  "skill_generation": {
+    "enabled": true,
+    "auto_generate": true,
+    "require_approval": true,
+    "thresholds": {
+      "error_repeat_count": 3,
+      "code_reuse_count": 3,
+      "success_rate": 0.95,
+      "user_rating": 4.5,
+      "operation_sequence_count": 5
+    },
+    "output_dir": ".oh-my-engine/generated-skills"
+  }
+}
