@@ -71,7 +71,10 @@ chmod +x install.sh
 
 Copy the installation prompt from [INSTALL_WITH_AI.md](INSTALL_WITH_AI.md) and paste it to any AI assistant (Claude, ChatGPT, etc.), and the AI will guide you through the installation.
 
-The installer will copy all skills to `~/.claude/skills/` and/or `~/.codex/skills/` and make them available globally.
+The installer will copy all skills to `~/.claude/skills/` and/or `~/.codex/skills/`.
+
+Claude Code users can invoke the installed workflows as slash commands.
+Codex users should invoke the installed skills by name; the exact trigger format depends on the Codex client, so do not assume `/oh-my-engine-*` slash commands are available there.
 
 ### Initialize a Project
 
@@ -84,7 +87,7 @@ In your project directory:
 
 **Codex:**
 ```bash
-/oh-my-engine-init
+oh-my-engine-init
 ```
 
 This creates a `.oh-my-engine/` directory with:
@@ -94,13 +97,8 @@ This creates a `.oh-my-engine/` directory with:
 
 ### Available Commands
 
-- `/oh-my-engine-init` - Initialize Oh My Engine in current project
-- `/oh-my-engine-ui` - Restore UI from design files or screenshots
-- `/oh-my-engine-bug` - Analyze and fix bugs with context
-- `/oh-my-engine-comp` - Generate components from specifications
-- `/oh-my-engine-api` - Integrate APIs with proper error handling
-- `/oh-my-engine-memory` - View execution history and learnings
-- `/oh-my-engine-evolve` - Analyze patterns and suggest new workflows
+- Claude Code: `/oh-my-engine-init`, `/oh-my-engine-ui`, `/oh-my-engine-bug`, `/oh-my-engine-comp`, `/oh-my-engine-api`, `/oh-my-engine-memory`, `/oh-my-engine-evolve`
+- Codex skill names: `oh-my-engine-init`, `oh-my-engine-ui`, `oh-my-engine-bug`, `oh-my-engine-comp`, `oh-my-engine-api`, `oh-my-engine-memory`, `oh-my-engine-evolve`
 
 ## 📖 Documentation
 

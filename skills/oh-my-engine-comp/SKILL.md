@@ -16,6 +16,9 @@ tags: [component, generator, react, react-native]
 /oh-my-engine-comp <component-name> [options]
 ```
 
+Claude Code 可直接使用上面的 slash command。
+Codex 请按技能名 `oh-my-engine-comp` 触发，并沿用相同参数。
+
 ## 参数
 
 - `component-name`: 组件名称（必填）

@@ -16,6 +16,9 @@ tags: [api, integration, openapi, swagger]
 /oh-my-engine-api <api-spec> [options]
 ```
 
+Claude Code 可直接使用上面的 slash command。
+Codex 请按技能名 `oh-my-engine-api` 触发，并沿用相同参数。
+
 ## 参数
 
 - `api-spec`: API 规范（URL 或文件路径）

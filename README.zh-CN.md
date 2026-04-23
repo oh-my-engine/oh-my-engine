@@ -71,14 +71,17 @@ chmod +x install.sh
 
 复制 [INSTALL_WITH_AI.md](INSTALL_WITH_AI.md) 中的安装提示词，粘贴给任何 AI 助手（Claude、ChatGPT 等），AI 会引导你完成安装。
 
-安装程序会将所有技能复制到 `~/.claude/skills/` 和/或 `~/.codex/skills/`，使其全局可用。
+安装程序会将所有技能复制到 `~/.claude/skills/` 和/或 `~/.codex/skills/`。
+
+Claude Code 可直接用 slash command 调用这些工作流。
+Codex 应按技能名触发，不要默认认为 `/oh-my-engine-*` 这类 slash command 在 Codex 中可用。
 
 ### 初始化项目
 
 在你的项目目录中：
 
 ```bash
-/oh-my-engine-init
+oh-my-engine-init
 ```
 
 这会创建一个 `.oh-my-engine/` 目录，包含：
@@ -88,13 +91,8 @@ chmod +x install.sh
 
 ### 可用命令
 
-- `/oh-my-engine-init` - 在当前项目中初始化 Oh My Engine
-- `/oh-my-engine-ui` - 从设计文件或截图还原 UI
-- `/oh-my-engine-bug` - 带上下文分析和修复 Bug
-- `/oh-my-engine-comp` - 从规范生成组件
-- `/oh-my-engine-api` - 集成 API 并处理错误
-- `/oh-my-engine-memory` - 查看执行历史和学习内容
-- `/oh-my-engine-evolve` - 分析模式并建议新工作流
+- Claude Code：`/oh-my-engine-init`、`/oh-my-engine-ui`、`/oh-my-engine-bug`、`/oh-my-engine-comp`、`/oh-my-engine-api`、`/oh-my-engine-memory`、`/oh-my-engine-evolve`
+- Codex 技能名：`oh-my-engine-init`、`oh-my-engine-ui`、`oh-my-engine-bug`、`oh-my-engine-comp`、`oh-my-engine-api`、`oh-my-engine-memory`、`oh-my-engine-evolve`
 
 ## 📖 文档
 

@@ -64,6 +64,9 @@ tags: [workflow, automation, evolution, learning]
 /oh-my-engine config              # 查看当前配置
 ```
 
+Claude Code 可直接使用上面的 slash command 形式。
+Codex 请按技能名 `oh-my-engine` 触发，并传入相同子命令和参数。
+
 ## 执行流程
 
 当用户调用 `/oh-my-engine <command>` 时：

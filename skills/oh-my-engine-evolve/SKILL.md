@@ -16,6 +16,9 @@ tags: [evolution, optimization, learning]
 /oh-my-engine-evolve [options]
 ```
 
+Claude Code 可直接使用上面的 slash command。
+Codex 请按技能名 `oh-my-engine-evolve` 触发，并沿用相同参数。
+
 ## 参数
 
 - `--workflow`: 指定工作流（可选，默认分析所有）

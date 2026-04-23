@@ -16,6 +16,9 @@ tags: [init, setup, configuration]
 /oh-my-engine-init [options]
 ```
 
+Claude Code 可直接使用上面的 slash command。
+Codex 请按技能名 `oh-my-engine-init` 触发，并沿用相同参数。
+
 ## 参数
 
 - `--template`: 使用模板（可选：react-native/react/vue）

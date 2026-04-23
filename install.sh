@@ -153,7 +153,8 @@ detect_agents() {
                     exit 1
                 fi
             else
-                exit 1
+                echo -e "${BLUE}ℹ${NC} Agent directory not detected yet, installing for both targets to avoid missing Codex"
+                AGENT_TARGET="both"
             fi
         fi
     fi
@@ -274,13 +275,13 @@ print_usage() {
             echo -e "  ${GREEN}/oh-my-engine-evolve${NC}  Evolve workflows"
             ;;
         codex)
-            echo -e "  ${GREEN}/oh-my-engine-init${NC}    Initialize in your project"
-            echo -e "  ${GREEN}/oh-my-engine-ui${NC}      Restore UI from designs"
-            echo -e "  ${GREEN}/oh-my-engine-bug${NC}     Analyze and fix bugs"
-            echo -e "  ${GREEN}/oh-my-engine-comp${NC}    Generate components"
-            echo -e "  ${GREEN}/oh-my-engine-api${NC}     Integrate APIs"
-            echo -e "  ${GREEN}/oh-my-engine-memory${NC}  View execution history"
-            echo -e "  ${GREEN}/oh-my-engine-evolve${NC}  Evolve workflows"
+            echo -e "  ${GREEN}oh-my-engine-init${NC}      Invoke the installed init skill"
+            echo -e "  ${GREEN}oh-my-engine-ui${NC}        Invoke the UI restore skill"
+            echo -e "  ${GREEN}oh-my-engine-bug${NC}       Invoke the bug analysis skill"
+            echo -e "  ${GREEN}oh-my-engine-comp${NC}      Invoke the component generator skill"
+            echo -e "  ${GREEN}oh-my-engine-api${NC}       Invoke the API integration skill"
+            echo -e "  ${GREEN}oh-my-engine-memory${NC}    Invoke the memory viewer skill"
+            echo -e "  ${GREEN}oh-my-engine-evolve${NC}    Invoke the evolution skill"
             ;;
         both)
             echo -e "${BLUE}Claude Code:${NC}"
@@ -293,13 +294,13 @@ print_usage() {
             echo -e "  ${GREEN}/oh-my-engine-evolve${NC}  Evolve workflows"
             echo ""
             echo -e "${BLUE}Codex:${NC}"
-            echo -e "  ${GREEN}/oh-my-engine-init${NC}    Initialize in your project"
-            echo -e "  ${GREEN}/oh-my-engine-ui${NC}      Restore UI from designs"
-            echo -e "  ${GREEN}/oh-my-engine-bug${NC}     Analyze and fix bugs"
-            echo -e "  ${GREEN}/oh-my-engine-comp${NC}    Generate components"
-            echo -e "  ${GREEN}/oh-my-engine-api${NC}     Integrate APIs"
-            echo -e "  ${GREEN}/oh-my-engine-memory${NC}  View execution history"
-            echo -e "  ${GREEN}/oh-my-engine-evolve${NC}  Evolve workflows"
+            echo -e "  ${GREEN}oh-my-engine-init${NC}      Invoke the installed init skill"
+            echo -e "  ${GREEN}oh-my-engine-ui${NC}        Invoke the UI restore skill"
+            echo -e "  ${GREEN}oh-my-engine-bug${NC}       Invoke the bug analysis skill"
+            echo -e "  ${GREEN}oh-my-engine-comp${NC}      Invoke the component generator skill"
+            echo -e "  ${GREEN}oh-my-engine-api${NC}       Invoke the API integration skill"
+            echo -e "  ${GREEN}oh-my-engine-memory${NC}    Invoke the memory viewer skill"
+            echo -e "  ${GREEN}oh-my-engine-evolve${NC}    Invoke the evolution skill"
             ;;
     esac
 
@@ -317,8 +318,8 @@ print_usage() {
             ;;
         codex)
             echo "  1. Open your project in Codex"
-            echo "  2. Run: ${GREEN}/oh-my-engine-init${NC}"
-            echo "  3. Start using workflows!"
+            echo "  2. Invoke the installed skill by name: ${GREEN}oh-my-engine-init${NC}"
+            echo "  3. Use the other installed skill names in the same way"
             ;;
         both)
             echo "  ${BLUE}Claude Code:${NC}"
@@ -327,7 +328,7 @@ print_usage() {
             echo ""
             echo "  ${BLUE}Codex:${NC}"
             echo "    1. Open your project in Codex"
-            echo "    2. Run: ${GREEN}/oh-my-engine-init${NC}"
+            echo "    2. Invoke the installed skill by name: ${GREEN}oh-my-engine-init${NC}"
             ;;
     esac
 

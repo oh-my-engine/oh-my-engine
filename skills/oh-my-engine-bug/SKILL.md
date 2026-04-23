@@ -16,6 +16,9 @@ tags: [bug, debug, analysis, fix]
 /oh-my-engine-bug <issue-description>
 ```
 
+Claude Code 可直接使用上面的 slash command。
+Codex 请按技能名 `oh-my-engine-bug` 触发，并沿用相同参数。
+
 ## 参数
 
 - `issue-description`: Bug 描述或 Issue ID

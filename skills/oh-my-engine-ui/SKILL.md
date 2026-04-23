@@ -16,6 +16,9 @@ tags: [ui, design, mastergo, figma, code-generation]
 /oh-my-engine-ui <design-url>
 ```
 
+Claude Code 可直接使用上面的 slash command。
+Codex 请按技能名 `oh-my-engine-ui` 触发，并沿用相同参数。
+
 ## 参数
 
 - `design-url`: MasterGo 或 Figma 设计稿链接

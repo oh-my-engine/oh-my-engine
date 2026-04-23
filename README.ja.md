@@ -51,14 +51,17 @@ chmod +x install.sh
 
 [INSTALL_WITH_AI.md](INSTALL_WITH_AI.md) のインストールプロンプトをコピーして、任意の AI アシスタント（Claude、ChatGPT など）に貼り付けると、AI がインストールをガイドします。
 
-インストーラーはすべてのスキルを `~/.claude/skills/` にコピーし、Claude Code でグローバルに利用可能にします。
+インストーラーはすべてのスキルを `~/.claude/skills/` および/または `~/.codex/skills/` にコピーします。
+
+Claude Code ではインストール済みワークフローを slash command として呼び出せます。
+Codex ではスキル名で呼び出してください。`/oh-my-engine-*` が使える前提にはしないでください。
 
 ### プロジェクトの初期化
 
 プロジェクトディレクトリで：
 
 ```bash
-/oh-my-engine-init
+oh-my-engine-init
 ```
 
 これにより、以下を含む `.oh-my-engine/` ディレクトリが作成されます：
@@ -68,13 +71,8 @@ chmod +x install.sh
 
 ### 利用可能なコマンド
 
-- `/oh-my-engine-init` - 現在のプロジェクトで Oh My Engine を初期化
-- `/oh-my-engine-ui` - デザインファイルやスクリーンショットから UI を復元
-- `/oh-my-engine-bug` - コンテキスト付きでバグを分析・修正
-- `/oh-my-engine-comp` - 仕様からコンポーネントを生成
-- `/oh-my-engine-api` - API を統合し、エラー処理を実装
-- `/oh-my-engine-memory` - 実行履歴と学習内容を表示
-- `/oh-my-engine-evolve` - パターンを分析し、新しいワークフローを提案
+- Claude Code: `/oh-my-engine-init`、`/oh-my-engine-ui`、`/oh-my-engine-bug`、`/oh-my-engine-comp`、`/oh-my-engine-api`、`/oh-my-engine-memory`、`/oh-my-engine-evolve`
+- Codex のスキル名: `oh-my-engine-init`、`oh-my-engine-ui`、`oh-my-engine-bug`、`oh-my-engine-comp`、`oh-my-engine-api`、`oh-my-engine-memory`、`oh-my-engine-evolve`
 
 ## 📖 ドキュメント
 

@@ -51,14 +51,17 @@ chmod +x install.sh
 
 Copia el prompt de instalación de [INSTALL_WITH_AI.md](INSTALL_WITH_AI.md) y pégalo en cualquier asistente de IA (Claude, ChatGPT, etc.), y la IA te guiará a través de la instalación.
 
-El instalador copiará todas las habilidades a `~/.claude/skills/` y las hará disponibles globalmente en Claude Code.
+El instalador copiará todas las habilidades a `~/.claude/skills/` y/o `~/.codex/skills/`.
+
+En Claude Code puedes invocar los workflows instalados como comandos con `/`.
+En Codex debes invocar las skills instaladas por nombre; no asumas que `/oh-my-engine-*` estará disponible allí.
 
 ### Inicializar un Proyecto
 
 En tu directorio de proyecto:
 
 ```bash
-/oh-my-engine-init
+oh-my-engine-init
 ```
 
 Esto crea un directorio `.oh-my-engine/` con:
@@ -68,13 +71,8 @@ Esto crea un directorio `.oh-my-engine/` con:
 
 ### Comandos Disponibles
 
-- `/oh-my-engine-init` - Inicializar Oh My Engine en el proyecto actual
-- `/oh-my-engine-ui` - Restaurar UI desde archivos de diseño o capturas de pantalla
-- `/oh-my-engine-bug` - Analizar y corregir bugs con contexto
-- `/oh-my-engine-comp` - Generar componentes desde especificaciones
-- `/oh-my-engine-api` - Integrar APIs con manejo de errores adecuado
-- `/oh-my-engine-memory` - Ver historial de ejecución y aprendizajes
-- `/oh-my-engine-evolve` - Analizar patrones y sugerir nuevos flujos de trabajo
+- Claude Code: `/oh-my-engine-init`, `/oh-my-engine-ui`, `/oh-my-engine-bug`, `/oh-my-engine-comp`, `/oh-my-engine-api`, `/oh-my-engine-memory`, `/oh-my-engine-evolve`
+- Nombres de skill en Codex: `oh-my-engine-init`, `oh-my-engine-ui`, `oh-my-engine-bug`, `oh-my-engine-comp`, `oh-my-engine-api`, `oh-my-engine-memory`, `oh-my-engine-evolve`
 
 ## 📖 Documentación
 
@@ -160,8 +158,8 @@ Licencia MIT - consulta el archivo [LICENSE](LICENSE) para más detalles
 
 ## 🙏 Agradecimientos
 
-Construido para [Claude Code](https://claude.ai/code) de Anthropic.
+Construido para [Claude Code](https://claude.ai/code) de Anthropic y [Codex](https://codex.dev).
 
 ---
 
-**Nota**: Oh My Engine requiere Claude Code para funcionar. Asegúrate de tener Claude Code instalado y configurado antes de usar este framework.
+**Nota**: Oh My Engine requiere Claude Code o Codex para funcionar. Asegúrate de tener al menos uno instalado y configurado antes de usar este framework.

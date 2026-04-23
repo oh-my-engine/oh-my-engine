@@ -54,10 +54,14 @@ You should see 8 skills listed.
 
 ### 1. Initialize a Project
 
-Navigate to your project directory and run:
+Navigate to your project directory and invoke the installed init workflow:
 
 ```bash
+# Claude Code
 /oh-my-engine-init
+
+# Codex
+oh-my-engine-init
 ```
 
 This creates the `.oh-my-engine/` directory with default configuration.
@@ -691,16 +695,20 @@ Configuration should be shared, memory should not.
 
 ### Workflow Not Found
 
-**Problem**: `/oh-my-engine-ui` command not recognized
+**Problem**: `oh-my-engine-ui` workflow not recognized
 
 **Solution**:
 ```bash
-# Check if skills are installed
+# Claude Code install location
 ls ~/.claude/skills/ | grep oh-my-engine
 
-# Reinstall if needed
+# Codex install location
+ls ~/.codex/skills/ | grep oh-my-engine
+
+# Reinstall for the intended target if needed
 cd /path/to/oh-my-engine
-./install.sh
+./install.sh --agent claude
+./install.sh --agent codex
 ```
 
 ### Configuration Not Loading

@@ -51,14 +51,17 @@ chmod +x install.sh
 
 [INSTALL_WITH_AI.md](INSTALL_WITH_AI.md)의 설치 프롬프트를 복사하여 AI 어시스턴트(Claude, ChatGPT 등)에 붙여넣으면 AI가 설치를 안내합니다.
 
-설치 프로그램은 모든 스킬을 `~/.claude/skills/`에 복사하여 Claude Code에서 전역적으로 사용할 수 있게 합니다.
+설치 프로그램은 모든 스킬을 `~/.claude/skills/` 및/또는 `~/.codex/skills/`에 복사합니다.
+
+Claude Code에서는 설치된 워크플로를 slash command로 호출할 수 있습니다.
+Codex에서는 설치된 스킬 이름으로 호출해야 하며, `/oh-my-engine-*` 형식이 항상 제공된다고 가정하면 안 됩니다.
 
 ### 프로젝트 초기화
 
 프로젝트 디렉토리에서:
 
 ```bash
-/oh-my-engine-init
+oh-my-engine-init
 ```
 
 다음을 포함하는 `.oh-my-engine/` 디렉토리가 생성됩니다:
@@ -68,13 +71,8 @@ chmod +x install.sh
 
 ### 사용 가능한 명령어
 
-- `/oh-my-engine-init` - 현재 프로젝트에서 Oh My Engine 초기화
-- `/oh-my-engine-ui` - 디자인 파일이나 스크린샷에서 UI 복원
-- `/oh-my-engine-bug` - 컨텍스트와 함께 버그 분석 및 수정
-- `/oh-my-engine-comp` - 사양에서 컴포넌트 생성
-- `/oh-my-engine-api` - API 통합 및 오류 처리
-- `/oh-my-engine-memory` - 실행 기록 및 학습 내용 보기
-- `/oh-my-engine-evolve` - 패턴 분석 및 새로운 워크플로우 제안
+- Claude Code: `/oh-my-engine-init`, `/oh-my-engine-ui`, `/oh-my-engine-bug`, `/oh-my-engine-comp`, `/oh-my-engine-api`, `/oh-my-engine-memory`, `/oh-my-engine-evolve`
+- Codex 스킬 이름: `oh-my-engine-init`, `oh-my-engine-ui`, `oh-my-engine-bug`, `oh-my-engine-comp`, `oh-my-engine-api`, `oh-my-engine-memory`, `oh-my-engine-evolve`
 
 ## 📖 문서
 
@@ -160,8 +158,8 @@ MIT 라이선스 - 자세한 내용은 [LICENSE](LICENSE) 파일 참조
 
 ## 🙏 감사의 말
 
-Anthropic의 [Claude Code](https://claude.ai/code)를 위해 제작되었습니다.
+Anthropic의 [Claude Code](https://claude.ai/code)와 [Codex](https://codex.dev)를 위해 제작되었습니다.
 
 ---
 
-**참고**: Oh My Engine은 Claude Code가 필요합니다. 이 프레임워크를 사용하기 전에 Claude Code가 설치되고 구성되어 있는지 확인하세요.
+**참고**: Oh My Engine은 Claude Code 또는 Codex가 필요합니다. 사용 전에 둘 중 하나 이상이 설치되고 구성되어 있는지 확인하세요.
