@@ -14,6 +14,7 @@ Oh My Engine est un framework puissant qui transforme Claude Code et Codex en un
 - **🔄 Auto-Évolution** : Identifie automatiquement les modèles et génère de nouvelles compétences
 - **⚙️ Configuration de Projet** : Personnalisation des workflows par projet avec `.oh-my-engine/`
 - **📋 Workflows Riches** : Workflows préconstruits pour la restauration d'UI, l'analyse de bugs, la génération de composants et l'intégration d'API
+- **📝 Mode Spec** : Workflow compatible OpenSpec pour proposer, planifier, appliquer, vérifier et archiver des changements
 - **🎯 Contexte Intelligent** : Charge automatiquement les règles et configurations spécifiques au projet
 - **🔧 Extensible** : Création facile de workflows personnalisés pour vos besoins spécifiques
 
@@ -35,6 +36,19 @@ Ou avec wget :
 wget -qO- https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quick-install.sh | bash
 ```
 
+**Installer pour un agent spécifique :**
+
+```bash
+# Claude Code uniquement
+curl -fsSL https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quick-install.sh | bash -s -- --agent claude
+
+# Codex uniquement
+curl -fsSL https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quick-install.sh | bash -s -- --agent codex
+
+# Les deux
+curl -fsSL https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quick-install.sh | bash -s -- --agent both
+```
+
 #### Méthode 2 : Cloner et Installer
 
 ```bash
@@ -44,7 +58,14 @@ git clone https://github.com/oh-my-engine/oh-my-engine.git
 # Exécuter le script d'installation
 cd oh-my-engine
 chmod +x install.sh
+
+# Détection automatique de l'agent
 ./install.sh
+
+# Ou agent explicite
+./install.sh --agent claude   # Claude Code uniquement
+./install.sh --agent codex    # Codex uniquement
+./install.sh --agent both     # Les deux agents
 ```
 
 #### Méthode 3 : Installer avec l'IA
@@ -60,6 +81,12 @@ Dans Codex, vous devez invoquer les skills installées par leur nom ; ne suppose
 
 Dans votre répertoire de projet :
 
+**Claude Code :**
+```bash
+/oh-my-engine-init
+```
+
+**Codex :**
 ```bash
 oh-my-engine-init
 ```
@@ -69,14 +96,50 @@ Cela crée un répertoire `.oh-my-engine/` avec :
 - `rules/` - Règles spécifiques au projet
 - `memory/` - Historique d'exécution et apprentissages (ignoré par git)
 
+Cela crée aussi un espace `openspec/` pour les specs durables et les changements actifs :
+- `project.md` - Contexte au niveau projet
+- `changes/` - Changements en cours
+- `specs/` - Specs de capacité stables
+- `archive/` - Changements terminés
+
 ### Commandes Disponibles
 
-- Claude Code : `/oh-my-engine-init`, `/oh-my-engine-ui`, `/oh-my-engine-bug`, `/oh-my-engine-comp`, `/oh-my-engine-api`, `/oh-my-engine-memory`, `/oh-my-engine-evolve`
-- Noms de skill Codex : `oh-my-engine-init`, `oh-my-engine-ui`, `oh-my-engine-bug`, `oh-my-engine-comp`, `oh-my-engine-api`, `oh-my-engine-memory`, `oh-my-engine-evolve`
+- Claude Code : `/oh-my-engine-init`, `/oh-my-engine-ui`, `/oh-my-engine-bug`, `/oh-my-engine-comp`, `/oh-my-engine-api`, `/oh-my-engine-spec`, `/oh-my-engine-memory`, `/oh-my-engine-evolve`
+- Noms de skill Codex : `oh-my-engine-init`, `oh-my-engine-ui`, `oh-my-engine-bug`, `oh-my-engine-comp`, `oh-my-engine-api`, `oh-my-engine-spec`, `oh-my-engine-memory`, `oh-my-engine-evolve`
+
+### Workflow Spec
+
+```bash
+# Initialiser l'espace spec
+oh-my-engine-spec init
+
+# Importer les entrées PRD et l'intention opérateur
+oh-my-engine-spec import user-authentication
+
+# Préparer proposal/design/tasks/spec delta à partir du contexte importé
+oh-my-engine-spec decompose user-authentication
+
+# Le scaffold manuel reste disponible
+oh-my-engine-spec propose user-authentication
+
+# Affiner et charger le contexte d'exécution
+oh-my-engine-spec plan user-authentication
+oh-my-engine-spec apply user-authentication
+oh-my-engine-spec apply user-authentication --task "Implement the change"
+oh-my-engine-spec status user-authentication
+
+# Vérifier et archiver le changement
+oh-my-engine-spec verify user-authentication
+oh-my-engine-spec archive user-authentication
+```
+
+`import` enregistre le texte source normalisé, le prompt, la traçabilité et les pièces jointes copiées sous `openspec/changes/<change-id>/context/`. `decompose` transforme ce contexte d'entrée en `analysis.md`, `proposal.md`, `design.md`, `tasks.md` et spec deltas, tout en conservant les références de source liées au changement. `apply` met à jour l'état du cycle de vie, peut marquer la progression des tâches et des critères d'acceptation, et affiche les fichiers que l'agent doit charger. Il ne génère pas automatiquement le code de production. `status` résume la phase courante et les éléments restants. `archive` crée la capability spec durable lors de la première acceptation, reconstruit le résumé canonique, les exigences et la compatibilité à partir des deltas acceptés, et conserve à la fois le snapshot courant accepté et l'historique archivé.
+Vous pouvez ajouter de vraies vérifications projet sous `workflows.spec.options.verifyCommands` dans `.oh-my-engine/config.json` ; `verify` les exécute séquentiellement et échoue à la première sortie non nulle. `verify` bloque aussi les marqueurs `TBD:` non résolus et exige que chaque spec delta sélectionne exactement un type de changement ainsi qu'au moins une exigence concrète et un scénario WHEN/THEN.
 
 ## 📖 Documentation
 
 - [Aperçu de l'Architecture](docs/architecture.md)
+- [Architecture d'Intake Spec Guidée par Prompt](docs/spec-intake-architecture.md)
 - [Créer des Workflows Personnalisés](docs/custom-workflows.md)
 - [Guide de Configuration](docs/configuration.md)
 - [Système de Mémoire](docs/memory-system.md)
@@ -125,21 +188,29 @@ description: Déploiement d'application avec vérifications préalables
 ## 🏗️ Architecture
 
 ```
-~/.claude/skills/           # Compétences globales (installées par install.sh)
+~/.claude/skills/           # Skills Claude Code
+~/.codex/skills/            # Skills Codex
 ├── oh-my-engine/          # Framework principal
 ├── oh-my-engine-init/     # Initialisation de projet
 ├── oh-my-engine-ui/       # Workflow de restauration d'UI
 ├── oh-my-engine-bug/      # Workflow d'analyse de bugs
 ├── oh-my-engine-comp/     # Workflow de génération de composants
 ├── oh-my-engine-api/      # Workflow d'intégration d'API
+├── oh-my-engine-spec/     # Workflow spec compatible OpenSpec
 ├── oh-my-engine-memory/   # Visualiseur de mémoire
 └── oh-my-engine-evolve/   # Analyseur d'évolution
 
 project/
-└── .oh-my-engine/         # Configuration spécifique au projet
-    ├── config.json        # Paramètres de workflow
-    ├── rules/             # Règles du projet (commitées dans git)
-    └── memory/            # Historique d'exécution (ignoré par git)
+├── .oh-my-engine/         # Configuration et mémoire spécifiques au projet
+│   ├── config.json        # Paramètres de workflow
+│   ├── rules/             # Règles du projet (commitées dans git)
+│   └── memory/            # Historique d'exécution (ignoré par git)
+└── openspec/              # Espace compatible OpenSpec
+    ├── project.md         # Contexte du projet
+    ├── changes/           # Changements en cours
+    │   └── <change-id>/context/  # PRD importé, prompt, analyse, références et pièces jointes
+    ├── specs/             # Specs de capacité stables
+    └── archive/           # Changements terminés
 ```
 
 ## 🤝 Contribuer
@@ -158,8 +229,8 @@ Licence MIT - voir le fichier [LICENSE](LICENSE) pour plus de détails
 
 ## 🙏 Remerciements
 
-Construit pour [Claude Code](https://claude.ai/code) d'Anthropic.
+Construit pour [Claude Code](https://claude.ai/code) d'Anthropic et [Codex](https://codex.dev).
 
 ---
 
-**Note** : Oh My Engine nécessite Claude Code pour fonctionner. Assurez-vous d'avoir Claude Code installé et configuré avant d'utiliser ce framework.
+**Note** : Oh My Engine nécessite Claude Code ou Codex pour fonctionner. Assurez-vous qu'au moins l'un des deux est installé et configuré avant d'utiliser ce framework.
