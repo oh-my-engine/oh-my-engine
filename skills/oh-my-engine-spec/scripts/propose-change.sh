@@ -70,17 +70,17 @@ ensure_workspace_exists "$PROJECT_ROOT" "$INIT_SCRIPT"
 
 CHANGE_DIR="$PROJECT_ROOT/openspec/changes/$CHANGE_SLUG"
 CHANGE_SPEC_DIR="$CHANGE_DIR/specs/$CAPABILITY_SLUG"
-CAPABILITY_DIR="$PROJECT_ROOT/openspec/specs/$CAPABILITY_SLUG"
 MEMORY_FILE="$PROJECT_ROOT/.oh-my-engine/memory/specs/$CHANGE_SLUG.json"
 
 if [ -e "$CHANGE_DIR" ] && [ "$FORCE" -ne 1 ]; then
-  echo "Change already exists: $CHANGE_DIR" >&2
-  echo "Use --force to overwrite." >&2
-  exit 1
+  if [ -f "$CHANGE_DIR/proposal.md" ] || [ -f "$CHANGE_DIR/design.md" ] || [ -f "$CHANGE_DIR/tasks.md" ] || [ -d "$CHANGE_DIR/specs" ]; then
+    echo "Change already exists: $CHANGE_DIR" >&2
+    echo "Use --force to overwrite." >&2
+    exit 1
+  fi
 fi
 
 mkdir -p "$CHANGE_SPEC_DIR"
-mkdir -p "$CAPABILITY_DIR"
 mkdir -p "$PROJECT_ROOT/.oh-my-engine/memory/specs"
 
 proposal_template="$ROOT_DIR/skills/oh-my-engine-spec/templates/proposal.md"
@@ -93,9 +93,18 @@ render_template() {
   dest="$2"
   sed \
     -e "s/<change-id>/$CHANGE_INPUT/g" \
+    -e "s/<change-slug>/$CHANGE_SLUG/g" \
     -e "s/<capability>/$CAPABILITY_SLUG/g" \
     "$src" > "$dest"
 }
+
+mkdir -p "$CHANGE_DIR"
+
+if [ "$FORCE" -eq 1 ]; then
+  rm -f "$CHANGE_DIR/proposal.md" "$CHANGE_DIR/design.md" "$CHANGE_DIR/tasks.md"
+  rm -rf "$CHANGE_DIR/specs"
+  mkdir -p "$CHANGE_SPEC_DIR"
+fi
 
 render_template "$proposal_template" "$CHANGE_DIR/proposal.md"
 render_template "$ROOT_DIR/skills/oh-my-engine-spec/templates/design.md" "$CHANGE_DIR/design.md"
@@ -108,10 +117,6 @@ if [ "$MODE" = "design-first" ]; then
     echo "## Planning Mode"
     echo "- design-first"
   } >> "$CHANGE_DIR/design.md"
-fi
-
-if [ ! -f "$CAPABILITY_DIR/spec.md" ] || [ "$FORCE" -eq 1 ]; then
-  render_template "$ROOT_DIR/skills/oh-my-engine-spec/templates/capability-spec.md" "$CAPABILITY_DIR/spec.md"
 fi
 
 cat > "$MEMORY_FILE" <<EOF
@@ -135,5 +140,4 @@ echo "  - openspec/changes/$CHANGE_SLUG/proposal.md"
 echo "  - openspec/changes/$CHANGE_SLUG/design.md"
 echo "  - openspec/changes/$CHANGE_SLUG/tasks.md"
 echo "  - openspec/changes/$CHANGE_SLUG/specs/$CAPABILITY_SLUG/spec.md"
-echo "  - openspec/specs/$CAPABILITY_SLUG/spec.md"
 echo "  - .oh-my-engine/memory/specs/$CHANGE_SLUG.json"

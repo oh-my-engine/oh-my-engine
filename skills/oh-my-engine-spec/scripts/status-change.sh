@@ -41,15 +41,33 @@ if [ -n "$ARCHIVED_PATH" ]; then
 fi
 
 if [ -d "$CHANGE_DIR" ]; then
-  OPEN_TASKS=$(count_open_checkboxes "$CHANGE_DIR/tasks.md")
-  DONE_TASKS=$(count_done_checkboxes "$CHANGE_DIR/tasks.md")
-  OPEN_ACCEPTANCE=$(count_open_checkboxes "$CHANGE_DIR/proposal.md")
+  if [ -d "$CHANGE_DIR/context" ]; then
+    echo "Intake context: present"
+    [ -f "$CHANGE_DIR/context/source.md" ] && echo "  - source.md"
+    [ -f "$CHANGE_DIR/context/prompt.md" ] && echo "  - prompt.md"
+    [ -f "$CHANGE_DIR/context/analysis.md" ] && echo "  - analysis.md"
+    if [ -d "$CHANGE_DIR/context/assets" ]; then
+      ASSET_COUNT=$(find "$CHANGE_DIR/context/assets" -maxdepth 1 -type f | wc -l | tr -d ' ')
+      echo "  - assets: $ASSET_COUNT"
+    fi
+  fi
+
+  OPEN_TASKS=0
+  DONE_TASKS=0
+  OPEN_ACCEPTANCE=0
+  if [ -f "$CHANGE_DIR/tasks.md" ]; then
+    OPEN_TASKS=$(count_open_checkboxes "$CHANGE_DIR/tasks.md")
+    DONE_TASKS=$(count_done_checkboxes "$CHANGE_DIR/tasks.md")
+  fi
+  if [ -f "$CHANGE_DIR/proposal.md" ]; then
+    OPEN_ACCEPTANCE=$(count_open_checkboxes "$CHANGE_DIR/proposal.md")
+  fi
 
   echo "Open tasks: $OPEN_TASKS"
   echo "Completed tasks: $DONE_TASKS"
   echo "Open acceptance criteria: $OPEN_ACCEPTANCE"
 
-  if [ "$OPEN_TASKS" -gt 0 ]; then
+  if [ "$OPEN_TASKS" -gt 0 ] && [ -f "$CHANGE_DIR/tasks.md" ]; then
     echo "Pending task items:"
     list_open_checkboxes "$CHANGE_DIR/tasks.md" | sed 's/^/  - /'
   fi

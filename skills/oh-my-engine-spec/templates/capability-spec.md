@@ -1,31 +1,25 @@
 # Capability Spec
 
 ## Capability Summary
-Describe the stable behavior this capability must provide.
+No accepted changes promoted yet.
 
 ## Requirements
-### Requirement 1
-The system MUST ...
+No accepted requirements promoted yet.
 
-#### Scenario
-- **WHEN** ...
-- **THEN** ...
+## Compatibility Notes
+No accepted compatibility notes promoted yet.
 
 ## Invariants
-- Invariant 1
-- Invariant 2
+Document constraints that must remain true across accepted changes when needed.
 
 ## Interfaces
-- Public entry points:
-- Internal contracts:
+Document stable public and internal contracts that support this capability.
 
 ## Observability
-- Logs:
-- Metrics:
-- Alerts:
+Document logs, metrics, and alerts operators rely on for this capability.
 
 ## References
-- Related changes:
+- Related accepted changes are tracked in the history below.
 - Code owners:
 
 ## Current Accepted Delta

@@ -113,7 +113,13 @@ It also creates an `openspec/` workspace for long-lived specs and active changes
 # Initialize the spec workspace
 oh-my-engine-spec init
 
-# Create a change proposal
+# Import PRD inputs and operator intent
+oh-my-engine-spec import user-authentication
+
+# Prepare proposal/design/tasks/spec delta from the imported context
+oh-my-engine-spec decompose user-authentication
+
+# Manual scaffold path remains available
 oh-my-engine-spec propose user-authentication
 
 # Refine and load execution context
@@ -127,12 +133,13 @@ oh-my-engine-spec verify user-authentication
 oh-my-engine-spec archive user-authentication
 ```
 
-`apply` updates lifecycle state, can mark task and acceptance progress, and prints the files the agent should load. It does not generate production code automatically. `status` summarizes the current phase and remaining checklist items. `archive` now updates both the current accepted snapshot and archived history in the long-lived capability spec.
-You can add real project checks under `workflows.spec.options.verifyCommands` in `.oh-my-engine/config.json`; `verify` runs them sequentially and fails on the first non-zero exit.
+`import` persists normalized source text, prompt input, provenance, and copied attachments under `openspec/changes/<change-id>/context/`. `decompose` turns that intake context into `analysis.md`, `proposal.md`, `design.md`, `tasks.md`, and spec deltas while keeping source references attached to the change. `apply` updates lifecycle state, can mark task and acceptance progress, and prints the files the agent should load. It does not generate production code automatically. `status` summarizes the current phase and remaining checklist items. `archive` now creates the long-lived capability spec on first acceptance, rebuilds canonical summary/requirements/compatibility sections from accepted deltas, and keeps both the current accepted snapshot and archived history.
+You can add real project checks under `workflows.spec.options.verifyCommands` in `.oh-my-engine/config.json`; `verify` runs them sequentially and fails on the first non-zero exit. `verify` also blocks unresolved `TBD:` template markers and requires each spec delta to select exactly one change type plus at least one concrete requirement and WHEN/THEN scenario.
 
 ## 📖 Documentation
 
 - [Architecture Overview](docs/architecture.md)
+- [Prompt-Driven Spec Intake Architecture](docs/spec-intake-architecture.md)
 - [Creating Custom Workflows](docs/custom-workflows.md)
 - [Configuration Guide](docs/configuration.md)
 - [Memory System](docs/memory-system.md)
@@ -201,6 +208,7 @@ project/
 └── openspec/              # OpenSpec-compatible workspace
     ├── project.md         # Project context
     ├── changes/           # In-progress changes
+    │   └── <change-id>/context/  # Imported PRD, prompt, analysis, references, assets
     ├── specs/             # Stable capability specs
     └── archive/           # Completed changes
 ```

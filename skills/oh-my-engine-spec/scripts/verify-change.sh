@@ -34,23 +34,41 @@ fi
 OPEN_TASKS=$(count_open_checkboxes "$CHANGE_DIR/tasks.md")
 DONE_TASKS=$(count_done_checkboxes "$CHANGE_DIR/tasks.md")
 OPEN_ACCEPTANCE=$(count_open_checkboxes "$CHANGE_DIR/proposal.md")
-MISSING_CAPABILITY_SPECS=0
 DELTA_COUNT=0
 VERIFY_COMMAND_COUNT=0
 FAILED_VERIFY_COMMAND=""
 
+VERIFY_COMMANDS_FILE=$(mktemp "${TMPDIR:-/tmp}/oh-my-engine-spec-verify.XXXXXX")
+PLACEHOLDER_HITS=$(mktemp "${TMPDIR:-/tmp}/oh-my-engine-spec-placeholder-hits.XXXXXX")
+DELTA_VALIDATION_ERRORS=$(mktemp "${TMPDIR:-/tmp}/oh-my-engine-spec-delta-errors.XXXXXX")
+trap 'rm -f "$VERIFY_COMMANDS_FILE" "$PLACEHOLDER_HITS" "$DELTA_VALIDATION_ERRORS"' EXIT INT TERM
+
+find_unresolved_placeholders \
+  "$CHANGE_DIR/proposal.md" \
+  "$CHANGE_DIR/design.md" > "$PLACEHOLDER_HITS"
+
 for delta_file in "$CHANGE_SPEC_ROOT"/*/spec.md; do
   [ -f "$delta_file" ] || continue
   DELTA_COUNT=$((DELTA_COUNT + 1))
-  capability=$(basename "$(dirname "$delta_file")")
-  if [ ! -f "$PROJECT_ROOT/openspec/specs/$capability/spec.md" ]; then
-    MISSING_CAPABILITY_SPECS=$((MISSING_CAPABILITY_SPECS + 1))
+
+  find_unresolved_placeholders "$delta_file" >> "$PLACEHOLDER_HITS"
+
+  if [ "$(count_selected_change_types "$delta_file")" -ne 1 ]; then
+    echo "$delta_file: select exactly one Change Type checkbox" >> "$DELTA_VALIDATION_ERRORS"
+  fi
+
+  if ! delta_has_concrete_requirement "$delta_file"; then
+    echo "$delta_file: add at least one concrete requirement statement" >> "$DELTA_VALIDATION_ERRORS"
+  fi
+
+  if ! delta_has_concrete_scenario "$delta_file"; then
+    echo "$delta_file: add at least one concrete WHEN/THEN scenario" >> "$DELTA_VALIDATION_ERRORS"
   fi
 done
 
 load_memory_context "$MEMORY_FILE"
 
-if [ "$DELTA_COUNT" -eq 0 ] || [ "$OPEN_TASKS" -gt 0 ] || [ "$OPEN_ACCEPTANCE" -gt 0 ] || [ "$MISSING_CAPABILITY_SPECS" -gt 0 ]; then
+if [ "$DELTA_COUNT" -eq 0 ] || [ "$OPEN_TASKS" -gt 0 ] || [ "$OPEN_ACCEPTANCE" -gt 0 ] || [ -s "$PLACEHOLDER_HITS" ] || [ -s "$DELTA_VALIDATION_ERRORS" ]; then
   write_memory_state \
     "$MEMORY_FILE" \
     "verify_failed" \
@@ -64,12 +82,20 @@ if [ "$DELTA_COUNT" -eq 0 ] || [ "$OPEN_TASKS" -gt 0 ] || [ "$OPEN_ACCEPTANCE" -
   echo "Change spec delta files: $DELTA_COUNT" >&2
   echo "Open tasks: $OPEN_TASKS" >&2
   echo "Open acceptance criteria: $OPEN_ACCEPTANCE" >&2
-  echo "Missing long-lived capability specs: $MISSING_CAPABILITY_SPECS" >&2
+
+  if [ -s "$PLACEHOLDER_HITS" ]; then
+    echo "Unresolved template markers still present:" >&2
+    sed 's/^/  - /' "$PLACEHOLDER_HITS" >&2
+  fi
+
+  if [ -s "$DELTA_VALIDATION_ERRORS" ]; then
+    echo "Spec delta validation errors:" >&2
+    sed 's/^/  - /' "$DELTA_VALIDATION_ERRORS" >&2
+  fi
+
   exit 1
 fi
 
-VERIFY_COMMANDS_FILE=$(mktemp "${TMPDIR:-/tmp}/oh-my-engine-spec-verify.XXXXXX")
-trap 'rm -f "$VERIFY_COMMANDS_FILE"' EXIT INT TERM
 json_get_string_array "verifyCommands" "$CONFIG_FILE" > "$VERIFY_COMMANDS_FILE"
 
 if [ -s "$VERIFY_COMMANDS_FILE" ]; then

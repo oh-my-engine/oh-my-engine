@@ -19,9 +19,10 @@ Implement a change while treating specs as the source of truth.
 ```
 1. Load .oh-my-engine/config.json
 2. Load openspec/project.md
-3. Load proposal.md, design.md, tasks.md
-4. Load related long-lived capability specs
-5. Load project rules and memory
+3. Load context/source.md, context/prompt.md, and context/analysis.md when present
+4. Load proposal.md, design.md, tasks.md
+5. Load related long-lived capability specs
+6. Load project rules and memory
 ```
 
 ### Step 2: Execute tasks

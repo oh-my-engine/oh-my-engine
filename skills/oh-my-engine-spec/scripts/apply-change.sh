@@ -148,10 +148,23 @@ echo "Apply context for change: $CHANGE_INPUT"
 echo "Load these files before implementing:"
 echo "  - .oh-my-engine/config.json"
 echo "  - openspec/project.md"
+if [ -f "$CHANGE_DIR/context/source.md" ]; then
+  echo "  - openspec/changes/$CHANGE_SLUG/context/source.md"
+fi
+if [ -f "$CHANGE_DIR/context/prompt.md" ]; then
+  echo "  - openspec/changes/$CHANGE_SLUG/context/prompt.md"
+fi
+if [ -f "$CHANGE_DIR/context/analysis.md" ]; then
+  echo "  - openspec/changes/$CHANGE_SLUG/context/analysis.md"
+fi
 echo "  - openspec/changes/$CHANGE_SLUG/proposal.md"
 echo "  - openspec/changes/$CHANGE_SLUG/design.md"
 echo "  - openspec/changes/$CHANGE_SLUG/tasks.md"
-echo "  - openspec/specs/$MEMORY_CAPABILITY/spec.md"
+if [ -f "$PROJECT_ROOT/openspec/specs/$MEMORY_CAPABILITY/spec.md" ]; then
+  echo "  - openspec/specs/$MEMORY_CAPABILITY/spec.md"
+else
+  echo "  - openspec/specs/$MEMORY_CAPABILITY/spec.md (not promoted yet)"
+fi
 echo "Pending tasks: $OPEN_TASKS"
 echo "Completed tasks: $DONE_TASKS"
 echo "Open acceptance criteria: $OPEN_ACCEPTANCE"

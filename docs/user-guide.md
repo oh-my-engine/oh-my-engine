@@ -20,10 +20,10 @@
 ```bash
 git clone https://github.com/yourusername/oh-my-engine.git
 cd oh-my-engine
-./install.sh
+./install.sh --agent both
 ```
 
-This creates symbolic links from `~/.claude/skills/` to the repository, so updates are automatic.
+This copies the skills into `~/.claude/skills/` and/or `~/.codex/skills/`, depending on the selected agent target.
 
 ### Manual Install
 
@@ -31,21 +31,26 @@ This creates symbolic links from `~/.claude/skills/` to the repository, so updat
 # Clone the repository
 git clone https://github.com/yourusername/oh-my-engine.git
 
-# Create skills directory if it doesn't exist
+# Create skills directories if they don't exist
 mkdir -p ~/.claude/skills
+mkdir -p ~/.codex/skills
 
-# Link each skill
+# Copy each skill
 cd oh-my-engine/skills
 for skill in oh-my-engine*; do
-  ln -sf "$(pwd)/$skill" ~/.claude/skills/
+  cp -R "$skill" ~/.claude/skills/
+  cp -R "$skill" ~/.codex/skills/
 done
 ```
 
 ### Verify Installation
 
 ```bash
-# Check if skills are installed
+# Check if skills are installed for Claude Code
 ls -la ~/.claude/skills/ | grep oh-my-engine
+
+# Check if skills are installed for Codex
+ls -la ~/.codex/skills/ | grep oh-my-engine
 ```
 
 You should see 9 skills listed.
@@ -134,8 +139,10 @@ Use descriptive keys: `screen.home.welcome` not `text1`
 # Analyze a bug
 /oh-my-engine-bug
 
-# Start a spec-driven change
-/oh-my-engine-spec propose user-authentication
+# Start a prompt-driven spec change
+/oh-my-engine-spec import user-authentication
+/oh-my-engine-spec decompose user-authentication
+/oh-my-engine-spec plan user-authentication
 ```
 
 ## Core Concepts
@@ -312,17 +319,21 @@ Manage an OpenSpec-compatible change lifecycle inside Oh My Engine.
 
 **What it does**:
 - Creates `openspec/` scaffolding
+- Imports PRD, prompt, and attachment context under `openspec/changes/<change-id>/context/`
+- Prepares `analysis.md` plus standard spec artifacts from imported context
 - Proposes changes under `openspec/changes/`
 - Refines design and tasks
 - Loads implementation context for the active change
 - Lets you mark task and acceptance progress from the CLI helper
 - Shows current change status and pending items
-- Verifies checklist completion in proposal/tasks docs
-- Archives completed changes into long-lived specs
+- Verifies checklist completion, blocks template placeholders, and enforces concrete spec deltas
+- Archives completed changes into long-lived specs, creating the capability spec on first acceptance
 
 **Usage**:
 ```bash
 /oh-my-engine-spec init
+/oh-my-engine-spec import user-authentication
+/oh-my-engine-spec decompose user-authentication
 /oh-my-engine-spec propose user-authentication
 /oh-my-engine-spec plan user-authentication
 /oh-my-engine-spec apply user-authentication
@@ -333,9 +344,10 @@ Manage an OpenSpec-compatible change lifecycle inside Oh My Engine.
 ```
 
 **Current limits**:
+- `import` and `decompose` persist normalized context and scaffolding, but the agent still needs to replace `TBD:` markers with concrete decisions.
 - `apply` updates lifecycle state and prints the expected context files, but does not edit app code automatically.
-- `verify` checks the documented checklist and runs `workflows.spec.options.verifyCommands` from `.oh-my-engine/config.json`.
-- `archive` maintains a current accepted delta snapshot plus archived history, but still does not do a semantic merge.
+- `verify` checks the documented checklist, blocks unresolved `TBD:` template markers, enforces exactly one change type plus concrete requirement/scenario content in each spec delta, and runs `workflows.spec.options.verifyCommands` from `.oh-my-engine/config.json`.
+- `archive` now rebuilds capability summary/requirements/compatibility from accepted deltas, but `Invariants`、`Interfaces`、`Observability` 这些长期说明仍需人工维护。
 
 ### `/oh-my-engine-bug`
 

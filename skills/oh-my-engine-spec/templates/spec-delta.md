@@ -9,21 +9,21 @@
 - [ ] Remove
 
 ## Requirements
-### Requirement 1
-The system MUST ...
+### Requirement: TBD requirement name
+The system MUST TBD: describe the required behavior.
 
-#### Scenario: Success
-- **WHEN** ...
-- **THEN** ...
+#### Scenario: TBD scenario name
+- **WHEN** TBD: describe the triggering condition.
+- **THEN** TBD: describe the expected result.
 
-### Requirement 2
-The system SHOULD ...
+### Requirement: TBD second requirement name
+The system SHOULD TBD: describe the optional or secondary behavior.
 
-#### Scenario: Failure handling
-- **WHEN** ...
-- **THEN** ...
+#### Scenario: TBD second scenario name
+- **WHEN** TBD: describe the second triggering condition.
+- **THEN** TBD: describe the second expected result.
 
 ## Compatibility Notes
-- Backward compatibility:
-- Migration notes:
-- Observability notes:
+- Backward compatibility: TBD: describe compatibility impact.
+- Migration notes: TBD: describe migration work or say none.
+- Observability notes: TBD: describe logs, metrics, or alerts to update.

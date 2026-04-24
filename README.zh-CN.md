@@ -107,7 +107,13 @@ oh-my-engine-init
 # 初始化 spec 工作区
 oh-my-engine-spec init
 
-# 创建变更提案
+# 导入 PRD、提示词和附件
+oh-my-engine-spec import user-authentication
+
+# 基于导入上下文准备 proposal/design/tasks/spec delta
+oh-my-engine-spec decompose user-authentication
+
+# 仍可使用手工 scaffold 路径
 oh-my-engine-spec propose user-authentication
 
 # 细化和加载执行上下文
@@ -121,12 +127,13 @@ oh-my-engine-spec verify user-authentication
 oh-my-engine-spec archive user-authentication
 ```
 
-`apply` 会更新生命周期状态，也可以回写任务和验收项进度，并输出应加载的上下文文件，但不会自动生成业务代码。`status` 用于查看当前 phase 和剩余待办。`archive` 现在会同时更新长期 capability spec 的当前接受快照和归档历史。
-你可以在 `.oh-my-engine/config.json` 的 `workflows.spec.options.verifyCommands` 中配置真实校验命令；`verify` 会按顺序执行，遇到首个非零退出码就失败。
+`import` 会把归一化后的来源文本、提示词、追踪信息和附件复制到 `openspec/changes/<change-id>/context/`。`decompose` 会基于这些 intake artifacts 准备 `analysis.md`、`proposal.md`、`design.md`、`tasks.md` 和 spec delta，并保留来源引用。`apply` 会更新生命周期状态，也可以回写任务和验收项进度，并输出应加载的上下文文件，但不会自动生成业务代码。`status` 用于查看当前 phase 和剩余待办。`archive` 现在会在首次接受时创建长期 capability spec，并基于已接受 delta 重建 canonical summary/requirements/compatibility，同时保留当前接受快照和归档历史。
+你可以在 `.oh-my-engine/config.json` 的 `workflows.spec.options.verifyCommands` 中配置真实校验命令；`verify` 会按顺序执行，遇到首个非零退出码就失败。`verify` 还会阻止未替换的 `TBD:` 模板标记，并要求每个 spec delta 必须且只能选中一种 change type，且写出至少一条具体 requirement 和 WHEN/THEN 场景。
 
 ## 📖 文档
 
 - [架构概览](docs/architecture.md)
+- [提示词驱动 Spec Intake 架构](docs/spec-intake-architecture.md)
 - [创建自定义工作流](docs/custom-workflows.md)
 - [配置指南](docs/configuration.md)
 - [记忆系统](docs/memory-system.md)
@@ -194,6 +201,7 @@ project/
 └── openspec/              # 兼容 OpenSpec 的工作区
     ├── project.md         # 项目上下文
     ├── changes/           # 进行中的变更
+    │   └── <change-id>/context/  # 导入的 PRD、提示词、分析、引用和附件
     ├── specs/             # 稳定能力规范
     └── archive/           # 已完成变更
 ```

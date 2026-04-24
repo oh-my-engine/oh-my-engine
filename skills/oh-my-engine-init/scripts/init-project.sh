@@ -119,7 +119,10 @@ CONFIG_CONTENT=$(cat <<EOF
         "specsDir": "openspec/specs",
         "archiveDir": "openspec/archive",
         "memoryDir": ".oh-my-engine/memory/specs",
-        "defaultFlow": "propose-plan-apply-verify-archive",
+        "defaultFlow": "import-decompose-plan-apply-verify-archive",
+        "manualFlow": "propose-plan-apply-verify-archive",
+        "contextDirName": "context",
+        "assetsDirName": "assets",
         "verifyCommands": []
       }
     }

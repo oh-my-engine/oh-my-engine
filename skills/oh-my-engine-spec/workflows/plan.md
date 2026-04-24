@@ -18,8 +18,9 @@ Turn a proposal into a concrete implementation and verification plan.
 ### Step 1: Design refinement
 ```
 1. Expand architecture and interfaces in design.md
-2. Document tradeoffs and rejected alternatives
-3. Capture testing and rollout constraints
+2. Reconcile design choices with context/analysis.md and any imported prompt constraints
+3. Document tradeoffs and rejected alternatives
+4. Capture testing and rollout constraints
 ```
 
 ### Step 2: Task shaping

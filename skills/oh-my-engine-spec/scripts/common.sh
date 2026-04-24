@@ -12,6 +12,20 @@ utc_stamp() {
   date -u +"%Y%m%dT%H%M%SZ"
 }
 
+json_escape() {
+  printf '%s' "$1" | awk '
+    BEGIN { ORS = "" }
+    {
+      gsub(/\\/, "\\\\")
+      gsub(/"/, "\\\"")
+      if (NR > 1) {
+        printf "\\n"
+      }
+      printf "%s", $0
+    }
+  '
+}
+
 json_get_string() {
   key="$1"
   file="$2"
@@ -23,16 +37,40 @@ json_get_string_array() {
   file="$2"
 
   awk -v key="$key" '
-    $0 ~ "\"" key "\"[[:space:]]*:[[:space:]]*\\[" { in_block = 1; next }
-    in_block && /\]/ { exit }
-    in_block {
+    function emit_strings(text, rest, matched) {
+      rest = text
+      while (match(rest, /"([^"\\]|\\.)*"/)) {
+        matched = substr(rest, RSTART + 1, RLENGTH - 2)
+        gsub(/\\"/, "\"", matched)
+        gsub(/\\\\/, "\\", matched)
+        print matched
+        rest = substr(rest, RSTART + RLENGTH)
+      }
+    }
+    {
       line = $0
-      gsub(/^[[:space:]]+/, "", line)
-      gsub(/[[:space:]]+$/, "", line)
-      sub(/,$/, "", line)
-      sub(/^"/, "", line)
-      sub(/"$/, "", line)
-      if (length(line) > 0) print line
+
+      if (in_block == 0) {
+        if (line ~ "\"" key "\"[[:space:]]*:[[:space:]]*\\[") {
+          in_block = 1
+          sub(/^.*\[[[:space:]]*/, "", line)
+          if (line ~ /\]/) {
+            sub(/\][^]]*$/, "", line)
+            emit_strings(line)
+            exit
+          }
+          emit_strings(line)
+        }
+        next
+      }
+
+      if (line ~ /\]/) {
+        sub(/\][^]]*$/, "", line)
+        emit_strings(line)
+        exit
+      }
+
+      emit_strings(line)
     }
   ' "$file"
 }
@@ -45,6 +83,74 @@ count_open_checkboxes() {
 count_done_checkboxes() {
   file="$1"
   awk '/^- \[[xX]\]/{c++} END{print c+0}' "$file"
+}
+
+find_unresolved_placeholders() {
+  awk '
+    {
+      line = $0
+      trimmed = line
+      gsub(/[[:space:]]+$/, "", trimmed)
+
+      if (trimmed ~ /TBD:/ || trimmed ~ /`<[^>]+>`/ || trimmed ~ /<[^>]+>/) {
+        print FILENAME ":" FNR ":" trimmed
+      }
+    }
+  ' "$@"
+}
+
+delta_has_concrete_requirement() {
+  file="$1"
+
+  awk '
+    /^The system / {
+      line = $0
+      gsub(/[[:space:]]+$/, "", line)
+      if (line !~ /TBD:/) found = 1
+    }
+    END { exit found ? 0 : 1 }
+  ' "$file"
+}
+
+delta_has_concrete_scenario() {
+  file="$1"
+
+  awk '
+    /^- \*\*WHEN\*\*/ {
+      line = $0
+      gsub(/[[:space:]]+$/, "", line)
+      if (line !~ /TBD:/) has_when = 1
+    }
+    /^- \*\*THEN\*\*/ {
+      line = $0
+      gsub(/[[:space:]]+$/, "", line)
+      if (line !~ /TBD:/) has_then = 1
+    }
+    END { exit (has_when && has_then) ? 0 : 1 }
+  ' "$file"
+}
+
+count_selected_change_types() {
+  file="$1"
+
+  awk '
+    /^## Change Type$/ { in_section = 1; next }
+    in_section && /^## / { exit }
+    in_section && /^- \[[xX]\] (Add|Modify|Remove)$/ { count++ }
+    END { print count + 0 }
+  ' "$file"
+}
+
+delta_change_type() {
+  file="$1"
+
+  awk '
+    /^## Change Type$/ { in_section = 1; next }
+    in_section && /^## / { exit }
+    in_section && /^- \[[xX]\] Add$/ { print "add"; exit }
+    in_section && /^- \[[xX]\] Modify$/ { print "modify"; exit }
+    in_section && /^- \[[xX]\] Remove$/ { print "remove"; exit }
+  ' "$file"
 }
 
 ensure_workspace_exists() {
@@ -220,6 +326,131 @@ No archived changes yet.
 <!-- OH-MY-ENGINE:HISTORY:END -->
 EOF
   fi
+}
+
+extract_markdown_section() {
+  file="$1"
+  heading="$2"
+  output_file="$3"
+
+  awk -v heading="$heading" '
+    $0 == heading { in_section = 1; next }
+    in_section && /^## / { exit }
+    in_section { print }
+  ' "$file" > "$output_file"
+}
+
+extract_first_nonempty_section_line() {
+  file="$1"
+  heading="$2"
+  output_file="$3"
+
+  awk -v heading="$heading" '
+    $0 == heading { in_section = 1; next }
+    in_section && /^## / { exit }
+    in_section {
+      line = $0
+      gsub(/^[[:space:]]+/, "", line)
+      gsub(/[[:space:]]+$/, "", line)
+      if (line != "") {
+        print line
+        found = 1
+        exit
+      }
+    }
+    END { exit found ? 0 : 1 }
+  ' "$file" > "$output_file"
+}
+
+replace_markdown_section_body() {
+  target_file="$1"
+  heading="$2"
+  content_file="$3"
+  tmp_file=$(mktemp "${TMPDIR:-/tmp}/oh-my-engine-spec-section.XXXXXX")
+
+  awk -v heading="$heading" -v replacement="$content_file" '
+    BEGIN {
+      while ((getline line < replacement) > 0) {
+        repl = repl line "\n"
+      }
+      close(replacement)
+    }
+    $0 == heading {
+      print
+      printf "%s", repl
+      in_section = 1
+      replaced = 1
+      next
+    }
+    in_section && /^## / {
+      in_section = 0
+      print
+      next
+    }
+    !in_section { print }
+    END {
+      if (!replaced) {
+        if (NR > 0) print ""
+        print heading
+        printf "%s", repl
+      }
+    }
+  ' "$target_file" > "$tmp_file"
+
+  mv "$tmp_file" "$target_file"
+}
+
+remove_line_from_file() {
+  target_file="$1"
+  query="$2"
+  tmp_file=$(mktemp "${TMPDIR:-/tmp}/oh-my-engine-spec-remove-line.XXXXXX")
+
+  awk -v query="$query" '
+    $0 != query { print }
+  ' "$target_file" > "$tmp_file"
+
+  mv "$tmp_file" "$target_file"
+}
+
+parse_requirement_blocks() {
+  delta_file="$1"
+  output_dir="$2"
+
+  mkdir -p "$output_dir"
+
+  awk -v output_dir="$output_dir" '
+    function slug(text, s) {
+      s = tolower(text)
+      gsub(/[^a-z0-9._-]+/, "-", s)
+      gsub(/-+/, "-", s)
+      gsub(/^-/, "", s)
+      gsub(/-$/, "", s)
+      return s
+    }
+    function flush_block(   title, block_file) {
+      if (block == "") return
+      title = current_heading
+      sub(/^### /, "", title)
+      block_index++
+      block_file = sprintf("%s/%03d-%s.md", output_dir, block_index, slug(title))
+      printf "%s", block > block_file
+      close(block_file)
+      block = ""
+      current_heading = ""
+    }
+    /^## Requirements$/ { in_section = 1; next }
+    in_section && /^## / { flush_block(); exit }
+    in_section && /^### / {
+      flush_block()
+      current_heading = $0
+      block = $0 "\n"
+      next
+    }
+    in_section && current_heading != "" {
+      block = block $0 "\n"
+    }
+    END { flush_block() }
+  ' "$delta_file"
 }
 
 replace_marker_block() {

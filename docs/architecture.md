@@ -166,7 +166,7 @@ When a workflow starts, it loads context in this order:
 2. **Project Spec Context**: `openspec/project.md`
 3. **Workflow Config**: Specific workflow settings
 4. **Active Change Docs**: `openspec/changes/<change-id>/`
-5. **Capability Specs**: `openspec/specs/<capability>/spec.md`
+5. **Capability Specs**: `openspec/specs/<capability>/spec.md` when the capability has already been accepted
 6. **Rules**: All rules specified in workflow config
 7. **Skills**: Additional skills specified in workflow config
 8. **Memory**: Recent executions and learnings
@@ -182,8 +182,20 @@ Spec mode follows an OpenSpec-compatible lifecycle:
 2. `propose` - scaffold a change under `openspec/changes/`
 3. `plan` - refine design and tasks
 4. `apply` - implement against the active change and long-lived specs
-5. `verify` - prove acceptance criteria and spec alignment
-6. `archive` - merge change deltas into `openspec/specs/` and persist memory
+5. `verify` - prove acceptance criteria, reject placeholder content, and require concrete spec deltas
+6. `archive` - create or update `openspec/specs/` from accepted change deltas and persist memory
+
+## Prompt-Driven Spec Intake
+
+The current OpenSpec-compatible workflow is the durable lifecycle core. For real-world PRD-driven work, the recommended extension is a thin intake layer in front of it:
+
+1. `import` - ingest PRD content from MCP, local docs, URLs, inline text, and image attachments
+2. `decompose` - convert normalized input plus operator prompt into `proposal.md`, `design.md`, `tasks.md`, and spec deltas
+3. `plan/apply/verify/archive` - continue using the existing lifecycle and long-lived specs as the source of truth
+
+This keeps multimodal retrieval and source-specific logic outside the spec core while preserving traceability and repeatability through persisted context artifacts.
+
+See [Prompt-Driven Spec Intake Architecture](spec-intake-architecture.md) for the detailed design.
 
 ## Extensibility
 
