@@ -2,7 +2,7 @@
 
 ## Overview
 
-Oh My Engine is a two-layer architecture that combines global skills with project-specific configurations to create intelligent, context-aware workflows.
+Oh My Engine is a two-layer architecture that combines global skills with project-specific configurations to create intelligent, context-aware workflows. Spec-driven work uses an OpenSpec-compatible workspace so long-lived specs and active changes stay separate from project memory.
 
 ## Architecture Layers
 
@@ -18,6 +18,7 @@ Global skills are installed once and available across all projects. They contain
 ├── oh-my-engine-bug/      # Bug analysis workflow
 ├── oh-my-engine-comp/     # Component generation workflow
 ├── oh-my-engine-api/      # API integration workflow
+├── oh-my-engine-spec/     # OpenSpec-compatible spec workflow
 ├── oh-my-engine-memory/   # Memory system viewer
 └── oh-my-engine-evolve/   # Evolution analyzer
 ```
@@ -37,8 +38,15 @@ project/.oh-my-engine/
 ├── memory/                # Execution history (git-ignored)
 │   ├── executions/
 │   ├── learnings/
-│   └── preferences/
+│   ├── preferences/
+│   └── specs/
 └── generated-skills/      # Auto-generated skills (future)
+
+project/openspec/
+├── project.md             # Stable project context
+├── changes/               # In-progress changes
+├── specs/                 # Long-lived capability specs
+└── archive/               # Completed changes
 ```
 
 ## Core Components
@@ -50,6 +58,7 @@ project/.oh-my-engine/
 - Enabled workflows and their settings
 - Skills to load for each workflow
 - Rules to apply
+- OpenSpec-compatible spec workflow settings
 - Memory and evolution settings
 
 Example:
@@ -132,19 +141,21 @@ Rules are loaded automatically based on workflow configuration and applied durin
    ↓
 2. Load project config.json
    ↓
-3. Check if workflow is enabled
+3. If using spec mode, load openspec/project.md and active change docs
    ↓
-4. Load configured skills
+4. Check if workflow is enabled
    ↓
-5. Load configured rules
+5. Load configured skills
    ↓
-6. Execute workflow logic
+6. Load configured rules
    ↓
-7. Generate code/output
+7. Execute workflow logic
    ↓
-8. Save execution to memory
+8. Generate code/output
    ↓
-9. Update learnings
+9. Save execution to memory
+   ↓
+10. Update learnings
 ```
 
 ## Context Loading Strategy
@@ -152,13 +163,27 @@ Rules are loaded automatically based on workflow configuration and applied durin
 When a workflow starts, it loads context in this order:
 
 1. **Project Config**: `.oh-my-engine/config.json`
-2. **Workflow Config**: Specific workflow settings
-3. **Rules**: All rules specified in workflow config
-4. **Skills**: Additional skills specified in workflow config
-5. **Memory**: Recent executions and learnings
-6. **User Input**: Command parameters
+2. **Project Spec Context**: `openspec/project.md`
+3. **Workflow Config**: Specific workflow settings
+4. **Active Change Docs**: `openspec/changes/<change-id>/`
+5. **Capability Specs**: `openspec/specs/<capability>/spec.md`
+6. **Rules**: All rules specified in workflow config
+7. **Skills**: Additional skills specified in workflow config
+8. **Memory**: Recent executions and learnings
+9. **User Input**: Command parameters
 
 This ensures the workflow has complete context before generating any code.
+
+## Spec-Driven Lifecycle
+
+Spec mode follows an OpenSpec-compatible lifecycle:
+
+1. `init` - create `openspec/` and memory directories
+2. `propose` - scaffold a change under `openspec/changes/`
+3. `plan` - refine design and tasks
+4. `apply` - implement against the active change and long-lived specs
+5. `verify` - prove acceptance criteria and spec alignment
+6. `archive` - merge change deltas into `openspec/specs/` and persist memory
 
 ## Extensibility
 

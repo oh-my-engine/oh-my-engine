@@ -247,6 +247,7 @@ print_usage() {
             echo -e "  ${GREEN}/oh-my-engine-bug${NC}     Analyze and fix bugs"
             echo -e "  ${GREEN}/oh-my-engine-comp${NC}    Generate components"
             echo -e "  ${GREEN}/oh-my-engine-api${NC}     Integrate APIs"
+            echo -e "  ${GREEN}/oh-my-engine-spec${NC}    Run the spec workflow"
             echo -e "  ${GREEN}/oh-my-engine-memory${NC}  View execution history"
             echo -e "  ${GREEN}/oh-my-engine-evolve${NC}  Evolve workflows"
             ;;
@@ -256,6 +257,7 @@ print_usage() {
             echo -e "  ${GREEN}oh-my-engine-bug${NC}       Invoke the bug analysis skill"
             echo -e "  ${GREEN}oh-my-engine-comp${NC}      Invoke the component generator skill"
             echo -e "  ${GREEN}oh-my-engine-api${NC}       Invoke the API integration skill"
+            echo -e "  ${GREEN}oh-my-engine-spec${NC}      Invoke the spec workflow skill"
             echo -e "  ${GREEN}oh-my-engine-memory${NC}    Invoke the memory viewer skill"
             echo -e "  ${GREEN}oh-my-engine-evolve${NC}    Invoke the evolution skill"
             ;;
@@ -266,6 +268,7 @@ print_usage() {
             echo -e "  ${GREEN}/oh-my-engine-bug${NC}     Analyze and fix bugs"
             echo -e "  ${GREEN}/oh-my-engine-comp${NC}    Generate components"
             echo -e "  ${GREEN}/oh-my-engine-api${NC}     Integrate APIs"
+            echo -e "  ${GREEN}/oh-my-engine-spec${NC}    Run the spec workflow"
             echo -e "  ${GREEN}/oh-my-engine-memory${NC}  View execution history"
             echo -e "  ${GREEN}/oh-my-engine-evolve${NC}  Evolve workflows"
             echo ""
@@ -274,6 +277,7 @@ print_usage() {
             echo -e "  ${GREEN}oh-my-engine-bug${NC}       Codex skill name"
             echo -e "  ${GREEN}oh-my-engine-comp${NC}      Codex skill name"
             echo -e "  ${GREEN}oh-my-engine-api${NC}       Codex skill name"
+            echo -e "  ${GREEN}oh-my-engine-spec${NC}      Codex skill name"
             echo -e "  ${GREEN}oh-my-engine-memory${NC}    Codex skill name"
             echo -e "  ${GREEN}oh-my-engine-evolve${NC}    Codex skill name"
             ;;

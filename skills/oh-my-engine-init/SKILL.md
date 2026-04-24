@@ -19,6 +19,18 @@ tags: [init, setup, configuration]
 Claude Code 可直接使用上面的 slash command。
 Codex 请按技能名 `oh-my-engine-init` 触发，并沿用相同参数。
 
+## 可执行脚本
+
+这版 MVP 已提供实际初始化脚本：
+
+```bash
+./scripts/init-project.sh
+./scripts/init-project.sh --template react-native
+./scripts/init-project.sh --force
+```
+
+脚本会创建 `.oh-my-engine/`、`openspec/`、基础 `config.json`、规则模板，以及 `.gitignore` 中的记忆目录忽略项。
+
 ## 参数
 
 - `--template`: 使用模板（可选：react-native/react/vue）
@@ -53,7 +65,14 @@ Codex 请按技能名 `oh-my-engine-init` 触发，并沿用相同参数。
    └── memory/              # 项目记忆
        ├── executions/      # 执行历史
        ├── learnings/       # 学习数据
-       └── preferences/     # 用户偏好
+       ├── preferences/     # 用户偏好
+       └── specs/           # Spec 执行记忆
+
+   openspec/
+   ├── project.md          # 项目级长期上下文
+   ├── changes/            # 当前变更
+   ├── specs/              # 长期能力规范
+   └── archive/            # 已归档变更
    ```
 
 3. **生成配置文件**
@@ -123,6 +142,21 @@ Codex 请按技能名 `oh-my-engine-init` 触发，并沿用相同参数。
         "generateMocks": true,
         "generateTests": true
       }
+    },
+    "spec": {
+      "enabled": true,
+      "format": "openspec-compatible",
+      "options": {
+        "specRoot": "openspec",
+        "changesDir": "openspec/changes",
+        "specsDir": "openspec/specs",
+        "archiveDir": "openspec/archive",
+        "memoryDir": ".oh-my-engine/memory/specs",
+        "defaultFlow": "propose-plan-apply-verify-archive",
+        "verifyCommands": [
+          "npm test"
+        ]
+      }
     }
   },
   "memory": {
@@ -187,6 +221,7 @@ Codex 请按技能名 `oh-my-engine-init` 触发，并沿用相同参数。
   ✅ .oh-my-engine/workflows/
   ✅ .oh-my-engine/rules/
   ✅ .oh-my-engine/memory/
+  ✅ openspec/
 
 生成的文件：
   ✅ .oh-my-engine/config.json
@@ -194,14 +229,15 @@ Codex 请按技能名 `oh-my-engine-init` 触发，并沿用相同参数。
   ✅ .oh-my-engine/rules/theme.md
   ✅ .oh-my-engine/rules/design-tokens.md
   ✅ .oh-my-engine/rules/code-style.md
+  ✅ openspec/project.md
 
 更新的文件：
   ✅ .gitignore (添加 .oh-my-engine/memory/)
 
 下一步：
   1. 编辑 .oh-my-engine/config.json 调整配置
-  2. 自定义 .oh-my-engine/rules/ 中的规则
-  3. 运行 /oh-my-engine-ui <url> 开始使用
+  2. 完善 openspec/project.md 的项目上下文
+  3. 运行 /oh-my-engine-spec propose <change-id>
 
 执行时间: 1.2s
 ```

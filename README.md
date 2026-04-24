@@ -14,6 +14,7 @@ Oh My Engine is a powerful framework that transforms Claude Code and Codex into 
 - **🔄 Self-Evolution**: Automatically identifies patterns and generates new skills
 - **⚙️ Project Configuration**: Per-project workflow customization with `.oh-my-engine/`
 - **📋 Rich Workflows**: Pre-built workflows for UI restoration, bug analysis, component generation, and API integration
+- **📝 Spec Mode**: OpenSpec-compatible proposal, planning, apply, verify, and archive workflow
 - **🎯 Smart Context**: Loads project-specific rules and configurations automatically
 - **🔧 Extensible**: Easy to create custom workflows for your specific needs
 
@@ -95,10 +96,39 @@ This creates a `.oh-my-engine/` directory with:
 - `rules/` - Project-specific rules
 - `memory/` - Execution history and learnings (git-ignored)
 
+It also creates an `openspec/` workspace for long-lived specs and active changes:
+- `project.md` - Project-level context
+- `changes/` - In-progress changes
+- `specs/` - Stable capability specs
+- `archive/` - Completed changes
+
 ### Available Commands
 
-- Claude Code: `/oh-my-engine-init`, `/oh-my-engine-ui`, `/oh-my-engine-bug`, `/oh-my-engine-comp`, `/oh-my-engine-api`, `/oh-my-engine-memory`, `/oh-my-engine-evolve`
-- Codex skill names: `oh-my-engine-init`, `oh-my-engine-ui`, `oh-my-engine-bug`, `oh-my-engine-comp`, `oh-my-engine-api`, `oh-my-engine-memory`, `oh-my-engine-evolve`
+- Claude Code: `/oh-my-engine-init`, `/oh-my-engine-ui`, `/oh-my-engine-bug`, `/oh-my-engine-comp`, `/oh-my-engine-api`, `/oh-my-engine-spec`, `/oh-my-engine-memory`, `/oh-my-engine-evolve`
+- Codex skill names: `oh-my-engine-init`, `oh-my-engine-ui`, `oh-my-engine-bug`, `oh-my-engine-comp`, `oh-my-engine-api`, `oh-my-engine-spec`, `oh-my-engine-memory`, `oh-my-engine-evolve`
+
+### Spec Workflow
+
+```bash
+# Initialize the spec workspace
+oh-my-engine-spec init
+
+# Create a change proposal
+oh-my-engine-spec propose user-authentication
+
+# Refine and load execution context
+oh-my-engine-spec plan user-authentication
+oh-my-engine-spec apply user-authentication
+oh-my-engine-spec apply user-authentication --task "Implement the change"
+oh-my-engine-spec status user-authentication
+
+# Verify and archive a change
+oh-my-engine-spec verify user-authentication
+oh-my-engine-spec archive user-authentication
+```
+
+`apply` updates lifecycle state, can mark task and acceptance progress, and prints the files the agent should load. It does not generate production code automatically. `status` summarizes the current phase and remaining checklist items. `archive` now updates both the current accepted snapshot and archived history in the long-lived capability spec.
+You can add real project checks under `workflows.spec.options.verifyCommands` in `.oh-my-engine/config.json`; `verify` runs them sequentially and fails on the first non-zero exit.
 
 ## 📖 Documentation
 
@@ -159,14 +189,20 @@ description: Deploy application with pre-flight checks
 ├── oh-my-engine-bug/      # Bug analysis workflow
 ├── oh-my-engine-comp/     # Component generation workflow
 ├── oh-my-engine-api/      # API integration workflow
+├── oh-my-engine-spec/     # OpenSpec-compatible spec workflow
 ├── oh-my-engine-memory/   # Memory viewer
 └── oh-my-engine-evolve/   # Evolution analyzer
 
 project/
-└── .oh-my-engine/         # Project-specific configuration
-    ├── config.json        # Workflow settings
-    ├── rules/             # Project rules (committed to git)
-    └── memory/            # Execution history (git-ignored)
+├── .oh-my-engine/         # Project-specific configuration and memory
+│   ├── config.json        # Workflow settings
+│   ├── rules/             # Project rules (committed to git)
+│   └── memory/            # Execution history (git-ignored)
+└── openspec/              # OpenSpec-compatible workspace
+    ├── project.md         # Project context
+    ├── changes/           # In-progress changes
+    ├── specs/             # Stable capability specs
+    └── archive/           # Completed changes
 ```
 
 ## 🤝 Contributing

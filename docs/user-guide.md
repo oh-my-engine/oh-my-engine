@@ -48,7 +48,7 @@ done
 ls -la ~/.claude/skills/ | grep oh-my-engine
 ```
 
-You should see 8 skills listed.
+You should see 9 skills listed.
 
 ## Quick Start
 
@@ -65,6 +65,8 @@ oh-my-engine-init
 ```
 
 This creates the `.oh-my-engine/` directory with default configuration.
+
+It also creates an `openspec/` workspace for long-lived capability specs and in-progress changes.
 
 ### 2. Configure Your Project
 
@@ -86,6 +88,10 @@ Edit `.oh-my-engine/config.json`:
     "component-generation": {
       "enabled": true,
       "rules": ["code-style", "theme"]
+    },
+    "spec": {
+      "enabled": true,
+      "format": "openspec-compatible"
     }
   }
 }
@@ -127,6 +133,9 @@ Use descriptive keys: `screen.home.welcome` not `text1`
 
 # Analyze a bug
 /oh-my-engine-bug
+
+# Start a spec-driven change
+/oh-my-engine-spec propose user-authentication
 ```
 
 ## Core Concepts
@@ -142,6 +151,12 @@ Use descriptive keys: `screen.home.welcome` not `text1`
 - Project-specific configuration
 - Custom rules and preferences
 - Execution history and learnings
+
+**Spec Workspace** (`openspec/`)
+- Stable project context
+- In-progress changes
+- Long-lived capability specs
+- Archived changes
 
 ### Configuration Inheritance
 
@@ -163,10 +178,12 @@ Projects inherit from global defaults but can override:
 
 When you run a workflow, Oh My Engine loads:
 1. Project configuration
-2. Workflow-specific settings
-3. All specified rules
-4. Recent memory and learnings
-5. Your input parameters
+2. Project spec context (`openspec/project.md`) when spec mode is enabled
+3. Workflow-specific settings
+4. Active change docs and long-lived capability specs when relevant
+5. All specified rules
+6. Recent memory and learnings
+7. Your input parameters
 
 This ensures every workflow has complete context.
 
@@ -288,6 +305,37 @@ Integrate an API endpoint.
 /oh-my-engine-api
 # Provide API endpoint details
 ```
+
+### `/oh-my-engine-spec`
+
+Manage an OpenSpec-compatible change lifecycle inside Oh My Engine.
+
+**What it does**:
+- Creates `openspec/` scaffolding
+- Proposes changes under `openspec/changes/`
+- Refines design and tasks
+- Loads implementation context for the active change
+- Lets you mark task and acceptance progress from the CLI helper
+- Shows current change status and pending items
+- Verifies checklist completion in proposal/tasks docs
+- Archives completed changes into long-lived specs
+
+**Usage**:
+```bash
+/oh-my-engine-spec init
+/oh-my-engine-spec propose user-authentication
+/oh-my-engine-spec plan user-authentication
+/oh-my-engine-spec apply user-authentication
+/oh-my-engine-spec apply user-authentication --task "Implement the change"
+/oh-my-engine-spec status user-authentication
+/oh-my-engine-spec verify user-authentication
+/oh-my-engine-spec archive user-authentication
+```
+
+**Current limits**:
+- `apply` updates lifecycle state and prints the expected context files, but does not edit app code automatically.
+- `verify` checks the documented checklist and runs `workflows.spec.options.verifyCommands` from `.oh-my-engine/config.json`.
+- `archive` maintains a current accepted delta snapshot plus archived history, but still does not do a semantic merge.
 
 ### `/oh-my-engine-bug`
 
