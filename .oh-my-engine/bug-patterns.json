@@ -1,0 +1,239 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "1.0.0",
+  "patterns": {
+    "react-event-handler-invocation": {
+      "name": "React 事件处理器立即调用",
+      "description": "事件处理器被立即调用而不是传递函数引用",
+      "category": "react",
+      "severity": "high",
+      "detection": {
+        "regex": "on[A-Z]\\w+={[^}]*\\(\\)}",
+        "filePatterns": ["**/*.tsx", "**/*.jsx"],
+        "examples": [
+          "onClick={handleClick()}",
+          "onChange={handleChange()}",
+          "onSubmit={handleSubmit()}"
+        ]
+      },
+      "fix": {
+        "pattern": "on{Event}={{handler}()}",
+        "replacement": "on{Event}={{handler}}",
+        "description": "移除函数调用的括号，传递函数引用"
+      },
+      "occurrences": 0,
+      "lastSeen": null,
+      "files": [],
+      "prevention": {
+        "eslintRule": {
+          "name": "react/jsx-no-bind",
+          "config": {
+            "ignoreRefs": true,
+            "allowArrowFunctions": false,
+            "allowFunctions": false,
+            "allowBind": false
+          }
+        },
+        "testTemplate": "tests/templates/react-event-handler.test.ts"
+      },
+      "autoFixAvailable": true,
+      "skillGenerated": false,
+      "thresholds": {
+        "generateSkill": 3,
+        "generateEslintRule": 5,
+        "generatePreCommitHook": 10
+      }
+    },
+    "async-await-missing": {
+      "name": "缺少 await 关键字",
+      "description": "异步函数调用缺少 await，导致 Promise 未被正确处理",
+      "category": "async",
+      "severity": "high",
+      "detection": {
+        "regex": "(?<!await\\s)\\b(fetch|axios\\.(get|post|put|delete)|api\\.)\\([^)]*\\);?(?!\\s*\\.then)",
+        "filePatterns": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
+        "examples": [
+          "const data = fetch('/api/users');",
+          "const result = apiClient.getData();",
+          "axios.post('/api/data', payload);"
+        ]
+      },
+      "fix": {
+        "pattern": "{asyncCall}",
+        "replacement": "await {asyncCall}",
+        "description": "在异步调用前添加 await 关键字"
+      },
+      "occurrences": 0,
+      "lastSeen": null,
+      "files": [],
+      "prevention": {
+        "eslintRule": {
+          "name": "@typescript-eslint/no-floating-promises",
+          "config": {
+            "ignoreVoid": false,
+            "ignoreIIFE": false
+          }
+        },
+        "testTemplate": "tests/templates/async-await.test.ts"
+      },
+      "autoFixAvailable": true,
+      "skillGenerated": false,
+      "thresholds": {
+        "generateSkill": 3,
+        "generateEslintRule": 5,
+        "generatePreCommitHook": 10
+      }
+    },
+    "react-state-mutation": {
+      "name": "React State 直接修改",
+      "description": "直接修改 state 对象而不是使用 setState",
+      "category": "react",
+      "severity": "critical",
+      "detection": {
+        "regex": "(this\\.state|\\w+State)\\.\\w+\\s*=(?!=)",
+        "filePatterns": ["**/*.tsx", "**/*.jsx"],
+        "examples": [
+          "this.state.count = 5;",
+          "userState.name = 'John';",
+          "items.push(newItem);"
+        ]
+      },
+      "fix": {
+        "pattern": "{state}.{property} = {value}",
+        "replacement": "set{State}({ ...{state}, {property}: {value} })",
+        "description": "使用 setState 或 useState 的 setter 函数"
+      },
+      "occurrences": 0,
+      "lastSeen": null,
+      "files": [],
+      "prevention": {
+        "eslintRule": {
+          "name": "react/no-direct-mutation-state",
+          "config": {}
+        },
+        "testTemplate": "tests/templates/react-state-mutation.test.ts"
+      },
+      "autoFixAvailable": true,
+      "skillGenerated": false,
+      "thresholds": {
+        "generateSkill": 3,
+        "generateEslintRule": 5,
+        "generatePreCommitHook": 10
+      }
+    },
+    "useeffect-missing-deps": {
+      "name": "useEffect 缺少依赖项",
+      "description": "useEffect 使用了外部变量但未在依赖数组中声明",
+      "category": "react",
+      "severity": "medium",
+      "detection": {
+        "regex": "useEffect\\(\\([^)]*\\)\\s*=>\\s*{[^}]*}\\s*,\\s*\\[\\]\\)",
+        "filePatterns": ["**/*.tsx", "**/*.jsx"],
+        "examples": [
+          "useEffect(() => { fetchData(userId); }, []);",
+          "useEffect(() => { setCount(count + 1); }, []);"
+        ]
+      },
+      "fix": {
+        "pattern": "useEffect(() => { ... }, [])",
+        "replacement": "useEffect(() => { ... }, [dependencies])",
+        "description": "在依赖数组中添加所有使用的外部变量"
+      },
+      "occurrences": 0,
+      "lastSeen": null,
+      "files": [],
+      "prevention": {
+        "eslintRule": {
+          "name": "react-hooks/exhaustive-deps",
+          "config": {
+            "warn": "error"
+          }
+        },
+        "testTemplate": "tests/templates/useeffect-deps.test.ts"
+      },
+      "autoFixAvailable": false,
+      "skillGenerated": false,
+      "thresholds": {
+        "generateSkill": 3,
+        "generateEslintRule": 5,
+        "generatePreCommitHook": 10
+      }
+    },
+    "memory-leak-event-listener": {
+      "name": "事件监听器未清理",
+      "description": "添加了事件监听器但未在组件卸载时清理",
+      "category": "memory",
+      "severity": "high",
+      "detection": {
+        "regex": "addEventListener\\([^)]+\\)(?!.*removeEventListener)",
+        "filePatterns": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
+        "examples": [
+          "window.addEventListener('resize', handleResize);",
+          "document.addEventListener('click', handleClick);"
+        ]
+      },
+      "fix": {
+        "pattern": "addEventListener(event, handler)",
+        "replacement": "useEffect(() => { addEventListener(event, handler); return () => removeEventListener(event, handler); }, [])",
+        "description": "在 useEffect 的 cleanup 函数中移除事件监听器"
+      },
+      "occurrences": 0,
+      "lastSeen": null,
+      "files": [],
+      "prevention": {
+        "eslintRule": {
+          "name": "react-hooks/exhaustive-deps",
+          "config": {}
+        },
+        "testTemplate": "tests/templates/event-listener-cleanup.test.ts"
+      },
+      "autoFixAvailable": true,
+      "skillGenerated": false,
+      "thresholds": {
+        "generateSkill": 3,
+        "generateEslintRule": 5,
+        "generatePreCommitHook": 10
+      }
+    },
+    "race-condition-async": {
+      "name": "异步操作竞态条件",
+      "description": "多个异步操作可能导致竞态条件",
+      "category": "async",
+      "severity": "high",
+      "detection": {
+        "regex": "useEffect\\(.*async.*\\).*\\[.*\\]",
+        "filePatterns": ["**/*.tsx", "**/*.jsx"],
+        "examples": [
+          "useEffect(() => { async function fetch() { ... } fetch(); }, [id]);"
+        ]
+      },
+      "fix": {
+        "pattern": "useEffect with async",
+        "replacement": "useEffect with AbortController or cleanup flag",
+        "description": "使用 AbortController 或 cleanup flag 防止竞态条件"
+      },
+      "occurrences": 0,
+      "lastSeen": null,
+      "files": [],
+      "prevention": {
+        "eslintRule": null,
+        "testTemplate": "tests/templates/race-condition.test.ts"
+      },
+      "autoFixAvailable": true,
+      "skillGenerated": false,
+      "thresholds": {
+        "generateSkill": 3,
+        "generateEslintRule": 5,
+        "generatePreCommitHook": 10
+      }
+    }
+  },
+  "statistics": {
+    "totalPatterns": 6,
+    "totalOccurrences": 0,
+    "skillsGenerated": 0,
+    "eslintRulesGenerated": 0,
+    "preCommitHooksGenerated": 0,
+    "lastUpdated": null
+  }
+}

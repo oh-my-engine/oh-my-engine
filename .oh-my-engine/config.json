@@ -1,0 +1,82 @@
+{
+  "version": "1.0.0",
+  "project": {
+    "name": "Oh My Engine",
+    "type": "workflow-engine",
+    "framework": "node"
+  },
+  "workflows": {
+    "ui-restore": {
+      "enabled": true,
+      "description": "从设计稿还原 UI 组件",
+      "skills": ["oh-my-engine-ui"],
+      "rules": ["theme", "i18n", "design-tokens"],
+      "options": {}
+    },
+    "bug-analysis": {
+      "enabled": true,
+      "description": "分析和修复 Bug",
+      "skills": ["oh-my-engine-bug"],
+      "rules": ["code-style"],
+      "options": {}
+    },
+    "component-gen": {
+      "enabled": true,
+      "description": "生成可复用组件",
+      "skills": ["oh-my-engine-comp"],
+      "rules": ["theme", "i18n", "design-tokens"],
+      "options": {}
+    },
+    "api-integration": {
+      "enabled": true,
+      "description": "集成 API 接口",
+      "skills": ["oh-my-engine-api"],
+      "rules": ["code-style"],
+      "options": {}
+    }
+  },
+  "rules": {
+    "theme": {
+      "description": "主题系统规则",
+      "required": true
+    },
+    "i18n": {
+      "description": "多语言规则",
+      "required": true
+    },
+    "design_tokens": {
+      "description": "设计令牌规则",
+      "required": true
+    },
+    "code_style": {
+      "description": "代码风格规则",
+      "required": true
+    }
+  },
+  "memory": {
+    "enabled": true,
+    "captureMode": "selective",
+    "allowSources": {
+      "workflow_command": true,
+      "explicit_remember": true,
+      "post_run_promotion": true
+    },
+    "thresholds": {
+      "preferencePromotion": 0.8,
+      "knowledgePromotion": 0.85,
+      "skillCandidatePromotion": 0.9
+    },
+    "retention_days": 90
+  },
+  "evolution": {
+    "enabled": true,
+    "autoApply": false,
+    "requireVerification": true,
+    "candidateOnly": true,
+    "thresholds": {
+      "learningCandidateMinEvidence": 3,
+      "skillCandidateMinEvidence": 3,
+      "adoptedPreferenceMinEvidence": 2
+    }
+  }
+}
