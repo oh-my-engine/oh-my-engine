@@ -17,6 +17,7 @@ Oh My Engine is a powerful framework that transforms Claude Code and Codex into 
 - **📝 Spec Mode**: OpenSpec-compatible proposal, planning, apply, verify, and archive workflow
 - **🎯 Smart Context**: Loads project-specific rules and configurations automatically
 - **🔧 Extensible**: Easy to create custom workflows for your specific needs
+- **🌐 Cross-Platform Rules**: Single source of truth for rules, auto-sync to 9+ AI platforms (Claude Code, Cursor, Trae, Agents, etc.) - [Learn more](docs/CROSS_PLATFORM_RULES.md)
 
 ## 🚀 Quick Start
 
@@ -93,7 +94,7 @@ oh-my-engine-init
 
 This creates a `.oh-my-engine/` directory with:
 - `config.json` - Workflow configurations
-- `rules/` - Project-specific rules
+- `rules/` - Project-specific rules (single source of truth, auto-syncs to all platforms)
 - `memory/` - Execution history and learnings (git-ignored)
 
 It also creates an `openspec/` workspace for long-lived specs and active changes:
