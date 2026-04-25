@@ -1,284 +1,423 @@
 ---
 name: oh-my-engine-init
-version: 1.0.0
-description: 初始化项目配置
+version: 2.0.0
+description: 智能初始化项目配置 - 扫描代码仓库并生成定制化规则
 author: yunxi
-tags: [init, setup, configuration]
+tags: [init, setup, configuration, ai, smart]
 ---
 
 # oh-my-engine-init
 
-在当前项目中初始化 Oh My Engine 配置。
+**智能初始化**：扫描代码仓库，结合用户需求，AI 生成定制化的开发规则。
+
+## 核心理念
+
+❌ **不使用固定模板**  
+✅ **智能分析 + AI 生成**
+
+```
+扫描代码仓库 → AI 分析 → 生成定制化 rules → 其他平台引用
+```
 
 ## 使用方法
 
-```bash
-/oh-my-engine-init [options]
-```
-
-Claude Code 可直接使用上面的 slash command。
-Codex 请按技能名 `oh-my-engine-init` 触发，并沿用相同参数。
-
-## 可执行脚本
-
-这版 MVP 已提供实际初始化脚本：
+### 方式 1：交互式初始化（推荐）
 
 ```bash
-./scripts/init-project.sh
-./scripts/init-project.sh --template react-native
-./scripts/init-project.sh --force
-```
-
-脚本会创建 `.oh-my-engine/`、`openspec/`、基础 `config.json`、规则模板，以及 `.gitignore` 中的记忆目录忽略项。
-
-## 参数
-
-- `--template`: 使用模板（可选：react-native/react/vue）
-- `--force`: 强制覆盖已有配置
-
-## 示例
-
-```bash
-# 基础初始化
 /oh-my-engine-init
-
-# 使用 React Native 模板
-/oh-my-engine-init --template react-native
-
-# 强制覆盖
-/oh-my-engine-init --force
 ```
+
+AI 会：
+1. 扫描你的代码仓库
+2. 询问项目特点和团队规范
+3. 生成定制化的 rules
+4. 创建索引文件到各平台
+
+### 方式 2：带提示词初始化
+
+```bash
+/oh-my-engine-init "这是一个 React Native 项目，使用 TypeScript，团队要求所有组件必须使用函数式组件和 Hooks，禁止使用 any 类型，必须支持 4 种语言（en/zh-CN/zh-TW/th）"
+```
+
+### 方式 3：使用脚本
+
+```bash
+node .oh-my-engine/smart-init.js "项目描述"
+```
+
+## 工作流程
+
+### 第一步：扫描代码仓库
+
+```
+🔍 扫描代码仓库...
+
+检测项目类型:
+  ✅ package.json → 前端/Node.js 项目
+  ✅ requirements.txt → Python 项目
+  ✅ go.mod → Go 项目
+  ✅ Cargo.toml → Rust 项目
+
+检测技术栈:
+  ✅ React / Vue / Angular
+  ✅ Next.js / Express / FastAPI
+  ✅ TypeScript / JavaScript / Python / Go
+
+检测目录结构:
+  ✅ src/ app/ components/ pages/
+  ✅ api/ server/ client/
+
+检测现有规则:
+  ⚠️  CLAUDE.md
+  ⚠️  .cursorrules
+```
+
+### 第二步：分析报告
+
+```
+📊 代码仓库分析结果：
+
+项目类型: mobile
+编程语言: TypeScript
+技术栈: React Native
+框架: Expo
+包管理器: yarn
+目录结构: app, components, screens, services
+
+⚠️  发现现有规则文件: CLAUDE.md, .cursor/rules
+```
+
+### 第三步：AI 生成规则
+
+根据分析结果和用户输入，AI 生成定制化的规则文件：
+
+```
+.oh-my-engine/rules/          ← 唯一的规则源
+├── code-style.md             ← AI 生成（针对 TypeScript + React Native）
+├── architecture.md           ← AI 生成（针对移动端架构）
+├── component-patterns.md     ← AI 生成（React Native 组件模式）
+├── performance.md            ← AI 生成（移动端性能优化）
+├── i18n.md                   ← AI 生成（多语言规范）
+└── testing.md                ← AI 生成（测试规范）
+```
+
+### 第四步：生成索引文件
+
+```
+生成轻量级索引文件到各平台：
+
+✅ CLAUDE.md                  ← 引用 .oh-my-engine/rules/
+✅ .cursorrules               ← 引用 .oh-my-engine/rules/
+✅ .cursor/rules/*.mdc        ← 引用 .oh-my-engine/rules/
+✅ .trae/rules/*.mdc          ← 引用 .oh-my-engine/rules/
+✅ .agents/rules/*.md         ← 引用 .oh-my-engine/rules/
+✅ 其他平台...
+```
+
+## 生成的规则示例
+
+### 针对 React Native 项目
+
+```markdown
+# code-style.md
+
+## TypeScript 规范
+
+### 1. 禁止使用 any
+
+\`\`\`typescript
+// ❌ 禁止
+function process(data: any) { }
+
+// ✅ 必须
+function process<T>(data: T) { }
+\`\`\`
+
+### 2. 组件必须使用函数式组件
+
+\`\`\`typescript
+// ❌ 禁止
+class MyComponent extends React.Component { }
+
+// ✅ 必须
+function MyComponent() { }
+\`\`\`
+
+## React Native 规范
+
+### 1. 使用 ThemedStyle
+
+\`\`\`typescript
+// ❌ 禁止
+<View style={{ padding: 16 }} />
+
+// ✅ 必须
+const $container: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  padding: spacing.md,
+})
+<View style={themed($container)} />
+\`\`\`
+```
+
+### 针对 Python FastAPI 项目
+
+```markdown
+# code-style.md
+
+## Python 规范
+
+### 1. 使用类型注解
+
+\`\`\`python
+# ❌ 禁止
+def process(data):
+    return data
+
+# ✅ 必须
+def process(data: dict) -> dict:
+    return data
+\`\`\`
+
+### 2. 使用 Pydantic 模型
+
+\`\`\`python
+# ✅ 必须
+from pydantic import BaseModel
+
+class User(BaseModel):
+    id: int
+    name: str
+    email: str
+\`\`\`
+
+## FastAPI 规范
+
+### 1. API 路由组织
+
+\`\`\`python
+# ✅ 推荐
+from fastapi import APIRouter
+
+router = APIRouter(prefix="/api/v1/users", tags=["users"])
+
+@router.get("/")
+async def list_users():
+    pass
+\`\`\`
+```
+
+## AI 提示词模板
+
+系统会自动构建以下提示词发送给 AI：
+
+```
+# 任务：为项目生成定制化的开发规则
+
+## 项目分析结果
+
+- 项目类型: mobile
+- 编程语言: TypeScript
+- 技术栈: React Native
+- 框架: Expo
+- 包管理器: yarn
+- 目录结构: { app: true, components: true, screens: true }
+
+## 用户需求
+
+这是一个 React Native 项目，使用 TypeScript，
+团队要求所有组件必须使用函数式组件和 Hooks，
+禁止使用 any 类型，必须支持 4 种语言。
+
+## 要求
+
+请根据以上信息，生成适合这个项目的开发规则...
+```
+
+## 与固定模板的对比
+
+| 特性 | 固定模板 | 智能初始化 |
+|------|---------|-----------|
+| 适用性 | 仅适用特定项目类型 | 适用任何项目 |
+| 规则内容 | 通用规则 | 定制化规则 |
+| 技术栈 | 预设技术栈 | 自动识别 |
+| 团队规范 | 无法体现 | 根据输入生成 |
+| 维护成本 | 需要维护多个模板 | 无需维护模板 |
+
+## 示例场景
+
+### 场景 1：React Native 项目
+
+```bash
+/oh-my-engine-init "React Native + TypeScript + Expo，使用 ThemedStyle 主题系统，必须支持 4 种语言，禁止行内样式"
+```
+
+生成的规则：
+- ✅ TypeScript 严格模式
+- ✅ React Native 组件规范
+- ✅ ThemedStyle 主题系统
+- ✅ 多语言 i18n 规范
+- ✅ 性能优化规范
+
+### 场景 2：Python FastAPI 项目
+
+```bash
+/oh-my-engine-init "Python FastAPI 后端项目，使用 Pydantic 模型，PostgreSQL 数据库，要求所有 API 必须有类型注解和文档"
+```
+
+生成的规则：
+- ✅ Python 类型注解规范
+- ✅ Pydantic 模型规范
+- ✅ FastAPI 路由组织
+- ✅ 数据库操作规范
+- ✅ API 文档规范
+
+### 场景 3：Go 微服务项目
+
+```bash
+/oh-my-engine-init "Go 微服务项目，使用 gRPC，要求所有服务必须有健康检查和监控，错误处理必须统一"
+```
+
+生成的规则：
+- ✅ Go 代码规范
+- ✅ gRPC 服务规范
+- ✅ 错误处理规范
+- ✅ 监控和日志规范
+- ✅ 测试规范
+
+## 规则文件组织
+
+### 唯一的规则源
+
+```
+.oh-my-engine/rules/          ← 所有规则都在这里
+├── code-style.md
+├── architecture.md
+├── best-practices.md
+├── testing.md
+└── [其他定制规则]
+```
+
+### 其他平台引用
+
+```
+CLAUDE.md                     ← 索引文件，引用 .oh-my-engine/rules/
+.cursorrules                  ← 索引文件，引用 .oh-my-engine/rules/
+.cursor/rules/*.mdc           ← 完整规则（从源生成）
+.trae/rules/*.mdc             ← 完整规则（从源生成）
+.agents/rules/*.md            ← 完整规则（从源生成）
+```
+
+**关键点**：
+- ✅ 规则只维护一份（`.oh-my-engine/rules/`）
+- ✅ 其他平台的文件是引用或生成的副本
+- ✅ 修改规则只需编辑源文件
+- ✅ 运行 `rules-sync.js` 更新所有平台
 
 ## 执行流程
 
-1. **检查当前目录**
-   - 检查是否已有 .oh-my-engine/ 目录
-   - 检查是否是 Git 仓库
-   - 识别项目类型
-
-2. **创建目录结构**
-   ```
-   .oh-my-engine/
-   ├── config.json          # 项目配置
-   ├── workflows/           # 自定义工作流
-   ├── rules/               # 项目规则
-   └── memory/              # 项目记忆
-       ├── executions/      # 执行历史
-       ├── learnings/       # 学习数据
-       ├── preferences/     # 用户偏好
-       └── specs/           # Spec 执行记忆
-
-   openspec/
-   ├── project.md          # 项目级长期上下文
-   ├── changes/            # 当前变更
-   ├── specs/              # 长期能力规范
-   └── archive/            # 已归档变更
-   ```
-
-3. **生成配置文件**
-   - 复制默认模板
-   - 根据项目类型调整
-   - 生成 config.json
-
-4. **复制规则模板**
-   - i18n 规则
-   - theme 规则
-   - design-tokens 规则
-   - code-style 规则
-
-5. **初始化记忆系统**
-   - 创建记忆目录
-   - 初始化统计数据
-   - 设置用户偏好
-
-6. **添加到 .gitignore**
-   - 添加 .oh-my-engine/memory/ 到 .gitignore
-   - 保留配置文件在版本控制中
-
-## 生成的配置示例
-
-### config.json
-
-```json
-{
-  "project": "MyProject",
-  "version": "1.0.0",
-  "workflows": {
-    "ui-restore": {
-      "enabled": true,
-      "rules": ["i18n", "theme", "design-tokens"],
-      "options": {
-        "languages": ["en", "zh-CN"],
-        "themeSystem": "styled-components",
-        "designTokens": true,
-        "outputDir": "src/components"
-      }
-    },
-    "bug-analysis": {
-      "enabled": true,
-      "rules": ["code-style"],
-      "options": {
-        "searchScope": ["src/", "app/"],
-        "logPaths": ["logs/"],
-        "autoFix": false
-      }
-    },
-    "component-gen": {
-      "enabled": true,
-      "rules": ["code-style", "design-tokens", "theme"],
-      "options": {
-        "outputDir": "src/components",
-        "componentLibrary": "react",
-        "styleType": "css-modules",
-        "generateTests": true
-      }
-    },
-    "api-integration": {
-      "enabled": true,
-      "rules": ["code-style", "error-handling"],
-      "options": {
-        "outputDir": "src/services",
-        "baseURL": "https://api.example.com",
-        "generateMocks": true,
-        "generateTests": true
-      }
-    },
-    "spec": {
-      "enabled": true,
-      "format": "openspec-compatible",
-      "options": {
-        "specRoot": "openspec",
-        "changesDir": "openspec/changes",
-        "specsDir": "openspec/specs",
-        "archiveDir": "openspec/archive",
-        "memoryDir": ".oh-my-engine/memory/specs",
-        "defaultFlow": "propose-plan-apply-verify-archive",
-        "verifyCommands": [
-          "npm test"
-        ]
-      }
-    }
-  },
-  "memory": {
-    "enabled": true,
-    "retention": "90d",
-    "maxExecutions": 1000
-  },
-  "evolution": {
-    "enabled": true,
-    "autoApply": false,
-    "evaluationInterval": "daily",
-    "optimizationThreshold": 85
-  }
-}
 ```
-
-## 模板
-
-### React Native 模板
-
-```bash
-/oh-my-engine-init --template react-native
+1. 用户运行 /oh-my-engine-init "项目描述"
+         ↓
+2. 扫描代码仓库（smart-init.js）
+         ↓
+3. 生成 AI 提示词
+         ↓
+4. AI 生成定制化规则
+         ↓
+5. 保存到 .oh-my-engine/rules/
+         ↓
+6. 运行 rules-sync.js
+         ↓
+7. 生成索引文件到各平台
+         ↓
+8. 完成！
 ```
-
-特点：
-- 4 种语言支持（en/zh-CN/zh-TW/th）
-- ThemedStyle 主题系统
-- React Native 组件库
-- Expo 支持
-
-### React 模板
-
-```bash
-/oh-my-engine-init --template react
-```
-
-特点：
-- 2 种语言支持（en/zh-CN）
-- CSS Modules 样式系统
-- React 组件库
-- Vite/CRA 支持
-
-### Vue 模板
-
-```bash
-/oh-my-engine-init --template vue
-```
-
-特点：
-- 2 种语言支持（en/zh-CN）
-- Scoped CSS 样式系统
-- Vue 组件库
-- Vite 支持
 
 ## 输出示例
 
 ```
-✅ Oh My Engine 初始化完成
+🚀 Oh My Engine - 智能初始化
 
-创建的目录：
-  ✅ .oh-my-engine/
-  ✅ .oh-my-engine/workflows/
-  ✅ .oh-my-engine/rules/
-  ✅ .oh-my-engine/memory/
-  ✅ openspec/
+项目目录: /path/to/project
 
-生成的文件：
-  ✅ .oh-my-engine/config.json
-  ✅ .oh-my-engine/rules/i18n.md
-  ✅ .oh-my-engine/rules/theme.md
-  ✅ .oh-my-engine/rules/design-tokens.md
-  ✅ .oh-my-engine/rules/code-style.md
-  ✅ openspec/project.md
+🔍 扫描代码仓库...
 
-更新的文件：
-  ✅ .gitignore (添加 .oh-my-engine/memory/)
+📊 代码仓库分析结果：
+
+项目类型: mobile
+编程语言: TypeScript
+技术栈: React Native
+框架: Expo
+包管理器: yarn
+目录结构: app, components, screens
+
+💬 用户输入: React Native + TypeScript，必须支持 4 种语言
+
+🤖 AI 正在生成定制化规则...
+
+✅ 生成规则文件：
+   - code-style.md (TypeScript + React Native 规范)
+   - component-patterns.md (组件模式)
+   - i18n.md (多语言规范)
+   - performance.md (性能优化)
+   - testing.md (测试规范)
+
+🔄 同步到所有平台...
+
+✅ claude-code: CLAUDE.md
+✅ cursor: .cursor/rules/ (5 个文件)
+✅ trae: .trae/rules/ (5 个文件)
+✅ agents: .agents/rules/ (5 个文件)
+
+🎉 初始化完成！
 
 下一步：
-  1. 编辑 .oh-my-engine/config.json 调整配置
-  2. 完善 openspec/project.md 的项目上下文
-  3. 运行 /oh-my-engine-spec propose <change-id>
-
-执行时间: 1.2s
+  1. 查看生成的规则：ls .oh-my-engine/rules/
+  2. 根据需要调整规则
+  3. 开始使用：/oh-my-engine-ui <design-url>
 ```
 
-## 自定义配置
+## 高级用法
 
-初始化后，你可以：
+### 1. 重新生成规则
 
-1. **编辑配置文件**
-   ```bash
-   vim .oh-my-engine/config.json
-   ```
-
-2. **自定义规则**
-   ```bash
-   vim .oh-my-engine/rules/i18n.md
-   ```
-
-3. **添加自定义工作流**
-   ```bash
-   vim .oh-my-engine/workflows/my-workflow.md
-   ```
-
-## 团队协作
-
-配置文件可以提交到 Git：
 ```bash
-git add .oh-my-engine/config.json
-git add .oh-my-engine/rules/
-git add .oh-my-engine/workflows/
-git commit -m "Add Oh My Engine configuration"
+/oh-my-engine-init --regenerate "新的项目描述"
 ```
 
-记忆数据不会提交（已在 .gitignore 中）。
+### 2. 只生成特定规则
+
+```bash
+/oh-my-engine-init --rules "code-style,testing"
+```
+
+### 3. 合并现有规则
+
+```bash
+/oh-my-engine-init --merge
+```
+
+AI 会分析现有的规则文件（CLAUDE.md, .cursorrules 等），并将其整合到新的规则中。
+
+## 相关文件
+
+- `smart-init.js` - 智能初始化脚本
+- `rules-sync.js` - 规则同步脚本
+- `platforms.json` - 平台配置
+- `config.json` - 项目配置
 
 ## 相关命令
 
-- `/oh-my-engine-ui` - 开始使用 UI 还原
+- `/oh-my-engine-init` - 智能初始化
+- `node .oh-my-engine/rules-sync.js` - 同步规则到所有平台
 - `/oh-my-engine-memory` - 查看记忆统计
 - `/oh-my-engine-evolve` - 触发进化分析
 
 ---
 
-**提示**：初始化后，系统会根据你的使用习惯自动学习和优化！
+**核心优势**：
+- ✅ 无需固定模板，适用任何项目
+- ✅ AI 生成定制化规则
+- ✅ 单一规则源，其他平台引用
+- ✅ 智能分析代码仓库
+- ✅ 结合团队规范

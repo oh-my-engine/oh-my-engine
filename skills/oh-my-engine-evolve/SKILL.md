@@ -8,7 +8,15 @@ tags: [evolution, optimization, learning]
 
 # oh-my-engine-evolve
 
-分析执行历史，识别优化机会，生成改进建议。
+分析已存储的 execution / preference memory，产出 candidate 级别的学习结果。
+
+当前 v1 已实现：
+- 从 repeated successful execution patterns 生成 `learning candidates`
+- 从 repeated bug-fix patterns 生成 `skill candidates`
+- 汇总已重复确认的显式 `preferences`
+- learning candidate 可单独走 `verify -> adopt`
+- skill candidate 可单独走 `verify -> adopt`
+- 不自动 adopt skill
 
 ## 使用方法
 
@@ -21,129 +29,103 @@ Codex 请按技能名 `oh-my-engine-evolve` 触发，并沿用相同参数。
 
 ## 参数
 
-- `--workflow`: 指定工作流（可选，默认分析所有）
-- `--period`: 分析周期（可选，默认 30 天）
+- `--project-root`: 指定项目根目录（可选，默认当前目录）
+- `--format`: 输出格式（可选：`text`/`json`）
 
 ## 示例
 
 ```bash
-# 分析所有工作流
+# 分析当前项目记忆
 /oh-my-engine-evolve
 
-# 分析特定工作流
-/oh-my-engine-evolve --workflow ui-restore
-
-# 指定分析周期
-/oh-my-engine-evolve --period 7d
+# 输出 JSON 报告
+/oh-my-engine-evolve --format json
 ```
 
 ## 执行流程
 
 1. **加载执行历史**
    - 读取 memory/executions/
-   - 过滤时间范围
-   - 统计执行数据
+   - 读取 memory/preferences/
+   - 统计 execution / preference 数据
 
 2. **评估执行效果**
-   - 计算规则通过率（目标 ≥95%）
-   - 计算执行效率（目标 ≥100%）
-   - 计算用户满意度（目标 ≥90%）
-   - 生成综合评分
+   - 识别 repeated successful patterns
+   - 识别 repeated bug-fix patterns
+   - 识别已重复确认的显式偏好
 
 3. **识别可优化模式**
-   - 错误模式（重复 ≥3 次）
-   - 复用模式（复用 ≥3 处）
-   - 最佳实践（成功率 ≥95%）
-   - 操作组合（重复 ≥5 次）
+   - learning candidate（默认阈值 ≥3）
+   - skill candidate（默认阈值 ≥3）
+   - adopted preference summary（默认阈值 ≥2）
 
 4. **生成优化建议**
-   - 性能优化建议
-   - 准确性优化建议
-   - 用户体验优化建议
-   - Skill 生成建议
+   - 写入 `.oh-my-engine/memory/learnings/candidates/`
+   - 写入 `.oh-my-engine/memory/skill-candidates/`
+   - 输出报告，不直接安装 skill
 
-5. **展示结果**
-   - 显示评估报告
-   - 显示优化建议
-   - 询问是否应用
-
-6. **应用优化（可选）**
-   - 生成新的 Skill
-   - 应用性能优化
-   - 更新规则配置
+5. **独立验证与采用**
+   - `verify-learning-candidate.js` 校验 learning candidate schema 和状态
+   - learning candidate adopt 结果写入 `.oh-my-engine/memory/learnings/adopted/`
+   - `verify-skill-candidate.js` 校验 candidate schema 和状态
+   - 只有 `verified` candidate 才能 adopt
+   - adopt 结果写入 `.oh-my-engine/generated-skills/`
 
 ## 输出示例
 
 ```
-📊 进化分析报告
+Evolution analysis
+Execution records: 8
+Preference records: 1
+Learning candidates: 1
+Skill candidates: 1
+Adopted preferences: 1
 
-执行统计（最近 30 天）：
-  - 总执行次数: 45
-  - 成功率: 93%
-  - 平均执行时间: 8.5s
+Learning candidates:
+- spec verify: Verified the spec change and acceptance state. [evidence=3]
 
-评估指标：
-  ✅ 规则通过率: 96.5% (目标 ≥95%)
-  ✅ 执行效率: 108.2% (目标 ≥100%)
-  ✅ 用户满意度: 92.0% (目标 ≥90%)
+Skill candidates:
+- react-event-handler-invocation [evidence=3]
 
-综合评分: 96.1 (A 级)
-
-识别的模式：
-  🔧 错误修复模式: 2 个
-     - MasterGo 超时错误 (5 次)
-     - 飞书搜索失败 (3 次)
-  
-  🔄 复用模式: 3 个
-     - 飞书文档搜索逻辑 (4 处)
-     - 主题变量应用 (6 处)
-     - i18n 文本提取 (5 处)
-  
-  ⭐ 最佳实践: 1 个
-     - UI 还原流程 (成功率 97%)
-
-优化建议：
-  1. [高优先级] 生成 fix-mastergo-timeout Skill
-  2. [中优先级] 提取 feishu-search-helper 工具
-  3. [低优先级] 固化 ui-restore-best-practice
-
-是否应用这些优化？(y/n)
+Adopted preferences:
+- Prefer concise reports [evidence=2]
 ```
 
 ## 配置
 
-### 全局配置（~/.claude/skills/oh-my-engine/config.json）
+### 项目配置（.oh-my-engine/config.json）
 
 ```json
 {
   "evolution": {
     "enabled": true,
     "autoApply": false,
-    "evaluationInterval": "daily",
-    "optimizationThreshold": 85,
-    "skillGenerationThreshold": {
-      "errorFrequency": 3,
-      "reuseFrequency": 3,
-      "successRate": 0.95,
-      "combinationFrequency": 5
+    "requireVerification": true,
+    "candidateOnly": true,
+    "thresholds": {
+      "learningCandidateMinEvidence": 3,
+      "skillCandidateMinEvidence": 3,
+      "adoptedPreferenceMinEvidence": 2
     }
   }
 }
 ```
 
-## 自动进化
+## 当前脚本
 
-系统会在后台自动触发进化分析：
-- 每次工作流执行后
-- 每天定时分析
-- 达到阈值时触发
+```bash
+node skills/oh-my-engine-evolve/scripts/run-evolve.js --format json
+node skills/oh-my-engine-evolve/scripts/verify-learning-candidate.js --slug spec-verify-verified-the-spec-change-and-acceptance-state
+node skills/oh-my-engine/scripts/adopt-learning-candidate.js --slug spec-verify-verified-the-spec-change-and-acceptance-state
+node skills/oh-my-engine-evolve/scripts/verify-skill-candidate.js --slug react-event-handler-invocation
+node skills/oh-my-engine/scripts/adopt-skill-candidate.js --slug react-event-handler-invocation
+```
 
 ## 相关命令
 
-- `/oh-my-engine-memory` - 查看执行历史
-- `/oh-my-engine-ui` - UI 还原（会触发进化）
-- `/oh-my-engine-bug` - Bug 分析（会触发进化）
+- `/oh-my-engine-memory` - 查看执行 / preference / candidate 记忆
+- `/oh-my-engine-init` - 初始化 selective memory 默认配置
 
 ---
 
-**提示**：系统会自动学习和进化，你也可以手动触发分析！
+**提示**：v1 的 evolve 只负责“发现并提名”，不负责“自动替你升级”。

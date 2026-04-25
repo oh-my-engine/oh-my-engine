@@ -38,9 +38,12 @@ project/.oh-my-engine/
 ├── memory/                # Execution history (git-ignored)
 │   ├── executions/
 │   ├── learnings/
+│   │   ├── candidates/
+│   │   └── adopted/
 │   ├── preferences/
+│   ├── skill-candidates/
 │   └── specs/
-└── generated-skills/      # Auto-generated skills (future)
+└── generated-skills/      # Adopted skill artifacts
 
 project/openspec/
 ├── project.md             # Stable project context
@@ -80,28 +83,44 @@ Example:
 
 ### 2. Memory System
 
-The memory system records and learns from every workflow execution:
+The v1 memory system is selective. It records only events that pass the memory policy gate:
+
+- explicit engine workflow execution
+- explicit user remember requests
+- post-run promotions that meet reusable-value thresholds
 
 **Executions** (`memory/executions/`)
 - Timestamped execution logs
-- Input parameters and outputs
+- Workflow/phase/source metadata
+- `captureLevel` and `whyStored`
 - Success/failure status
-- Performance metrics
+- File/test/error evidence when available
 
 **Learnings** (`memory/learnings/`)
-- Successful patterns
-- Failed cases and their causes
-- Best practices discovered
-- Anti-patterns to avoid
+- Candidate best practices promoted from repeated successful patterns
+- Candidates are stored under `memory/learnings/candidates/`
+- Adopted learning artifacts are stored under `memory/learnings/adopted/`
+- Verified before broader adoption
 
 **Preferences** (`memory/preferences/`)
 - User feedback on generated code
 - Preferred approaches
 - Custom conventions
 
+**Skill Candidates** (`memory/skill-candidates/`)
+- Candidate automation distilled from repeated bug-fix patterns
+- Stored as candidates first, not auto-installed
+- Verified before adoption
+
+**Generated Skills** (`generated-skills/`)
+- Adopted candidate artifacts promoted after verification
+- Can contribute execution directives that are surfaced during downstream `spec apply`
+- Are visible through the memory viewer and change status surfaces
+- Remain project-local in v1
+
 ### 3. Evolution Mechanism
 
-The evolution system analyzes memory data to identify opportunities for improvement:
+The evolution system analyzes selected memory data to identify opportunities for improvement:
 
 **Pattern Detection**
 - Errors repeated ≥3 times → Generate fix skill
@@ -109,9 +128,9 @@ The evolution system analyzes memory data to identify opportunities for improvem
 - Success rate ≥95% → Solidify as best practice
 
 **Skill Generation**
-- Automatically creates new skills based on patterns
+- Creates skill candidates based on verified patterns
 - Proposes them to the user for approval
-- Installs approved skills to `generated-skills/`
+- Adopts approved candidates into `generated-skills/` and exposes their execution directives to downstream workflows
 
 ### 4. Rule System
 
@@ -153,10 +172,16 @@ Rules are loaded automatically based on workflow configuration and applied durin
    ↓
 8. Generate code/output
    ↓
-9. Save execution to memory
+9. Run the selective memory gate
    ↓
-10. Update learnings
+10. Persist only approved execution or promotion records
 ```
+
+Non-spec workflow helpers can now consume adopted engine knowledge directly through:
+- `skills/oh-my-engine-bug/scripts/prepare-context.sh`
+- `skills/oh-my-engine-ui/scripts/prepare-context.sh`
+- `skills/oh-my-engine-comp/scripts/prepare-context.sh`
+- `skills/oh-my-engine-api/scripts/prepare-context.sh`
 
 ## Context Loading Strategy
 
@@ -168,9 +193,10 @@ When a workflow starts, it loads context in this order:
 4. **Active Change Docs**: `openspec/changes/<change-id>/`
 5. **Capability Specs**: `openspec/specs/<capability>/spec.md` when the capability has already been accepted
 6. **Rules**: All rules specified in workflow config
-7. **Skills**: Additional skills specified in workflow config
-8. **Memory**: Recent executions and learnings
-9. **User Input**: Command parameters
+7. **Engine Memory Context**: `openspec/changes/<change-id>/context/engine-memory.md` refreshed from adopted learnings and generated skills during `plan/apply`, including execution directives derived from adopted skills
+8. **Skills**: Additional skills specified in workflow config
+9. **Memory**: Recent executions and learnings
+10. **User Input**: Command parameters
 
 This ensures the workflow has complete context before generating any code.
 

@@ -14,6 +14,7 @@ tags: [component, generator, react, react-native]
 
 ```bash
 /oh-my-engine-comp <component-name> [options]
+./scripts/prepare-context.sh <component-name>
 ```
 
 Claude Code 可直接使用上面的 slash command。
@@ -41,6 +42,7 @@ Codex 请按技能名 `oh-my-engine-comp` 触发，并沿用相同参数。
 ## 执行流程
 
 1. **分析需求**
+   - 先运行 `./scripts/prepare-context.sh` 加载 adopted learnings / generated skill directives
    - 解析组件名称
    - 推断组件类型
    - 确定组件属性

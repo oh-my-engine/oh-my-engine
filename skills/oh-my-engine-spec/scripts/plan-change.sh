@@ -33,6 +33,7 @@ if ! grep -Fq "## Planning Notes" "$CHANGE_DIR/design.md"; then
 fi
 
 load_memory_context "$MEMORY_FILE"
+refresh_engine_memory_context "$PROJECT_ROOT" "$CHANGE_SLUG" "spec"
 write_memory_state \
   "$MEMORY_FILE" \
   "planned" \
@@ -41,6 +42,11 @@ write_memory_state \
   "$(count_done_checkboxes "$CHANGE_DIR/tasks.md")" \
   "$(count_open_checkboxes "$CHANGE_DIR/proposal.md")" \
   ""
+record_spec_execution_memory \
+  "$PROJECT_ROOT" \
+  "plan" \
+  "planned" \
+  "Refined the spec change plan and updated lifecycle state."
 
 echo "Planned change: $CHANGE_INPUT"
 echo "Review:"
@@ -53,6 +59,9 @@ fi
 if [ -f "$CHANGE_DIR/context/analysis.md" ]; then
   echo "  - openspec/changes/$CHANGE_SLUG/context/analysis.md"
 fi
+if [ -f "$CHANGE_DIR/context/engine-memory.md" ]; then
+  echo "  - openspec/changes/$CHANGE_SLUG/context/engine-memory.md"
+fi
 echo "  - openspec/changes/$CHANGE_SLUG/proposal.md"
 echo "  - openspec/changes/$CHANGE_SLUG/design.md"
 echo "  - openspec/changes/$CHANGE_SLUG/tasks.md"
@@ -60,4 +69,11 @@ if [ -f "$PROJECT_ROOT/openspec/specs/$MEMORY_CAPABILITY/spec.md" ]; then
   echo "  - openspec/specs/$MEMORY_CAPABILITY/spec.md"
 else
   echo "  - openspec/specs/$MEMORY_CAPABILITY/spec.md (not promoted yet)"
+fi
+if [ -f "$CHANGE_DIR/context/engine-memory.md" ]; then
+  ENGINE_DIRECTIVE_COUNT=$(count_engine_memory_directives "$CHANGE_DIR/context/engine-memory.md")
+  if [ "$ENGINE_DIRECTIVE_COUNT" -gt 0 ]; then
+    echo "Execution directives from adopted skills:"
+    print_engine_memory_directives "$CHANGE_DIR/context/engine-memory.md" | sed -n '1,120p'
+  fi
 fi

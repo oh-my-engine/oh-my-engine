@@ -46,6 +46,10 @@ if [ -d "$CHANGE_DIR" ]; then
     [ -f "$CHANGE_DIR/context/source.md" ] && echo "  - source.md"
     [ -f "$CHANGE_DIR/context/prompt.md" ] && echo "  - prompt.md"
     [ -f "$CHANGE_DIR/context/analysis.md" ] && echo "  - analysis.md"
+    if [ -f "$CHANGE_DIR/context/engine-memory.md" ]; then
+      echo "  - engine-memory.md"
+      echo "Execution directives: $(count_engine_memory_directives "$CHANGE_DIR/context/engine-memory.md")"
+    fi
     if [ -d "$CHANGE_DIR/context/assets" ]; then
       ASSET_COUNT=$(find "$CHANGE_DIR/context/assets" -maxdepth 1 -type f | wc -l | tr -d ' ')
       echo "  - assets: $ASSET_COUNT"

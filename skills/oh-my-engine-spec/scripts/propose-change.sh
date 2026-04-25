@@ -135,6 +135,43 @@ cat > "$MEMORY_FILE" <<EOF
 }
 EOF
 
+EXECUTION_EVENT_FILE=$(mktemp "${TMPDIR:-/tmp}/oh-my-engine-spec-execution.XXXXXX")
+cat > "$EXECUTION_EVENT_FILE" <<EOF
+{
+  "source": "workflow_command",
+  "workflow": "spec",
+  "phase": "propose",
+  "changeId": "$CHANGE_INPUT",
+  "changeSlug": "$CHANGE_SLUG",
+  "capability": "$CAPABILITY_SLUG",
+  "complexity": "high",
+  "confidence": "high",
+  "sensitivity": "low",
+  "reusePotential": 0.8,
+  "stability": 0.8,
+  "novelty": 0.7,
+  "status": "proposed",
+  "summary": "Scaffolded a spec change and initialized project memory.",
+  "filesTouched": [
+    "openspec/changes/$CHANGE_SLUG/proposal.md",
+    "openspec/changes/$CHANGE_SLUG/design.md",
+    "openspec/changes/$CHANGE_SLUG/tasks.md",
+    "openspec/changes/$CHANGE_SLUG/specs/$CAPABILITY_SLUG/spec.md",
+    ".oh-my-engine/memory/specs/$CHANGE_SLUG.json"
+  ],
+  "testsRun": [],
+  "errors": [],
+  "metadata": {
+    "mode": "$MODE"
+  }
+}
+EOF
+
+node "$ROOT_DIR/skills/oh-my-engine/scripts/record-execution-memory.js" \
+  --project-root "$PROJECT_ROOT" \
+  --event-file "$EXECUTION_EVENT_FILE" >/dev/null
+rm -f "$EXECUTION_EVENT_FILE"
+
 echo "Created change scaffold:"
 echo "  - openspec/changes/$CHANGE_SLUG/proposal.md"
 echo "  - openspec/changes/$CHANGE_SLUG/design.md"

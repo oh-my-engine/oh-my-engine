@@ -125,7 +125,7 @@ append_change_block() {
   } >> "$output_file"
 }
 
-"$VERIFY_SCRIPT" "$CHANGE_INPUT" >/dev/null
+"$VERIFY_SCRIPT" "$CHANGE_INPUT" --skip-execution-memory >/dev/null
 DONE_TASKS=$(count_done_checkboxes "$CHANGE_DIR/tasks.md")
 
 for delta_file in "$CHANGE_DIR"/specs/*/spec.md; do
@@ -212,6 +212,12 @@ write_memory_state \
   0 \
   "$DONE_TASKS" \
   0 \
+  "openspec/archive/$(basename "$ARCHIVE_TARGET")"
+record_spec_execution_memory \
+  "$PROJECT_ROOT" \
+  "archive" \
+  "archived" \
+  "Archived the accepted spec change into long-lived capability specs." \
   "openspec/archive/$(basename "$ARCHIVE_TARGET")"
 
 echo "Archived change: $CHANGE_INPUT"

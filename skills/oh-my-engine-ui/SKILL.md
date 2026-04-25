@@ -14,6 +14,7 @@ tags: [ui, design, mastergo, figma, code-generation]
 
 ```bash
 /oh-my-engine-ui <design-url>
+./scripts/prepare-context.sh <design-url>
 ```
 
 Claude Code 可直接使用上面的 slash command。
@@ -36,6 +37,7 @@ Codex 请按技能名 `oh-my-engine-ui` 触发，并沿用相同参数。
 ## 执行流程
 
 1. **解析设计稿 URL**
+   - 先运行 `./scripts/prepare-context.sh` 加载 adopted learnings / generated skill directives
    - 验证 URL 格式
    - 提取 fileId 和 layerId
    - 检测设计工具类型

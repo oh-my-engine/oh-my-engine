@@ -90,7 +90,7 @@ Edit `.oh-my-engine/config.json`:
       "skills": ["theme-system", "i18n-helper"],
       "rules": ["i18n", "theme", "design-tokens"]
     },
-    "component-generation": {
+    "component-gen": {
       "enabled": true,
       "rules": ["code-style", "theme"]
     },
@@ -129,15 +129,19 @@ Use descriptive keys: `screen.home.welcome` not `text1`
 ```bash
 # Restore UI from Figma
 /oh-my-engine-ui
+./skills/oh-my-engine-ui/scripts/prepare-context.sh https://mastergo.com/goto/demo
 
 # Generate a component
 /oh-my-engine-comp
+./skills/oh-my-engine-comp/scripts/prepare-context.sh UserCard
 
 # Integrate an API
 /oh-my-engine-api
+./skills/oh-my-engine-api/scripts/prepare-context.sh ./specs/user-api.yaml
 
 # Analyze a bug
 /oh-my-engine-bug
+./skills/oh-my-engine-bug/scripts/prepare-context.sh "Login button click does nothing"
 
 # Start a prompt-driven spec change
 /oh-my-engine-spec import user-authentication
@@ -188,9 +192,10 @@ When you run a workflow, Oh My Engine loads:
 2. Project spec context (`openspec/project.md`) when spec mode is enabled
 3. Workflow-specific settings
 4. Active change docs and long-lived capability specs when relevant
-5. All specified rules
-6. Recent memory and learnings
-7. Your input parameters
+5. Workflow guidance derived from adopted learnings and generated skills
+6. All specified rules
+7. Recent memory and learnings
+8. Your input parameters
 
 This ensures every workflow has complete context.
 
@@ -233,8 +238,9 @@ Restore UI from design files (Figma, Sketch, etc.).
       "skills": ["theme-system", "i18n-helper"],
       "rules": ["i18n", "theme", "design-tokens"],
       "options": {
-        "componentStyle": "functional",
-        "stateManagement": "hooks"
+        "languages": ["en", "zh-CN", "zh-TW", "th"],
+        "themeSystem": "ThemedStyle",
+        "designTokens": true
       }
     }
   }
@@ -244,6 +250,7 @@ Restore UI from design files (Figma, Sketch, etc.).
 **Usage**:
 ```bash
 /oh-my-engine-ui
+./skills/oh-my-engine-ui/scripts/prepare-context.sh <design-url>
 # Follow prompts to provide design file URL
 ```
 
@@ -262,7 +269,7 @@ Generate a new component with best practices.
 ```json
 {
   "workflows": {
-    "component-generation": {
+    "component-gen": {
       "enabled": true,
       "rules": ["code-style", "theme"],
       "options": {
@@ -277,6 +284,7 @@ Generate a new component with best practices.
 **Usage**:
 ```bash
 /oh-my-engine-comp
+./skills/oh-my-engine-comp/scripts/prepare-context.sh <component-name>
 # Specify component name and type
 ```
 
@@ -310,6 +318,7 @@ Integrate an API endpoint.
 **Usage**:
 ```bash
 /oh-my-engine-api
+./skills/oh-my-engine-api/scripts/prepare-context.sh <api-spec>
 # Provide API endpoint details
 ```
 
@@ -366,7 +375,7 @@ Analyze and fix bugs.
   "workflows": {
     "bug-analysis": {
       "enabled": true,
-      "rules": ["debugging-guidelines"],
+      "rules": ["code-style"],
       "options": {
         "autoFix": false,
         "createTest": true
@@ -379,6 +388,7 @@ Analyze and fix bugs.
 **Usage**:
 ```bash
 /oh-my-engine-bug
+./skills/oh-my-engine-bug/scripts/prepare-context.sh "Describe the bug or provide error logs"
 # Describe the bug or provide error logs
 ```
 
@@ -388,14 +398,16 @@ View execution history and learnings.
 
 **What it does**:
 - Shows recent executions
-- Displays learnings
+- Displays learning candidates and adopted learnings
 - Shows user preferences
-- Analyzes patterns
+- Shows skill candidates and generated skills, including execution directives
 
 **Usage**:
 ```bash
 /oh-my-engine-memory
-# Optional: filter by workflow or date
+/oh-my-engine-memory --type adopted-learnings
+/oh-my-engine-memory --type generated-skills
+# Optional: filter by workflow, scope, or output format
 ```
 
 ### `/oh-my-engine-evolve`
@@ -440,13 +452,24 @@ Analyze patterns and suggest improvements.
   },
   "memory": {
     "enabled": true,
-    "retentionDays": 90,
-    "autoArchive": true
+    "captureMode": "selective",
+    "allowSources": {
+      "workflow_command": true,
+      "explicit_remember": true,
+      "post_run_promotion": true
+    },
+    "retention": "90d"
   },
   "evolution": {
     "enabled": true,
-    "patternThreshold": 3,
-    "autoGenerate": false
+    "autoApply": false,
+    "requireVerification": true,
+    "candidateOnly": true,
+    "thresholds": {
+      "learningCandidateMinEvidence": 3,
+      "skillCandidateMinEvidence": 3,
+      "adoptedPreferenceMinEvidence": 2
+    }
   }
 }
 ```
@@ -458,9 +481,10 @@ Each workflow can have custom options:
 **UI Restore**:
 ```json
 {
-  "componentStyle": "functional | class",
-  "stateManagement": "hooks | redux | mobx",
-  "styling": "styled-components | emotion | stylesheet"
+  "languages": ["en", "zh-CN", "zh-TW", "th"],
+  "themeSystem": "ThemedStyle",
+  "designTokens": true,
+  "outputDir": "src/components"
 }
 ```
 
@@ -560,15 +584,13 @@ Or load all rules:
 
 ```
 .oh-my-engine/memory/
-├── executions/           # Execution logs
-│   └── YYYY-MM-DD/
-│       └── HH-MM-SS-workflow-name.json
-├── learnings/            # Learned patterns
-│   ├── successful-patterns.json
-│   ├── failed-cases.json
-│   └── best-practices.json
-└── preferences/          # User preferences
-    └── user-feedback.json
+├── executions/           # Execution logs grouped by workflow/day
+├── learnings/
+│   ├── candidates/       # Learning candidates
+│   └── adopted/          # Adopted learning artifacts
+├── preferences/          # Explicit remembered preferences
+├── skill-candidates/     # Candidate automation patterns
+└── generated-skills/     # Adopted generated skill artifacts
 ```
 
 ### Execution Logs
@@ -596,24 +618,29 @@ Each execution creates a log:
 
 ### Learnings
 
-The system learns from executions:
+The system promotes repeated successful behavior into learning candidates, then requires verification before adoption.
 
-**Successful Patterns**:
+**Learning Candidate**:
 ```json
 {
-  "pattern": "form-validation",
-  "occurrences": 5,
-  "successRate": 1.0,
-  "bestPractice": "Use Yup schema validation"
+  "slug": "ui-restore-apply-reuse-themedstyle-and-design-tokens-for-generated-ui",
+  "workflow": "ui-restore",
+  "phase": "apply",
+  "status": "candidate",
+  "verification": {
+    "state": "pending"
+  },
+  "evidenceCount": 3
 }
 ```
 
-**Failed Cases**:
+**Adopted Learning**:
 ```json
 {
-  "error": "Missing translation key",
-  "occurrences": 3,
-  "solution": "Always check i18n keys exist before using"
+  "slug": "ui-restore-apply-reuse-themedstyle-and-design-tokens-for-generated-ui",
+  "status": "adopted",
+  "appliesTo": ["ui-restore"],
+  "summary": "Reuse ThemedStyle and design tokens for generated UI."
 }
 ```
 
@@ -636,9 +663,9 @@ Records your feedback:
 
 1. **Pattern Detection**: Analyzes memory for repeated patterns
 2. **Threshold Check**: Patterns must occur ≥3 times (configurable)
-3. **Skill Generation**: Creates new skill based on pattern
-4. **User Approval**: Proposes skill to user
-5. **Installation**: Installs approved skill to `generated-skills/`
+3. **Candidate Generation**: Creates learning and skill candidates from repeated patterns
+4. **Verification**: Candidates must be verified before adoption
+5. **Adoption**: Promotes approved skill artifacts to `generated-skills/`, stores adopted learnings under `memory/learnings/adopted/`, and surfaces their execution directives in downstream workflows
 
 ### Pattern Types
 
@@ -656,38 +683,38 @@ Records your feedback:
 
 ### Generated Skills
 
-Example generated skill:
+Example generated skill artifact:
 
-```markdown
----
-name: fix-missing-i18n-key
-description: Auto-fix missing translation keys
-generated: true
-confidence: 0.95
----
-
-# Fix Missing i18n Key
-
-This skill was auto-generated after detecting 5 occurrences of missing translation keys.
-
-## Detection
-Looks for: `i18n.t('key')` where key doesn't exist
-
-## Fix
-1. Check if key exists in all language files
-2. If missing, add placeholder
-3. Log warning for manual translation
+```json
+{
+  "slug": "react-event-handler-invocation",
+  "status": "adopted",
+  "patternId": "react-event-handler-invocation",
+  "executionDirectives": [
+    "Avoid immediate invocation in React JSX event handlers; pass function references instead of calling handlers during render.",
+    "If a handler needs arguments, wrap it in an explicit closure at the event boundary rather than invoking it while rendering."
+  ]
+}
 ```
+
+These directives are consumed directly by:
+- `spec` via `plan/apply` and `context/engine-memory.md`
+- `bug/ui/comp/api` via each workflow's `./scripts/prepare-context.sh`
 
 ### Configuration
 
 ```json
 {
+  "memory": {
+    "captureMode": "selective"
+  },
   "evolution": {
     "enabled": true,
-    "patternThreshold": 3,
-    "autoGenerate": false,
-    "requireApproval": true
+    "requireVerification": true,
+    "thresholds": {
+      "learningCandidateMinEvidence": 3,
+      "skillCandidateMinEvidence": 3
+    }
   }
 }
 ```
@@ -796,7 +823,7 @@ cd /path/to/oh-my-engine
 **Solution**:
 1. Need at least 3 executions for pattern detection
 2. Check evolution is enabled in config.json
-3. Lower `patternThreshold` if needed
+3. Lower `learningCandidateMinEvidence` or `skillCandidateMinEvidence` if needed
 
 ### Generated Code Not Following Rules
 

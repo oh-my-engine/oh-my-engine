@@ -181,6 +181,40 @@ load_memory_context() {
   MEMORY_MODE=$(json_get_string "mode" "$memory_file")
 }
 
+refresh_engine_memory_context() {
+  project_root="$1"
+  change_slug="$2"
+  workflow_name="${3:-spec}"
+  repo_root=$(CDPATH= cd -- "$SCRIPT_DIR/../../.." && pwd)
+
+  node "$repo_root/skills/oh-my-engine/scripts/build-engine-memory-context.js" \
+    --project-root "$project_root" \
+    --change-slug "$change_slug" \
+    --capability "$MEMORY_CAPABILITY" \
+    --workflow "$workflow_name" >/dev/null
+}
+
+print_engine_memory_directives() {
+  context_file="$1"
+
+  awk '
+    /^## Execution Directives$/ { in_section = 1; next }
+    in_section && /^## / { exit }
+    in_section && NF { print }
+  ' "$context_file"
+}
+
+count_engine_memory_directives() {
+  context_file="$1"
+
+  awk '
+    /^## Execution Directives$/ { in_section = 1; next }
+    in_section && /^## / { exit }
+    in_section && /^- / { count++ }
+    END { print count + 0 }
+  ' "$context_file"
+}
+
 write_memory_state() {
   memory_file="$1"
   status="$2"
@@ -210,6 +244,103 @@ write_memory_state() {
 EOF
 
   mv "$tmp_file" "$memory_file"
+}
+
+record_spec_execution_memory() {
+  project_root="$1"
+  phase="$2"
+  status="$3"
+  summary="$4"
+  archived_path="${5:-}"
+
+  repo_root=$(CDPATH= cd -- "$SCRIPT_DIR/../../.." && pwd)
+  event_file=$(mktemp "${TMPDIR:-/tmp}/oh-my-engine-spec-execution.XXXXXX")
+  complexity="medium"
+  files_json=""
+
+  case "$phase" in
+    plan)
+      files_json=$(cat <<EOF
+[
+  "openspec/changes/$MEMORY_CHANGE_SLUG/proposal.md",
+  "openspec/changes/$MEMORY_CHANGE_SLUG/design.md",
+  "openspec/changes/$MEMORY_CHANGE_SLUG/tasks.md",
+  ".oh-my-engine/memory/specs/$MEMORY_CHANGE_SLUG.json"
+]
+EOF
+)
+      ;;
+    apply)
+      files_json=$(cat <<EOF
+[
+  "openspec/changes/$MEMORY_CHANGE_SLUG/proposal.md",
+  "openspec/changes/$MEMORY_CHANGE_SLUG/design.md",
+  "openspec/changes/$MEMORY_CHANGE_SLUG/tasks.md",
+  ".oh-my-engine/memory/specs/$MEMORY_CHANGE_SLUG.json"
+]
+EOF
+)
+      ;;
+    verify)
+      complexity="high"
+      files_json=$(cat <<EOF
+[
+  "openspec/changes/$MEMORY_CHANGE_SLUG/proposal.md",
+  "openspec/changes/$MEMORY_CHANGE_SLUG/design.md",
+  "openspec/changes/$MEMORY_CHANGE_SLUG/tasks.md",
+  "openspec/changes/$MEMORY_CHANGE_SLUG/specs/$MEMORY_CAPABILITY/spec.md",
+  ".oh-my-engine/memory/specs/$MEMORY_CHANGE_SLUG.json"
+]
+EOF
+)
+      ;;
+    archive)
+      complexity="high"
+      files_json=$(cat <<EOF
+[
+  "openspec/specs/$MEMORY_CAPABILITY/spec.md",
+  "$archived_path",
+  ".oh-my-engine/memory/specs/$MEMORY_CHANGE_SLUG.json"
+]
+EOF
+)
+      ;;
+    *)
+      rm -f "$event_file"
+      echo "Unsupported spec execution phase: $phase" >&2
+      exit 1
+      ;;
+  esac
+
+  cat > "$event_file" <<EOF
+{
+  "source": "workflow_command",
+  "workflow": "spec",
+  "phase": "$phase",
+  "changeId": "$(json_escape "$MEMORY_CHANGE_ID")",
+  "changeSlug": "$MEMORY_CHANGE_SLUG",
+  "capability": "$MEMORY_CAPABILITY",
+  "complexity": "$complexity",
+  "confidence": "high",
+  "sensitivity": "low",
+  "reusePotential": 0.8,
+  "stability": 0.8,
+  "novelty": 0.6,
+  "status": "$status",
+  "summary": "$(json_escape "$summary")",
+  "filesTouched": $files_json,
+  "testsRun": [],
+  "errors": [],
+  "metadata": {
+    "mode": "$MEMORY_MODE"
+  }
+}
+EOF
+
+  node "$repo_root/skills/oh-my-engine/scripts/record-execution-memory.js" \
+    --project-root "$project_root" \
+    --event-file "$event_file" >/dev/null
+  rm -f "$event_file"
 }
 
 append_archive_section() {

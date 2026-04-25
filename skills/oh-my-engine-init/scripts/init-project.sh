@@ -78,9 +78,12 @@ append_gitignore_once() {
 
 ensure_dir "$PROJECT_ROOT/.oh-my-engine/workflows"
 ensure_dir "$PROJECT_ROOT/.oh-my-engine/rules"
+ensure_dir "$PROJECT_ROOT/.oh-my-engine/generated-skills"
 ensure_dir "$PROJECT_ROOT/.oh-my-engine/memory/executions"
-ensure_dir "$PROJECT_ROOT/.oh-my-engine/memory/learnings"
+ensure_dir "$PROJECT_ROOT/.oh-my-engine/memory/learnings/candidates"
+ensure_dir "$PROJECT_ROOT/.oh-my-engine/memory/learnings/adopted"
 ensure_dir "$PROJECT_ROOT/.oh-my-engine/memory/preferences"
+ensure_dir "$PROJECT_ROOT/.oh-my-engine/memory/skill-candidates"
 ensure_dir "$PROJECT_ROOT/.oh-my-engine/memory/specs"
 ensure_dir "$PROJECT_ROOT/openspec/changes"
 ensure_dir "$PROJECT_ROOT/openspec/specs"
@@ -129,12 +132,30 @@ CONFIG_CONTENT=$(cat <<EOF
   },
   "memory": {
     "enabled": true,
+    "captureMode": "selective",
+    "allowSources": {
+      "workflow_command": true,
+      "explicit_remember": true,
+      "post_run_promotion": true
+    },
+    "thresholds": {
+      "preferencePromotion": 0.8,
+      "knowledgePromotion": 0.85,
+      "skillCandidatePromotion": 0.9
+    },
     "retention": "90d",
     "maxExecutions": 1000
   },
   "evolution": {
     "enabled": true,
     "autoApply": false,
+    "requireVerification": true,
+    "candidateOnly": true,
+    "thresholds": {
+      "learningCandidateMinEvidence": 3,
+      "skillCandidateMinEvidence": 3,
+      "adoptedPreferenceMinEvidence": 2
+    },
     "evaluationInterval": "daily",
     "optimizationThreshold": 85
   }
@@ -171,3 +192,15 @@ echo "Rule files updated: $RULES_CREATED"
 echo "Created directories:"
 echo "  - .oh-my-engine/"
 echo "  - openspec/"
+
+# 自动同步 rules 到所有平台
+if [ "$RULES_CREATED" -gt 0 ] && [ -f "$PROJECT_ROOT/.oh-my-engine/rules-sync.js" ]; then
+  echo ""
+  echo "Syncing rules to all platforms..."
+  if command -v node >/dev/null 2>&1; then
+    (cd "$PROJECT_ROOT" && node .oh-my-engine/rules-sync.js) || echo "Warning: rules sync failed"
+  else
+    echo "Warning: Node.js not found, skipping rules sync"
+    echo "Run 'node .oh-my-engine/rules-sync.js' manually to sync rules"
+  fi
+fi

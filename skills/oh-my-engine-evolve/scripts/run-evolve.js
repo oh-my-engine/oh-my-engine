@@ -1,0 +1,93 @@
+#!/usr/bin/env node
+
+const path = require('node:path');
+
+const { analyzeEvolution } = require('../../oh-my-engine/lib/evolution-engine');
+
+function parseArgs(argv) {
+  const options = {
+    projectRoot: process.cwd(),
+    format: 'text'
+  };
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const argument = argv[index];
+
+    if (argument === '--project-root') {
+      options.projectRoot = argv[index + 1];
+      index += 1;
+      continue;
+    }
+
+    if (argument === '--format') {
+      options.format = argv[index + 1];
+      index += 1;
+      continue;
+    }
+
+    throw new Error(`Unknown argument: ${argument}`);
+  }
+
+  return options;
+}
+
+function renderTextReport(report) {
+  const lines = [];
+
+  lines.push('Evolution analysis');
+  lines.push(`Execution records: ${report.summary.executionRecords}`);
+  lines.push(`Preference records: ${report.summary.preferenceRecords}`);
+  lines.push(`Learning candidates: ${report.summary.learningCandidates}`);
+  lines.push(`Skill candidates: ${report.summary.skillCandidates}`);
+  lines.push(`Adopted preferences: ${report.summary.adoptedPreferences}`);
+
+  if (report.learningCandidates.length > 0) {
+    lines.push('');
+    lines.push('Learning candidates:');
+    for (const candidate of report.learningCandidates) {
+      lines.push(`- ${candidate.title} [evidence=${candidate.evidenceCount}]`);
+    }
+  }
+
+  if (report.skillCandidates.length > 0) {
+    lines.push('');
+    lines.push('Skill candidates:');
+    for (const candidate of report.skillCandidates) {
+      lines.push(`- ${candidate.patternId} [evidence=${candidate.evidenceCount}]`);
+    }
+  }
+
+  if (report.adoptedPreferences.length > 0) {
+    lines.push('');
+    lines.push('Adopted preferences:');
+    for (const preference of report.adoptedPreferences) {
+      lines.push(`- ${preference.statement} [evidence=${preference.evidenceCount}]`);
+    }
+  }
+
+  return `${lines.join('\n')}\n`;
+}
+
+function main() {
+  const options = parseArgs(process.argv.slice(2));
+  const report = analyzeEvolution(path.resolve(options.projectRoot));
+
+  if (options.format === 'json') {
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return;
+  }
+
+  if (options.format === 'text') {
+    process.stdout.write(renderTextReport(report));
+    return;
+  }
+
+  throw new Error(`Unsupported output format: ${options.format}`);
+}
+
+try {
+  main();
+} catch (error) {
+  process.stderr.write(`${error.message}\n`);
+  process.exitCode = 1;
+}

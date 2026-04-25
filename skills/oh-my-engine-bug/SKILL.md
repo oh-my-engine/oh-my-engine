@@ -14,6 +14,7 @@ tags: [bug, debug, analysis, fix]
 
 ```bash
 /oh-my-engine-bug <issue-description>
+./scripts/prepare-context.sh <issue-description>
 ```
 
 Claude Code 可直接使用上面的 slash command。
@@ -39,6 +40,7 @@ Codex 请按技能名 `oh-my-engine-bug` 触发，并沿用相同参数。
 ## 执行流程
 
 1. **理解问题**
+   - 先运行 `./scripts/prepare-context.sh` 加载 adopted learnings / generated skill directives
    - 解析 Bug 描述
    - 提取关键信息（复现步骤、预期行为、实际行为）
    - 识别影响范围

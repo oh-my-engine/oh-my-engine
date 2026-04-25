@@ -3,11 +3,27 @@
 set -eu
 
 if [ "$#" -lt 1 ]; then
-  echo "Usage: $0 <change-id>" >&2
+  echo "Usage: $0 <change-id> [--skip-execution-memory]" >&2
   exit 1
 fi
 
 CHANGE_INPUT="$1"
+shift
+SKIP_EXECUTION_MEMORY=0
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --skip-execution-memory)
+      SKIP_EXECUTION_MEMORY=1
+      shift
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      exit 1
+      ;;
+  esac
+done
+
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 # shellcheck source=/dev/null
 . "$SCRIPT_DIR/common.sh"
@@ -77,6 +93,13 @@ if [ "$DELTA_COUNT" -eq 0 ] || [ "$OPEN_TASKS" -gt 0 ] || [ "$OPEN_ACCEPTANCE" -
     "$DONE_TASKS" \
     "$OPEN_ACCEPTANCE" \
     ""
+  if [ "$SKIP_EXECUTION_MEMORY" -ne 1 ]; then
+    record_spec_execution_memory \
+      "$PROJECT_ROOT" \
+      "verify" \
+      "verify_failed" \
+      "Verification failed for the spec change."
+  fi
 
   echo "Verification failed for $CHANGE_INPUT" >&2
   echo "Change spec delta files: $DELTA_COUNT" >&2
@@ -113,6 +136,13 @@ if [ -s "$VERIFY_COMMANDS_FILE" ]; then
         "$DONE_TASKS" \
         "$OPEN_ACCEPTANCE" \
         ""
+      if [ "$SKIP_EXECUTION_MEMORY" -ne 1 ]; then
+        record_spec_execution_memory \
+          "$PROJECT_ROOT" \
+          "verify" \
+          "verify_failed" \
+          "Verification command failed for the spec change."
+      fi
 
       echo "Verification failed for $CHANGE_INPUT" >&2
       echo "Failed verify command: $FAILED_VERIFY_COMMAND" >&2
@@ -129,6 +159,13 @@ write_memory_state \
   "$DONE_TASKS" \
   "$OPEN_ACCEPTANCE" \
   ""
+if [ "$SKIP_EXECUTION_MEMORY" -ne 1 ]; then
+  record_spec_execution_memory \
+    "$PROJECT_ROOT" \
+    "verify" \
+    "verified" \
+    "Verified the spec change and acceptance state."
+fi
 
 echo "Verification passed for $CHANGE_INPUT"
 echo "Completed tasks: $DONE_TASKS"

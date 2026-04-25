@@ -18,7 +18,8 @@ TASKS_UNDONE=$(mktemp "${TMPDIR:-/tmp}/oh-my-engine-spec-apply-task-undone.XXXXX
 ACCEPTANCE_DONE=$(mktemp "${TMPDIR:-/tmp}/oh-my-engine-spec-apply-acc-done.XXXXXX")
 ACCEPTANCE_UNDONE=$(mktemp "${TMPDIR:-/tmp}/oh-my-engine-spec-apply-acc-undone.XXXXXX")
 NOTES_FILE=$(mktemp "${TMPDIR:-/tmp}/oh-my-engine-spec-apply-notes.XXXXXX")
-trap 'rm -f "$TASKS_DONE" "$TASKS_UNDONE" "$ACCEPTANCE_DONE" "$ACCEPTANCE_UNDONE" "$NOTES_FILE"' EXIT INT TERM
+ENGINE_DIRECTIVES_FILE=""
+trap 'rm -f "$TASKS_DONE" "$TASKS_UNDONE" "$ACCEPTANCE_DONE" "$ACCEPTANCE_UNDONE" "$NOTES_FILE" "$ENGINE_DIRECTIVES_FILE"' EXIT INT TERM
 
 ALL_TASKS=0
 ALL_ACCEPTANCE=0
@@ -131,6 +132,7 @@ while IFS= read -r note; do
 done < "$NOTES_FILE"
 
 load_memory_context "$MEMORY_FILE"
+refresh_engine_memory_context "$PROJECT_ROOT" "$CHANGE_SLUG" "spec"
 OPEN_TASKS=$(count_open_checkboxes "$CHANGE_DIR/tasks.md")
 DONE_TASKS=$(count_done_checkboxes "$CHANGE_DIR/tasks.md")
 OPEN_ACCEPTANCE=$(count_open_checkboxes "$CHANGE_DIR/proposal.md")
@@ -143,6 +145,11 @@ write_memory_state \
   "$DONE_TASKS" \
   "$OPEN_ACCEPTANCE" \
   ""
+record_spec_execution_memory \
+  "$PROJECT_ROOT" \
+  "apply" \
+  "in_progress" \
+  "Updated spec implementation progress and lifecycle state."
 
 echo "Apply context for change: $CHANGE_INPUT"
 echo "Load these files before implementing:"
@@ -157,6 +164,9 @@ fi
 if [ -f "$CHANGE_DIR/context/analysis.md" ]; then
   echo "  - openspec/changes/$CHANGE_SLUG/context/analysis.md"
 fi
+if [ -f "$CHANGE_DIR/context/engine-memory.md" ]; then
+  echo "  - openspec/changes/$CHANGE_SLUG/context/engine-memory.md"
+fi
 echo "  - openspec/changes/$CHANGE_SLUG/proposal.md"
 echo "  - openspec/changes/$CHANGE_SLUG/design.md"
 echo "  - openspec/changes/$CHANGE_SLUG/tasks.md"
@@ -164,6 +174,14 @@ if [ -f "$PROJECT_ROOT/openspec/specs/$MEMORY_CAPABILITY/spec.md" ]; then
   echo "  - openspec/specs/$MEMORY_CAPABILITY/spec.md"
 else
   echo "  - openspec/specs/$MEMORY_CAPABILITY/spec.md (not promoted yet)"
+fi
+if [ -f "$CHANGE_DIR/context/engine-memory.md" ]; then
+  ENGINE_DIRECTIVES_FILE=$(mktemp "${TMPDIR:-/tmp}/oh-my-engine-engine-directives.XXXXXX")
+  print_engine_memory_directives "$CHANGE_DIR/context/engine-memory.md" > "$ENGINE_DIRECTIVES_FILE"
+  if [ -s "$ENGINE_DIRECTIVES_FILE" ]; then
+    echo "Execution directives from adopted skills:"
+    sed -n '1,120p' "$ENGINE_DIRECTIVES_FILE"
+  fi
 fi
 echo "Pending tasks: $OPEN_TASKS"
 echo "Completed tasks: $DONE_TASKS"
