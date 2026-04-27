@@ -1,3 +1,17 @@
+---
+rule: domain-ui-design-tokens
+version: 1.0.0
+category: domain/ui
+priority: high
+severity: error
+tags: [design-tokens, ui, styling]
+dependencies: []
+conflicts: []
+applicableWhen:
+  project.framework: [react-native, react]
+autoApply: true
+---
+
 # 设计令牌规则
 
 ## 强制要求

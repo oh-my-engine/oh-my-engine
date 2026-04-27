@@ -1,8 +1,10 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const yaml = require('js-yaml');
 
 const { fileExists, listMarkdownFiles, projectPath, readJsonFile } = require('./project');
 const { ENGINE_DIR, enginePath } = require('./paths');
+const { loadConfig, loadPlatformsConfig } = require('./config-loader');
 
 export interface RulesValidationIssue {
   severity: 'error' | 'warning';
@@ -27,14 +29,30 @@ export interface RulesSyncResult {
   files?: string[];
 }
 
-function loadProjectConfig(root: string = process.cwd()): Record<string, any> {
-  const configPath = enginePath(root, 'config.json');
-  return fs.existsSync(configPath) ? readJsonFile(configPath) : {};
+export interface RuleMetadata {
+  rule: string;
+  version?: string;
+  category?: string;
+  priority?: 'low' | 'medium' | 'high' | 'critical';
+  severity?: 'warning' | 'error';
+  tags?: string[];
+  dependencies?: string[];
+  conflicts?: string[];
+  applicableWhen?: {
+    'project.type'?: string | string[];
+    'project.framework'?: string | string[];
+    'project.language'?: string | string[];
+  };
+  autoApply?: boolean;
 }
 
-function loadPlatformsConfig(root: string = process.cwd()): Record<string, any> {
-  const platformsPath = enginePath(root, 'platforms.json');
-  return fs.existsSync(platformsPath) ? readJsonFile(platformsPath) : { enabled: [], platforms: {} };
+function loadProjectConfig(root: string = process.cwd()): Record<string, any> {
+  try {
+    return loadConfig(root);
+  } catch (error) {
+    // Fallback to empty config if loading fails
+    return {};
+  }
 }
 
 function loadRules(root: string = process.cwd()): Record<string, string> {
@@ -301,4 +319,206 @@ export function syncRulesInherit(platforms: string[] = []): void {
   }
 
   process.stdout.write('\n🎉 同步完成！\n');
+}
+
+/**
+ * 解析规则的 YAML frontmatter 元数据
+ */
+export function parseRuleMetadata(ruleContent: string): RuleMetadata | null {
+  const frontmatterMatch = ruleContent.match(/^---\n([\s\S]*?)\n---/);
+  if (!frontmatterMatch) return null;
+
+  try {
+    const metadata = yaml.load(frontmatterMatch[1]) as RuleMetadata;
+    return metadata;
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
+ * 根据条件选择适用的规则
+ */
+export function selectApplicableRules(
+  allRules: Record<string, string>,
+  config: Record<string, any>,
+  workflow?: string
+): string[] {
+  const applicable: string[] = [];
+  const project = config.project || {};
+
+  for (const [ruleName, ruleContent] of Object.entries(allRules)) {
+    const metadata = parseRuleMetadata(ruleContent);
+
+    // 如果没有元数据，默认启用
+    if (!metadata) {
+      applicable.push(ruleName);
+      continue;
+    }
+
+    // 检查条件
+    if (metadata.applicableWhen) {
+      const conditions = metadata.applicableWhen;
+
+      // 检查 project.framework
+      if (conditions['project.framework']) {
+        const frameworks = Array.isArray(conditions['project.framework'])
+          ? conditions['project.framework']
+          : [conditions['project.framework']];
+        if (!frameworks.includes(project.framework)) {
+          continue;
+        }
+      }
+
+      // 检查 project.type
+      if (conditions['project.type']) {
+        const types = Array.isArray(conditions['project.type'])
+          ? conditions['project.type']
+          : [conditions['project.type']];
+        if (!types.includes(project.type)) {
+          continue;
+        }
+      }
+
+      // 检查 project.language
+      if (conditions['project.language']) {
+        const languages = Array.isArray(conditions['project.language'])
+          ? conditions['project.language']
+          : [conditions['project.language']];
+        if (!languages.includes(project.language)) {
+          continue;
+        }
+      }
+    }
+
+    applicable.push(ruleName);
+  }
+
+  return applicable;
+}
+
+/**
+ * 解析规则依赖
+ */
+export function resolveDependencies(
+  selectedRules: string[],
+  allRules: Record<string, string>
+): string[] {
+  const resolved = new Set<string>(selectedRules);
+  const queue = [...selectedRules];
+
+  while (queue.length > 0) {
+    const ruleName = queue.shift()!;
+    const ruleContent = allRules[ruleName];
+    if (!ruleContent) continue;
+
+    const metadata = parseRuleMetadata(ruleContent);
+    if (metadata?.dependencies) {
+      for (const dep of metadata.dependencies) {
+        if (!resolved.has(dep) && allRules[dep]) {
+          resolved.add(dep);
+          queue.push(dep);
+        }
+      }
+    }
+  }
+
+  return Array.from(resolved);
+}
+
+/**
+ * 检测规则冲突
+ */
+export function detectConflicts(
+  selectedRules: string[],
+  allRules: Record<string, string>
+): Array<{ rule1: string; rule2: string; reason?: string }> {
+  const conflicts: Array<{ rule1: string; rule2: string; reason?: string }> = [];
+
+  for (const ruleName of selectedRules) {
+    const ruleContent = allRules[ruleName];
+    if (!ruleContent) continue;
+
+    const metadata = parseRuleMetadata(ruleContent);
+    if (metadata?.conflicts) {
+      for (const conflictRule of metadata.conflicts) {
+        if (selectedRules.includes(conflictRule)) {
+          conflicts.push({
+            rule1: ruleName,
+            rule2: conflictRule,
+            reason: `${ruleName} conflicts with ${conflictRule}`,
+          });
+        }
+      }
+    }
+  }
+
+  return conflicts;
+}
+
+/**
+ * 列出所有规则
+ */
+export function listRules(root: string = process.cwd()): Record<string, string> {
+  return loadRules(root);
+}
+
+/**
+ * 按分类列出规则
+ */
+export function listRulesByCategory(root: string = process.cwd()): Record<string, string[]> {
+  const rules = loadRules(root);
+  const categories: Record<string, string[]> = {
+    universal: [],
+    framework: [],
+    domain: [],
+    toolchain: [],
+    other: [],
+  };
+
+  for (const ruleName of Object.keys(rules)) {
+    if (ruleName.startsWith('universal-')) {
+      categories.universal.push(ruleName);
+    } else if (ruleName.startsWith('framework-')) {
+      categories.framework.push(ruleName);
+    } else if (ruleName.startsWith('domain-')) {
+      categories.domain.push(ruleName);
+    } else if (ruleName.startsWith('toolchain-')) {
+      categories.toolchain.push(ruleName);
+    } else {
+      categories.other.push(ruleName);
+    }
+  }
+
+  return categories;
+}
+
+/**
+ * 获取规则的详细信息
+ */
+export function getRuleInfo(ruleName: string, root: string = process.cwd()): {
+  name: string;
+  metadata: RuleMetadata | null;
+  content: string;
+  category: string;
+} | null {
+  const rules = loadRules(root);
+  const ruleContent = rules[ruleName];
+
+  if (!ruleContent) return null;
+
+  const metadata = parseRuleMetadata(ruleContent);
+
+  let category = 'other';
+  if (ruleName.startsWith('universal-')) category = 'universal';
+  else if (ruleName.startsWith('framework-')) category = 'framework';
+  else if (ruleName.startsWith('domain-')) category = 'domain';
+  else if (ruleName.startsWith('toolchain-')) category = 'toolchain';
+
+  return {
+    name: ruleName,
+    metadata,
+    content: ruleContent,
+    category,
+  };
 }

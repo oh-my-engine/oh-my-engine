@@ -11,7 +11,21 @@
       "WebSearch",
       "Bash(node .oh-my-engine/rules-sync.js claude-code cursor)",
       "Bash(node:*)",
-      "Bash(wc -l CLAUDE.md .cursor/rules/*.mdc .agents/rules/*.md)"
+      "Bash(wc -l CLAUDE.md .cursor/rules/*.mdc .agents/rules/*.md)",
+      "Bash(ls *)",
+      "Bash(wc -l src/core/*.ts)",
+      "Bash(wc *)",
+      "Bash(xargs cat *)",
+      "Bash(npm install *)",
+      "Bash(mv code-style.md universal-code-style.md)",
+      "Bash(mv theme.md domain-ui-theme.md)",
+      "Bash(mv i18n.md domain-i18n.md)",
+      "Bash(mv design-tokens.md domain-ui-design-tokens.md)",
+      "Bash(npm run *)",
+      "Bash(./dist/bin/ome.js bug *)",
+      "Bash(./dist/bin/ome.js finish *)",
+      "Bash(./dist/bin/ome.js memory *)",
+      "Bash(cat .ome/memory/executions/bug/*.jsonl)"
     ]
   }
 }

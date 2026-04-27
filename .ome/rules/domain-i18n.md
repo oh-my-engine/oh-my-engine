@@ -1,3 +1,17 @@
+---
+rule: domain-i18n
+version: 1.0.0
+category: domain/i18n
+priority: high
+severity: error
+tags: [i18n, localization, translation]
+dependencies: []
+conflicts: []
+applicableWhen:
+  project.type: [mobile-app, web-app, desktop-app]
+autoApply: true
+---
+
 # 多语言规则（i18n）
 
 ## 强制要求

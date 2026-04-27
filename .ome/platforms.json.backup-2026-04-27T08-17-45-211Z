@@ -1,0 +1,124 @@
+{
+  "enabled": [
+    "claude-code",
+    "cursor",
+    "trae",
+    "antigravity",
+    "codex",
+    "opencode",
+    "windsurf",
+    "qoder"
+  ],
+  "platforms": {
+    "claude-code": {
+      "name": "Claude Code",
+      "description": "Anthropic 官方 CLI/Desktop/Web",
+      "type": "single-file",
+      "file": "CLAUDE.md",
+      "format": "markdown-index",
+      "autoSync": true
+    },
+    "cursor": {
+      "name": "Cursor IDE",
+      "description": "AI-first IDE",
+      "type": "multi-file",
+      "directory": ".cursor/rules",
+      "format": "mdc",
+      "extension": ".mdc",
+      "frontmatter": {
+        "glob": "**/*",
+        "alwaysApply": true
+      },
+      "autoSync": true
+    },
+    "trae": {
+      "name": "Trae",
+      "description": "Trae AI Agent",
+      "type": "multi-file",
+      "directory": ".trae/rules",
+      "format": "markdown",
+      "extension": ".md",
+      "autoSync": true
+    },
+    "antigravity": {
+      "name": "Antigravity",
+      "description": "Antigravity AI Agent",
+      "type": "multi-file",
+      "directory": ".agents/rules",
+      "format": "markdown",
+      "extension": ".md",
+      "numberedPrefix": true,
+      "autoSync": true
+    },
+    "codex": {
+      "name": "Codex",
+      "description": "Codex AI Agent",
+      "type": "single-file",
+      "file": "AGENTS.md",
+      "format": "markdown-index",
+      "autoSync": true
+    },
+    "opencode": {
+      "name": "OpenCode",
+      "description": "OpenCode AI Agent",
+      "type": "single-file",
+      "file": "AGENTS.md",
+      "format": "markdown-index",
+      "autoSync": true
+    },
+    "windsurf": {
+      "name": "Windsurf",
+      "description": "Windsurf IDE by Codeium",
+      "type": "single-file",
+      "file": ".windsurfrules",
+      "format": "markdown-index",
+      "autoSync": true
+    },
+    "qoder": {
+      "name": "Qoder",
+      "description": "Qoder AI Agent",
+      "type": "multi-file",
+      "directory": ".qoder/rules",
+      "format": "markdown",
+      "extension": ".md",
+      "autoSync": true
+    }
+  },
+  "ruleMapping": {
+    "_comment": "规则文件名映射：源文件名 -> 各平台的文件名",
+    "i18n": {
+      "cursor": "i18n-localization",
+      "trae": "i18n-localization",
+      "agents": "i18n",
+      "default": "i18n"
+    },
+    "theme": {
+      "cursor": "theme-system-enforcement",
+      "trae": "theme-system-enforcement",
+      "agents": "theme-and-styling",
+      "default": "theme"
+    },
+    "design-tokens": {
+      "cursor": "design-tokens",
+      "trae": "design-tokens",
+      "agents": "design-tokens",
+      "default": "design-tokens"
+    },
+    "code-style": {
+      "cursor": "typescript-react-native",
+      "trae": "typescript-react-native",
+      "agents": "typescript-react-native",
+      "default": "code-style"
+    }
+  },
+  "customPlatforms": {
+    "_comment": "在这里添加自定义平台",
+    "_example": {
+      "name": "My Custom Agent",
+      "type": "single-file",
+      "file": ".myagent/rules.md",
+      "format": "markdown-index",
+      "autoSync": true
+    }
+  }
+}

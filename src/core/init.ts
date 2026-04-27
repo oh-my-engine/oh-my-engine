@@ -3,6 +3,7 @@ const path = require('node:path');
 
 const { ENGINE_DIR, currentEnginePath, migrateLegacyEngineDirectory, repoEnginePath } = require('./paths');
 const { syncRules } = require('./rules');
+const { installGitHooks } = require('./git-hooks');
 
 export interface InitOptions {
   force: boolean;
@@ -277,6 +278,13 @@ export function initializeProject(options: InitOptions): InitResult {
   if (options.installAgents === true) {
     const { installAgents } = require('./agents');
     installedAgentTargets = installAgents({ platforms: [], all: true, home: options.home }).map((result: Record<string, any>) => `${result.platform}: ${result.target}`);
+  }
+
+  // 安装 git hooks
+  try {
+    installGitHooks(options.projectRoot);
+  } catch (error) {
+    process.stderr.write(`Warning: Failed to install git hooks: ${error instanceof Error ? error.message : String(error)}\n`);
   }
 
   return {

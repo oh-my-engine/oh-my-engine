@@ -1,3 +1,17 @@
+---
+rule: domain-ui-theme
+version: 1.0.0
+category: domain/ui
+priority: high
+severity: error
+tags: [ui, theme, styling, react-native]
+dependencies: [domain-ui-design-tokens]
+conflicts: []
+applicableWhen:
+  project.framework: [react-native, react]
+autoApply: true
+---
+
 # 主题系统规则（ThemedStyle）
 
 ## 强制要求

@@ -5,6 +5,8 @@ const { directoryExists, fileExists, projectPath } = require('./project');
 const { ENGINE_DIR, enginePath } = require('./paths');
 const { validateRules } = require('./rules');
 const { schemaPath, validateJsonFile } = require('./schema/validator');
+const { isUsingMarkdownConfig, isUsingJsonConfig } = require('./config-loader');
+const { validateMarkdownConfig } = require('./config-migrator');
 
 export interface DoctorLine {
   name: string;
@@ -28,17 +30,32 @@ function validateSchemaFile(label: string, filePath: string, schemaFile: string,
 
 export function runDoctorReport(projectRoot: string = process.cwd()): DoctorReport {
   const issues: string[] = [];
+  const usingMarkdown = isUsingMarkdownConfig(projectRoot);
+  const usingJson = isUsingJsonConfig(projectRoot);
+
   const checks: DoctorLine[] = [
     { name: 'Node', value: process.version },
-    { name: 'Project config', value: fileExists(enginePath(projectRoot, 'config.json')) ? 'found' : 'missing' },
+    { name: 'Config format', value: usingMarkdown ? 'OME.md' : (usingJson ? 'config.json (legacy)' : 'missing') },
     { name: 'Rules directory', value: directoryExists(enginePath(projectRoot, 'rules')) ? 'found' : 'missing' },
     { name: 'Memory directory', value: directoryExists(enginePath(projectRoot, 'memory')) ? 'found' : 'missing' },
     { name: 'OpenSpec workspace', value: directoryExists(projectPath('openspec')) ? 'found' : 'missing' }
   ];
 
   checks.push({ name: 'Engine directory', value: ENGINE_DIR });
-  checks.push({ name: 'Config schema', value: validateSchemaFile('Config schema', enginePath(projectRoot, 'config.json'), 'config.schema.json', issues) });
-  checks.push({ name: 'Platforms schema', value: validateSchemaFile('Platforms schema', enginePath(projectRoot, 'platforms.json'), 'platforms.schema.json', issues) });
+
+  // 验证配置文件
+  if (usingMarkdown) {
+    const validation = validateMarkdownConfig(projectRoot);
+    checks.push({ name: 'OME.md validation', value: validation.valid ? 'valid' : 'invalid' });
+    for (const error of validation.errors) issues.push(`OME.md: ${error}`);
+    for (const warning of validation.warnings) issues.push(`OME.md warning: ${warning}`);
+  } else if (usingJson) {
+    checks.push({ name: 'Config schema', value: validateSchemaFile('Config schema', enginePath(projectRoot, 'config.json'), 'config.schema.json', issues) });
+    checks.push({ name: 'Platforms schema', value: validateSchemaFile('Platforms schema', enginePath(projectRoot, 'platforms.json'), 'platforms.schema.json', issues) });
+    issues.push('Consider migrating to OME.md format using: ome config migrate');
+  } else {
+    issues.push('No configuration file found. Run: ome init');
+  }
 
   const specStateDirectory = enginePath(projectRoot, 'memory', 'specs');
   if (fs.existsSync(specStateDirectory)) {

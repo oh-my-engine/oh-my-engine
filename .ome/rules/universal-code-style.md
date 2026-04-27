@@ -1,3 +1,17 @@
+---
+rule: universal-code-style
+version: 1.0.0
+category: universal
+priority: high
+severity: error
+tags: [code-style, typescript, best-practices]
+dependencies: []
+conflicts: []
+applicableWhen:
+  project.language: [typescript, javascript]
+autoApply: true
+---
+
 # 通用代码风格规则
 
 ## TypeScript 规范
