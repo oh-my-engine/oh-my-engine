@@ -307,3 +307,4 @@ Built for [Claude Code](https://claude.ai/code) by Anthropic and [Codex](https:/
 ---
 
 **Note**: The `ome` CLI works in any terminal. Claude Code and Codex skills are optional native entry points; other tools consume generated rule files through `ome rules sync`.
+# Test auto-record
