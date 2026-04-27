@@ -81,7 +81,7 @@ function selectedAgents(platforms: string[], all?: boolean): AgentDefinition[] {
 
 function renderCommandPrompt(agent: AgentDefinition, workflow: WorkflowDefinition): string {
   const trigger = agent.commandStyle === 'skill' ? workflow.command : `/${workflow.command}`;
-  return [
+  const body = [
     `# ${workflow.command}`,
     '',
     `Use ${workflow.title} for the current project.`,
@@ -105,7 +105,23 @@ function renderCommandPrompt(agent: AgentDefinition, workflow: WorkflowDefinitio
     '- Codex skill clients should pass the same arguments after the skill name.',
     '',
     'If shell execution is available, prefer running the equivalent `ome-*` command and then continue from its guidance.'
-  ].join('\n');
+  ];
+
+  if (agent.commandStyle === 'skill') {
+    return [
+      '---',
+      `name: ${workflow.command}`,
+      'version: 1.0.0',
+      `description: ${workflow.description}`,
+      'author: oh-my-engine',
+      `tags: [ome, ${workflow.id}, workflow]`,
+      '---',
+      '',
+      ...body
+    ].join('\n');
+  }
+
+  return body.join('\n');
 }
 
 function targetPath(baseDirectory: string, agent: AgentDefinition, workflow: WorkflowDefinition): string {

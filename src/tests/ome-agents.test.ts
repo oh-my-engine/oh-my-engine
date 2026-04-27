@@ -39,8 +39,11 @@ test('ome agents install writes global short command entries', () => {
   assert.equal(fs.existsSync(path.join(home, '.codeium', 'windsurf', 'global_workflows', 'ome-bug.md')), true);
 
   const claudeCommand = fs.readFileSync(path.join(home, '.claude', 'commands', 'ome-bug.md'), 'utf8');
+  const codexSkill = fs.readFileSync(path.join(home, '.codex', 'skills', 'ome-bug', 'SKILL.md'), 'utf8');
   assert.match(claudeCommand, /Read `.ome\/config.json`/);
   assert.match(claudeCommand, /ome-bug/);
+  assert.match(codexSkill, /^---\nname: ome-bug\n/);
+  assert.match(codexSkill, /\ntags: \[ome, bug, workflow\]\n---\n/);
 });
 
 test('ome agents install --project writes project command entries', () => {
