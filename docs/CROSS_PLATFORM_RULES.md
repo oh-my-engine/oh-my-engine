@@ -12,17 +12,15 @@
 ├── theme.md
 └── [其他规则]
          ↓
-   rules-sync.js              (自动同步)
+   ome rules sync             (自动同步)
          ↓
     所有平台自动更新
     ├── CLAUDE.md             (索引文件，引用规则源)
     ├── .cursor/rules/        (完整规则，.mdc 格式)
-    ├── .trae/rules/          (完整规则，.mdc 格式)
+    ├── .trae/rules/          (完整规则，.md 格式)
     ├── .agents/rules/        (完整规则，编号前缀)
-    ├── .antigravity/rules.md (索引文件)
-    ├── .codex/rules.md       (索引文件)
-    ├── .opencode/rules.md    (索引文件)
-    ├── .windsurf/rules/      (完整规则)
+    ├── AGENTS.md             (Codex / OpenCode 索引文件)
+    ├── .windsurfrules        (Windsurf 索引文件)
     └── .qoder/rules/         (完整规则)
 ```
 
@@ -32,12 +30,11 @@
 |------|---------|------|------|
 | **Claude Code** | 单文件 | 索引 | 引用规则源 |
 | **Cursor** | 多文件 | .mdc | 带 frontmatter |
-| **Trae** | 多文件 | .mdc | 带 frontmatter |
-| **Agents** | 多文件 | .md | 编号前缀 |
-| **Antigravity** | 单文件 | 索引 | 引用规则源 |
-| **Codex** | 单文件 | 索引 | 引用规则源 |
-| **OpenCode** | 单文件 | 索引 | 引用规则源 |
-| **Windsurf** | 多文件 | .md | 纯 Markdown |
+| **Trae** | 多文件 | .md | 纯 Markdown |
+| **Antigravity / Agents** | 多文件 | .md | 编号前缀 |
+| **Codex** | 单文件 | AGENTS.md 索引 | 引用规则源 |
+| **OpenCode** | 单文件 | AGENTS.md 索引 | 引用规则源 |
+| **Windsurf** | 单文件 | .windsurfrules 索引 | 引用规则源 |
 | **Qoder** | 多文件 | .md | 纯 Markdown |
 
 ## 快速开始
@@ -46,17 +43,17 @@
 
 ```bash
 # 在你的项目目录运行
-/oh-my-engine-init "你的项目描述"
+ome init
 
-# 例如：
-/oh-my-engine-init "React Native + TypeScript 项目，使用 Expo，必须支持 4 种语言"
+# 同步到默认启用平台
+ome rules sync
 ```
 
 **自动完成**：
-- ✅ 扫描代码仓库（检测技术栈、项目类型）
-- ✅ AI 生成定制化规则（不是固定模板）
+- ✅ 创建 `.oh-my-engine/` 和 `openspec/` 工作区
+- ✅ 写入默认规则和工作流配置
 - ✅ 保存到 `.oh-my-engine/rules/`（唯一的规则源）
-- ✅ 同步到所有 9+ 平台
+- ✅ 同步到 Claude Code、Codex、Trae、Cursor 等平台规则文件
 - ✅ 开箱即用
 
 ### 2. 日常使用
@@ -66,14 +63,14 @@
 vim .oh-my-engine/rules/theme.md
 
 # 同步到所有平台
-node .oh-my-engine/rules-sync.js
+ome rules sync
 
 # 输出：
 # 🔄 开始同步 rules...
 # ✅ claude-code: CLAUDE.md
 # ✅ cursor: .cursor/rules/ (4 个文件)
 # ✅ trae: .trae/rules/ (4 个文件)
-# ✅ agents: .agents/rules/ (4 个文件)
+# ✅ codex: AGENTS.md
 # 🎉 同步完成！
 ```
 
@@ -87,8 +84,8 @@ node .oh-my-engine/rules-sync.js
 #!/bin/bash
 if git diff --cached --name-only | grep -q ".oh-my-engine/rules/"; then
   echo "🔄 检测到 rules 修改，自动同步..."
-  node .oh-my-engine/rules-sync.js
-  git add CLAUDE.md .cursor/rules/ .trae/rules/ .agents/rules/
+  ome rules sync
+  git add CLAUDE.md AGENTS.md .cursor/rules/ .trae/rules/ .agents/rules/ .windsurfrules .qoder/rules/
 fi
 ```
 
@@ -121,7 +118,7 @@ fi
 
 从规则源生成完整的规则文件：
 
-**Cursor/Trae（.mdc 格式）**：
+**Cursor（.mdc 格式）**：
 ```markdown
 ---
 glob: "app/**/*.tsx,app/**/*.ts"
@@ -129,6 +126,13 @@ alwaysApply: true
 description: "主题系统规则"
 ---
 
+# 主题系统规则
+
+[完整的规则内容]
+```
+
+**Trae / Qoder / Antigravity（Markdown 文件）**：
+```markdown
 # 主题系统规则
 
 [完整的规则内容]
@@ -199,13 +203,14 @@ description: "主题系统规则"
 源文件: i18n.md
   ↓
 Cursor:  i18n-localization.mdc
-Trae:    i18n-localization.mdc
+Trae:    i18n-localization.md
 Agents:  03-i18n.md
+Qoder:   i18n.md
 ```
 
 ### 2. 格式转换
 
-自动添加 frontmatter（Cursor/Trae 需要）：
+自动添加 frontmatter（Cursor 需要）：
 
 ```markdown
 源文件 (i18n.md):
@@ -314,11 +319,11 @@ if (ruleName === 'i18n') {
 # 检查 Node.js 是否安装
 node --version
 
-# 检查 rules-sync.js 是否存在
-ls -la .oh-my-engine/rules-sync.js
+# 检查 ome CLI 是否可用
+ome --help
 
 # 手动运行查看错误
-node .oh-my-engine/rules-sync.js
+ome rules sync
 ```
 
 ### 问题 2：生成的文件格式不对
@@ -328,7 +333,7 @@ node .oh-my-engine/rules-sync.js
 cat .oh-my-engine/platforms.json
 
 # 重新生成
-node .oh-my-engine/rules-sync.js
+ome rules sync
 ```
 
 ### 问题 3：某个平台没有生成
@@ -338,7 +343,8 @@ node .oh-my-engine/rules-sync.js
 grep -A 10 '"enabled"' .oh-my-engine/platforms.json
 
 # 指定平台生成
-node .oh-my-engine/rules-sync.js cursor trae
+ome rules sync cursor
+ome rules sync trae
 ```
 
 ## 最佳实践
@@ -348,7 +354,7 @@ node .oh-my-engine/rules-sync.js cursor trae
 ```bash
 # ✅ 正确
 vim .oh-my-engine/rules/theme.md
-node .oh-my-engine/rules-sync.js
+ome rules sync
 
 # ❌ 错误（生成的文件会被覆盖）
 vim .cursor/rules/theme-system.mdc
@@ -361,8 +367,8 @@ vim .cursor/rules/theme-system.mdc
 cat > .git/hooks/pre-commit << 'EOF'
 #!/bin/bash
 if git diff --cached --name-only | grep -q ".oh-my-engine/rules/"; then
-  node .oh-my-engine/rules-sync.js
-  git add CLAUDE.md .cursor/rules/ .trae/rules/ .agents/rules/
+  ome rules sync
+  git add CLAUDE.md AGENTS.md .cursor/rules/ .trae/rules/ .agents/rules/ .windsurfrules .qoder/rules/
 fi
 EOF
 chmod +x .git/hooks/pre-commit
@@ -373,7 +379,7 @@ chmod +x .git/hooks/pre-commit
 ```bash
 # 推荐：提交所有文件
 git add .oh-my-engine/rules/
-git add CLAUDE.md .cursor/rules/ .trae/rules/ .agents/rules/
+git add CLAUDE.md AGENTS.md .cursor/rules/ .trae/rules/ .agents/rules/ .windsurfrules .qoder/rules/
 git commit -m "feat: 更新规则"
 
 # 优点：团队成员 clone 后直接可用
@@ -383,7 +389,7 @@ git commit -m "feat: 更新规则"
 
 ```bash
 # 检查生成的文件是否最新
-node .oh-my-engine/rules-sync.js
+ome rules sync
 
 # 如果有更新，提交
 git status
@@ -393,7 +399,7 @@ git status
 
 - [智能初始化](../skills/oh-my-engine-init/SKILL.md)
 - [平台配置](../.oh-my-engine/platforms.json)
-- [规则同步脚本](../.oh-my-engine/rules-sync.js)
+- [规则同步实现](../src/core/rules.ts)
 
 ## 总结
 
@@ -406,7 +412,7 @@ git status
 - ✅ 维护成本降低 90%
 
 **使用流程**：
-1. 运行 `/oh-my-engine-init` 智能初始化
+1. 运行 `ome init` 初始化
 2. 编辑 `.oh-my-engine/rules/*.md`
-3. 运行 `node .oh-my-engine/rules-sync.js` 同步
+3. 运行 `ome rules sync` 同步
 4. 所有平台自动更新

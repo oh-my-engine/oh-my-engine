@@ -15,3 +15,13 @@ coverage/
 # Build
 dist/
 build/
+.oh-my-engine/memory/
+
+# Oh My Engine generated platform rule outputs
+.agents/
+.cursor/
+.qoder/
+.trae/
+.windsurfrules
+CLAUDE.md
+AGENTS.md

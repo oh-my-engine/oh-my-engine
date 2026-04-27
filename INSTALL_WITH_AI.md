@@ -1,31 +1,48 @@
 # 🤖 Install Oh My Engine with AI
 
-You can install Oh My Engine in multiple ways. Choose the method that works best for you:
+You can install Oh My Engine in multiple ways. The current model is:
 
-## 🚀 Quick Install (Easiest)
+1. Install the `ome` CLI with npm or from a local GitHub clone.
+2. Optionally install Claude Code/Codex skills for native agent entry points.
+3. Run `ome init && ome rules sync` inside each target project.
 
-Just run this one command:
+## 🚀 CLI Install (Recommended)
+
+Install the CLI:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quick-install.sh | bash
+npm install -g oh-my-engine
+ome --help
 ```
 
-Or with wget:
+Initialize a project:
 
 ```bash
-wget -qO- https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quick-install.sh | bash
+cd your-project
+ome init
+ome doctor
+ome rules sync
 ```
 
-**Install for specific agent:**
+## 🧩 Optional Claude Code / Codex Skills
+
+If you also want native Claude Code slash commands or Codex skill-name entry points, install skills from a GitHub clone:
 
 ```bash
-# For Claude Code only
-curl -fsSL https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quick-install.sh | bash -s -- --agent claude
+git clone https://github.com/oh-my-engine/oh-my-engine.git
+cd oh-my-engine
+npm install
+npm run build
+npm link
 
-# For Codex only
-curl -fsSL https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quick-install.sh | bash -s -- --agent codex
+./install.sh --agent claude
+./install.sh --agent codex
+./install.sh --agent both
+```
 
-# For both
+The quick installer copies skills only:
+
+```bash
 curl -fsSL https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quick-install.sh | bash -s -- --agent both
 ```
 
@@ -40,30 +57,37 @@ You can also install Oh My Engine by simply copying and pasting this prompt to a
 ## Installation Prompt (English)
 
 ```
-Please help me install Oh My Engine, a self-evolving workflow framework for Claude Code and Codex.
+Please help me install Oh My Engine, a TypeScript-driven workflow engine for Claude Code, Codex, Trae, Cursor, Windsurf, OpenCode, Qoder, and Antigravity.
 
 Follow these steps:
 
-1. Clone the repository:
+1. Install the CLI:
+   npm install -g oh-my-engine
+
+   If npm package installation is not available, install from GitHub:
    git clone https://github.com/oh-my-engine/oh-my-engine.git
    cd oh-my-engine
+   npm install
+   npm run build
+   npm link
 
-2. Run the installation script:
-   chmod +x install.sh
-   ./install.sh
-
-   The installer will auto-detect whether I have Claude Code, Codex, or both installed.
-   If I want to specify which agent to install for, I can use:
+2. Optionally install Claude Code/Codex skills from the cloned repo:
    ./install.sh --agent claude   # Claude Code only
    ./install.sh --agent codex    # Codex only
    ./install.sh --agent both     # Both agents
 
-3. After installation, initialize it in my project:
-   - Navigate to my project directory
-   - In Claude Code, run: /oh-my-engine-init
-   - In Codex, invoke the installed skill by name: oh-my-engine-init
+3. Initialize it in my project:
+   cd /path/to/my-project
+   ome init
+   ome doctor
+   ome rules sync
 
-4. Explain what Oh My Engine does and show me the available commands.
+4. Explain tool-specific usage:
+   - Claude Code: /oh-my-engine-init and CLAUDE.md from ome rules sync
+   - Codex: skill names such as oh-my-engine-init and AGENTS.md from ome rules sync
+   - Trae/Cursor/Windsurf/OpenCode/Qoder/Antigravity: generated rule files from ome rules sync
+
+5. Show me the main commands: ome spec, ome guidance, ome memory, and ome evolve.
 
 If you encounter any issues, help me troubleshoot them.
 ```
@@ -73,29 +97,37 @@ If you encounter any issues, help me troubleshoot them.
 ## 安装提示词（中文）
 
 ```
-请帮我安装 Oh My Engine，这是一个为 Claude Code 和 Codex 设计的自我进化工作流框架。
+请帮我安装 Oh My Engine，这是一个 TypeScript 驱动、支持 Claude Code / Codex / Trae / Cursor / Windsurf / OpenCode / Qoder / Antigravity 的工作流引擎。
 
 按照以下步骤操作：
 
-1. 克隆仓库：
+1. 安装 CLI：
+   npm install -g oh-my-engine
+
+   如果 npm 包还不可用，则从 GitHub 安装：
    git clone https://github.com/oh-my-engine/oh-my-engine.git
    cd oh-my-engine
+   npm install
+   npm run build
+   npm link
 
-2. 运行安装脚本：
-   chmod +x install.sh
-   ./install.sh
-
-   如果需要，也可以显式指定：
+2. 可选：从克隆仓库安装 Claude Code / Codex skills：
    ./install.sh --agent claude
    ./install.sh --agent codex
    ./install.sh --agent both
 
-3. 安装完成后，在我的项目中初始化：
-   - 进入我的项目目录
-   - 如果是 Claude Code，运行：/oh-my-engine-init
-   - 如果是 Codex，按技能名触发：oh-my-engine-init
+3. 在我的项目中初始化：
+   cd /path/to/my-project
+   ome init
+   ome doctor
+   ome rules sync
 
-4. 解释 Oh My Engine 的功能并展示可用的命令。
+4. 解释不同工具的用法：
+   - Claude Code：可用 /oh-my-engine-init，并读取 ome rules sync 生成的 CLAUDE.md
+   - Codex：按 oh-my-engine-init 等 skill 名触发，并读取 AGENTS.md
+   - Trae / Cursor / Windsurf / OpenCode / Qoder / Antigravity：读取 ome rules sync 生成的规则文件
+
+5. 展示主要命令：ome spec、ome guidance、ome memory、ome evolve。
 
 如果遇到任何问题，请帮我排查。
 ```

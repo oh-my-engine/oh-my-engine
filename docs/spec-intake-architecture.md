@@ -197,13 +197,13 @@ The system should treat these as evidence inputs, not as downstream verification
 Recommended command surface:
 
 ```text
-oh-my-engine-spec init <optional-project-context>
-oh-my-engine-spec import <change-id>
-oh-my-engine-spec decompose <change-id>
-oh-my-engine-spec plan <change-id>
-oh-my-engine-spec apply <change-id>
-oh-my-engine-spec verify <change-id>
-oh-my-engine-spec archive <change-id>
+ome spec init
+ome spec import <change-id>
+ome spec decompose <change-id>
+ome spec plan <change-id>
+ome spec apply <change-id>
+ome spec verify <change-id>
+ome spec archive <change-id>
 ```
 
 ### `import`

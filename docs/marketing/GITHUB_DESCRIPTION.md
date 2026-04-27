@@ -2,14 +2,14 @@
 
 ## Short Description (160 characters max)
 ```
-🧠 Self-evolving workflow engine with memory & learning for Claude Code and Codex. Learns patterns, remembers preferences, auto-generates skills.
+🧠 TypeScript workflow engine with memory, specs, and rule sync for Claude Code, Codex, Trae, Cursor, Windsurf, and more.
 ```
 
 ## About Section
 
 **Description:**
 ```
-A self-evolving workflow engine with memory and learning capabilities for Claude Code and Codex. Automatically learns from your patterns, remembers your preferences, and evolves to create custom workflows.
+TypeScript-driven workflow engine with memory, OpenSpec-style specs, evolution candidates, and cross-tool rule sync for Claude Code, Codex, Trae, Cursor, Windsurf, OpenCode, Qoder, and Antigravity.
 ```
 
 **Website:**
@@ -21,6 +21,13 @@ https://github.com/oh-my-engine/oh-my-engine
 ```
 claude-code
 codex
+trae
+cursor
+windsurf
+opencode
+qoder
+typescript
+cli
 workflow-engine
 ai-agent
 automation
@@ -52,28 +59,29 @@ Add these badges to the top of your README.md:
 
 ### Twitter/X (280 characters)
 ```
-🚀 Introducing Oh My Engine - a self-evolving workflow framework for Claude Code & Codex!
+🚀 Introducing Oh My Engine - a TypeScript workflow engine for AI coding tools.
 
 🧠 Learns from your patterns
 💾 Remembers preferences
-⚡ Auto-generates skills
-🔄 Evolves workflows
+📝 Runs spec workflows
+🌐 Syncs rules to Claude Code, Codex, Trae, Cursor, Windsurf & more
 
-One-line install:
-curl -fsSL https://bit.ly/oh-my-engine | bash
+npm install -g oh-my-engine
+ome init && ome rules sync
 
 #AI #Automation #DevTools
 ```
 
 ### LinkedIn
 ```
-Excited to share Oh My Engine - an intelligent workflow engine that transforms Claude Code and Codex into self-learning systems!
+Excited to share Oh My Engine - a TypeScript-driven workflow engine for AI coding tools.
 
 Key Features:
 • 🧠 Memory System - Remembers execution history and user preferences
-• 🔄 Self-Evolution - Automatically identifies patterns and generates new skills
+• 🔄 Self-Evolution - Identifies patterns and promotes verified candidates
 • ⚙️ Project Configuration - Per-project workflow customization
-• 📋 Rich Workflows - Pre-built workflows for UI restoration, bug analysis, and more
+• 📝 Spec Workflow - OpenSpec-style propose/plan/apply/verify/archive
+• 🌐 Cross-Tool Rules - Sync rules to Claude Code, Codex, Trae, Cursor, Windsurf, OpenCode, Qoder, and Antigravity
 
 Perfect for developers who want to:
 ✓ Automate repetitive tasks
@@ -91,13 +99,14 @@ https://github.com/oh-my-engine/oh-my-engine
 ```
 Title: Oh My Engine - Self-Evolving Workflow Framework for AI Coding Assistants
 
-I built a workflow engine that learns from your usage patterns and automatically evolves to create custom workflows for Claude Code and Codex.
+I built a TypeScript-driven workflow engine that learns from usage patterns, manages OpenSpec-style changes, and syncs project rules across AI coding tools.
 
 **What it does:**
 - Remembers your execution history and preferences
 - Identifies repetitive patterns in your work
-- Automatically generates new skills when it detects reusable patterns
+- Produces verified learning/skill candidates when it detects reusable patterns
 - Provides pre-built workflows for common tasks (UI restoration, bug analysis, component generation, API integration)
+- Syncs rule files for Claude Code, Codex, Trae, Cursor, Windsurf, OpenCode, Qoder, and Antigravity
 
 **Key Features:**
 - 🧠 Memory system that tracks executions and learnings
@@ -108,10 +117,13 @@ I built a workflow engine that learns from your usage patterns and automatically
 
 **Installation:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quick-install.sh | bash
+npm install -g oh-my-engine
+cd your-project
+ome init
+ome rules sync
 ```
 
-Supports both Claude Code and Codex. MIT licensed.
+Optional Claude Code/Codex skills are installable from GitHub. MIT licensed.
 
 GitHub: https://github.com/oh-my-engine/oh-my-engine
 
@@ -127,7 +139,7 @@ Self-evolving workflow engine that learns and adapts
 
 **Description:**
 ```
-Oh My Engine transforms Claude Code and Codex into intelligent workflow systems that learn from your patterns and evolve automatically.
+Oh My Engine provides a TypeScript-driven workflow layer for AI coding tools, with memory, specs, evolution candidates, and cross-tool rules.
 
 🧠 Memory System
 Remembers execution history, learnings, and user preferences across sessions.

@@ -72,15 +72,15 @@ Workflow spec: 2
 
 ## 当前实现
 
-v1 viewer 脚本位置：
+v1 viewer 命令：
 
 ```bash
-node skills/oh-my-engine-memory/scripts/view-memory.js --type executions
-node skills/oh-my-engine-memory/scripts/view-memory.js --type preferences --scope user
-node skills/oh-my-engine-memory/scripts/view-memory.js --type learnings
-node skills/oh-my-engine-memory/scripts/view-memory.js --type adopted-learnings
-node skills/oh-my-engine-memory/scripts/view-memory.js --type skill-candidates
-node skills/oh-my-engine-memory/scripts/view-memory.js --type generated-skills
+ome memory view --type executions
+ome memory view --type preferences --scope user
+ome memory view --type learnings
+ome memory view --type adopted-learnings
+ome memory view --type skill-candidates
+ome memory view --type generated-skills
 ```
 
 当前返回：
@@ -104,7 +104,7 @@ node skills/oh-my-engine-memory/scripts/view-memory.js --type generated-skills
 ## 相关命令
 
 - `/oh-my-engine-evolve` - 触发进化分析
-- `/oh-my-engine-init` - 初始化项目配置
+- `ome init` - 初始化项目配置
 
 ---
 

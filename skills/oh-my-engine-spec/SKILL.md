@@ -47,25 +47,27 @@ tags: [spec, openspec, workflow, planning, verification]
 Claude Code 可直接使用上面的 slash command。
 Codex 请按技能名 `oh-my-engine-spec` 触发，并沿用相同子命令和参数。
 
-## 可执行脚本
+## 可执行入口
 
-这版 MVP 已提供可直接运行的 helper scripts：
+主入口是 TypeScript 驱动的 `ome spec`：
 
 ```bash
-./scripts/init-workspace.sh
-./scripts/import-change.sh <change-id> --source-file docs/prd.md --prompt-file docs/prompt.md
-./scripts/import-change.sh <change-id> --source-text "Copied PRD text" --asset mockup.png
-./scripts/decompose-change.sh <change-id>
-./scripts/propose-change.sh <change-id>
-./scripts/plan-change.sh <change-id>
-./scripts/apply-change.sh <change-id>
-./scripts/apply-change.sh <change-id> --task "Implement the change"
-./scripts/status-change.sh <change-id>
-./scripts/verify-change.sh <change-id>
-./scripts/archive-change.sh <change-id>
-./scripts/propose-change.sh <change-id> --design-first
-./scripts/propose-change.sh <change-id> --bugfix
+ome spec init
+ome spec import <change-id> --source-file docs/prd.md --prompt-file docs/prompt.md
+ome spec import <change-id> --source-text "Copied PRD text" --asset mockup.png
+ome spec decompose <change-id>
+ome spec propose <change-id>
+ome spec plan <change-id>
+ome spec apply <change-id>
+ome spec apply <change-id> --task "Implement the change"
+ome spec status <change-id>
+ome spec verify <change-id>
+ome spec archive <change-id>
+ome spec propose <change-id> --design-first
+ome spec propose <change-id> --bugfix
 ```
+
+旧的 shell 兼容转发器已移除；统一使用 `ome spec`。
 
 脚本能力边界：
 - `init`：创建工作区和默认配置

@@ -4,6 +4,8 @@
 
 ---
 
+> Current usage note: `ome` is the TypeScript-driven source of truth. Install the CLI with `npm install -g oh-my-engine`, initialize projects with `ome init && ome rules sync`, and use optional Claude Code/Codex skills only for native agent entry points. See [docs/installation-and-usage.md](docs/installation-and-usage.md).
+
 > Un motor de flujo de trabajo auto-evolutivo con capacidades de memoria y aprendizaje para Claude Code y Codex
 
 Oh My Engine es un framework poderoso que transforma Claude Code y Codex en un sistema de flujo de trabajo inteligente. Aprende de tus patrones, recuerda tus preferencias y evoluciona para crear flujos de trabajo personalizados automáticamente.
@@ -111,26 +113,26 @@ También crea un espacio `openspec/` para especificaciones de largo plazo y camb
 
 ```bash
 # Inicializar el espacio spec
-oh-my-engine-spec init
+ome spec init
 
 # Importar entradas del PRD y la intención del operador
-oh-my-engine-spec import user-authentication
+ome spec import user-authentication
 
 # Preparar proposal/design/tasks/spec delta desde el contexto importado
-oh-my-engine-spec decompose user-authentication
+ome spec decompose user-authentication
 
 # La vía manual de scaffold sigue disponible
-oh-my-engine-spec propose user-authentication
+ome spec propose user-authentication
 
 # Refinar y cargar el contexto de ejecución
-oh-my-engine-spec plan user-authentication
-oh-my-engine-spec apply user-authentication
-oh-my-engine-spec apply user-authentication --task "Implement the change"
-oh-my-engine-spec status user-authentication
+ome spec plan user-authentication
+ome spec apply user-authentication
+ome spec apply user-authentication --task "Implement the change"
+ome spec status user-authentication
 
 # Verificar y archivar el cambio
-oh-my-engine-spec verify user-authentication
-oh-my-engine-spec archive user-authentication
+ome spec verify user-authentication
+ome spec archive user-authentication
 ```
 
 `import` guarda el texto fuente normalizado, el prompt, la trazabilidad y los adjuntos copiados en `openspec/changes/<change-id>/context/`. `decompose` convierte ese contexto de entrada en `analysis.md`, `proposal.md`, `design.md`, `tasks.md` y spec deltas, manteniendo las referencias de origen unidas al cambio. `apply` actualiza el estado del ciclo de vida, puede marcar el progreso de tareas y criterios de aceptación, y muestra qué archivos debe cargar el agente. No genera código de producción automáticamente. `status` resume la fase actual y los elementos pendientes. `archive` crea la capability spec de largo plazo en la primera aceptación, reconstruye el resumen canónico, los requisitos y la compatibilidad a partir de los deltas aceptados, y conserva tanto el snapshot actual aceptado como el historial archivado.

@@ -23,57 +23,59 @@ Oh My Engine is a powerful framework that transforms Claude Code and Codex into 
 
 ### Installation
 
-#### Method 1: Quick Install (Recommended)
+#### Method 1: npm CLI Install (Recommended)
 
-One command to install everything:
+Install the TypeScript-driven `ome` CLI:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quick-install.sh | bash
+npm install -g oh-my-engine
+ome --help
 ```
 
-Or with wget:
+Then initialize any project:
 
 ```bash
-wget -qO- https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quick-install.sh | bash
+cd your-project
+ome init
+ome doctor
+ome rules sync
 ```
 
-**Install for specific agent:**
+#### Method 2: GitHub Install
 
 ```bash
-# For Claude Code only
-curl -fsSL https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quick-install.sh | bash -s -- --agent claude
-
-# For Codex only
-curl -fsSL https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quick-install.sh | bash -s -- --agent codex
-
-# For both
-curl -fsSL https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quick-install.sh | bash -s -- --agent both
-```
-
-#### Method 2: Clone and Install
-
-```bash
-# Clone the repository
 git clone https://github.com/oh-my-engine/oh-my-engine.git
-
-# Run the installation script
 cd oh-my-engine
-chmod +x install.sh
+npm install
+npm run build
+npm link
+ome --help
+```
 
-# Auto-detect agent
+#### Method 3: Install Claude Code / Codex Skills
+
+The CLI works everywhere. Install skills only if you want native Claude Code slash commands or Codex skill-name entry points:
+
+```bash
 ./install.sh
-
-# Or specify agent
 ./install.sh --agent claude   # Claude Code only
 ./install.sh --agent codex    # Codex only
 ./install.sh --agent both     # Both agents
 ```
 
-#### Method 3: Install with AI
+One-line GitHub skill installer:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quick-install.sh | bash -s -- --agent both
+```
+
+The quick installer copies skills only. Install the CLI with npm or `npm link`.
+
+#### Method 4: Install with AI
 
 Copy the installation prompt from [INSTALL_WITH_AI.md](INSTALL_WITH_AI.md) and paste it to any AI assistant (Claude, ChatGPT, etc.), and the AI will guide you through the installation.
 
-The installer will copy all skills to `~/.claude/skills/` and/or `~/.codex/skills/`.
+Detailed install and multi-tool usage: [docs/installation-and-usage.md](docs/installation-and-usage.md).
 
 Claude Code users can invoke the installed workflows as slash commands.
 Codex users should invoke the installed skills by name; the exact trigger format depends on the Codex client, so do not assume `/oh-my-engine-*` slash commands are available there.
@@ -82,15 +84,11 @@ Codex users should invoke the installed skills by name; the exact trigger format
 
 In your project directory:
 
-**Claude Code:**
 ```bash
-/oh-my-engine-init
+ome init
 ```
 
-**Codex:**
-```bash
-oh-my-engine-init
-```
+Agent-specific skill commands such as `/oh-my-engine-init` or `oh-my-engine-init` remain available for compatibility, but `ome init` is the TypeScript-driven entry point.
 
 This creates a `.oh-my-engine/` directory with:
 - `config.json` - Workflow configurations
@@ -103,35 +101,98 @@ It also creates an `openspec/` workspace for long-lived specs and active changes
 - `specs/` - Stable capability specs
 - `archive/` - Completed changes
 
+
+### TypeScript-Driven Development
+
+Oh My Engine is now TypeScript-driven. Edit source files under `src/`, then run:
+
+```bash
+npm run build
+npm test
+```
+
+Runtime JavaScript is emitted only under ignored `dist/`. Repository scripts, tests, and engine code are authored from `src/**/*.ts`.
+
+### Unified CLI
+
+```bash
+# Check the current project
+ome doctor
+
+# Validate and sync rules
+ome rules validate
+ome rules preview codex
+ome rules sync
+```
+
+Rules sync is implemented in `src/core/rules.ts`; use `ome rules sync` instead of removed compatibility entrypoints.
+
+```bash
+# Run TypeScript-backed spec workflow commands
+ome spec init
+ome spec propose user-authentication
+ome spec plan user-authentication
+ome spec apply user-authentication
+ome spec status user-authentication
+
+# Verify and archive are TypeScript-backed too
+ome spec verify user-authentication
+ome spec archive user-authentication
+
+# Inspect memory and evolution candidates
+ome memory view --format json
+ome evolve analyze --format json
+ome evolve verify-learning --slug spec-verify-verified-the-spec-change-and-acceptance-state
+ome evolve adopt-learning --slug spec-verify-verified-the-spec-change-and-acceptance-state
+ome evolve verify-skill --slug react-event-handler-invocation
+ome evolve adopt-skill --slug react-event-handler-invocation
+
+# Render workflow guidance with adopted learnings and generated skill directives
+ome guidance bug-analysis --input "Login button click does nothing"
+ome guidance ui-restore --input "https://mastergo.com/goto/demo"
+ome guidance component-gen --input "UserCard"
+ome guidance api-integration --input "./specs/user-api.yaml"
+
+# List platform adapters
+ome adapters list
+```
+
+Platform adapters live under `src/adapters/platforms/` and expose detection metadata plus rule/skill capabilities through the adapter registry.
+
+Generated artifact policy is documented in `docs/generated-artifacts.md`.
+
+Packaging is guarded by `npm run verify` and `prepack`, which run typecheck, clean build, and the full test suite before publishing.
+
 ### Available Commands
 
 - Claude Code: `/oh-my-engine-init`, `/oh-my-engine-ui`, `/oh-my-engine-bug`, `/oh-my-engine-comp`, `/oh-my-engine-api`, `/oh-my-engine-spec`, `/oh-my-engine-memory`, `/oh-my-engine-evolve`
 - Codex skill names: `oh-my-engine-init`, `oh-my-engine-ui`, `oh-my-engine-bug`, `oh-my-engine-comp`, `oh-my-engine-api`, `oh-my-engine-spec`, `oh-my-engine-memory`, `oh-my-engine-evolve`
+- Trae/Cursor/Windsurf/OpenCode/Qoder/Antigravity: run `ome rules sync <platform>` in the project and use the generated rule files in each tool.
 
 ### Spec Workflow
 
 ```bash
 # Initialize the spec workspace
-oh-my-engine-spec init
+ome spec init
 
 # Import PRD inputs and operator intent
-oh-my-engine-spec import user-authentication
+ome spec import user-authentication --source-file docs/prd.md
 
 # Prepare proposal/design/tasks/spec delta from the imported context
-oh-my-engine-spec decompose user-authentication
+ome spec decompose user-authentication
 
 # Manual scaffold path remains available
-oh-my-engine-spec propose user-authentication
+ome spec propose user-authentication
 
 # Refine and load execution context
-oh-my-engine-spec plan user-authentication
-oh-my-engine-spec apply user-authentication
-oh-my-engine-spec apply user-authentication --task "Implement the change"
-oh-my-engine-spec status user-authentication
+ome spec plan user-authentication
+ome spec apply user-authentication
+ome spec apply user-authentication --task "Implement the change"
+ome spec status user-authentication
 
 # Verify and archive a change
-oh-my-engine-spec verify user-authentication
-oh-my-engine-spec archive user-authentication
+ome spec verify user-authentication
+ome spec archive user-authentication
 ```
 
 `import` persists normalized source text, prompt input, provenance, and copied attachments under `openspec/changes/<change-id>/context/`. `decompose` turns that intake context into `analysis.md`, `proposal.md`, `design.md`, `tasks.md`, and spec deltas while keeping source references attached to the change. `apply` updates lifecycle state, can mark task and acceptance progress, and prints the files the agent should load. It does not generate production code automatically. `status` summarizes the current phase and remaining checklist items. `archive` now creates the long-lived capability spec on first acceptance, rebuilds canonical summary/requirements/compatibility sections from accepted deltas, and keeps both the current accepted snapshot and archived history.
@@ -140,6 +201,7 @@ You can add real project checks under `workflows.spec.options.verifyCommands` in
 ## 📖 Documentation
 
 - [Architecture Overview](docs/architecture.md)
+- [Installation and Multi-Tool Usage](docs/installation-and-usage.md)
 - [Prompt-Driven Spec Intake Architecture](docs/spec-intake-architecture.md)
 - [Creating Custom Workflows](docs/custom-workflows.md)
 - [Configuration Guide](docs/configuration.md)
@@ -234,4 +296,4 @@ Built for [Claude Code](https://claude.ai/code) by Anthropic and [Codex](https:/
 
 ---
 
-**Note**: Oh My Engine requires Claude Code or Codex to function. Make sure you have at least one of them installed and configured before using this framework.
+**Note**: The `ome` CLI works in any terminal. Claude Code and Codex skills are optional native entry points; other tools consume generated rule files through `ome rules sync`.

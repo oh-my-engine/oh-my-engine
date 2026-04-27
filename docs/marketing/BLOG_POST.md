@@ -2,6 +2,8 @@
 
 ## TL;DR
 
+> 最新使用口径：`ome` CLI 是核心入口，推荐 `npm install -g oh-my-engine` 后在项目中运行 `ome init && ome rules sync`。Claude Code / Codex skills 是可选原生入口；Trae / Cursor / Windsurf / OpenCode / Qoder / Antigravity 通过同步生成的规则文件使用。
+
 我开发了一个自我进化的工作流引擎 **Oh My Engine**，它能让 Claude Code 和 Codex 拥有记忆和学习能力。它会记住你的操作历史、学习你的编码模式，并自动生成新的技能。
 
 **一行命令安装：**
@@ -594,7 +596,7 @@ memory:
 **A:** 可以。在 `.oh-my-engine/config.json` 中设置 `"autoEvolve": false`。
 
 ### Q: 支持其他 AI 代理吗？
-**A:** 目前支持 Claude Code 和 Codex。未来计划支持更多 AI 代理。
+**A:** CLI 可在任意终端使用；规则同步已覆盖 Claude Code、Codex、Trae、Cursor、Windsurf、OpenCode、Qoder 和 Antigravity。Claude Code / Codex 还支持可选 skills 入口。
 
 ---
 

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Oh My Engine Platforms Config",
+  "type": "object",
+  "required": ["enabled", "platforms"],
+  "properties": {
+    "enabled": { "type": "array", "items": { "type": "string" } },
+    "platforms": { "type": "object" },
+    "ruleMapping": { "type": "object" }
+  }
+}

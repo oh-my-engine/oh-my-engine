@@ -1,5 +1,7 @@
 # 我给 Claude Code / Codex 做了一个“可进化”的工作流层：oh-my-engine
 
+> 最新使用口径：`ome` CLI 是核心入口，推荐 `npm install -g oh-my-engine` 后在项目中运行 `ome init && ome rules sync`。Claude Code / Codex skills 是可选原生入口；Trae / Cursor / Windsurf / OpenCode / Qoder / Antigravity 通过同步生成的规则文件使用。
+
 > 不是再堆一堆 prompt，也不是再装一批零散 skill。  
 > 我想做的是一层更稳定的东西：让 AI 在项目里有“工作流”、有“记忆”、有“规则”、还能持续沉淀。
 

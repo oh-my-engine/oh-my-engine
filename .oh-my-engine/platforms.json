@@ -3,7 +3,6 @@
     "claude-code",
     "cursor",
     "trae",
-    "agents",
     "antigravity",
     "codex",
     "opencode",
@@ -37,17 +36,13 @@
       "description": "Trae AI Agent",
       "type": "multi-file",
       "directory": ".trae/rules",
-      "format": "mdc",
-      "extension": ".mdc",
-      "frontmatter": {
-        "glob": "**/*",
-        "alwaysApply": true
-      },
+      "format": "markdown",
+      "extension": ".md",
       "autoSync": true
     },
-    "agents": {
-      "name": "Agents",
-      "description": "Generic Agents",
+    "antigravity": {
+      "name": "Antigravity",
+      "description": "Antigravity AI Agent",
       "type": "multi-file",
       "directory": ".agents/rules",
       "format": "markdown",
@@ -55,19 +50,11 @@
       "numberedPrefix": true,
       "autoSync": true
     },
-    "antigravity": {
-      "name": "Antigravity",
-      "description": "Antigravity AI Agent",
-      "type": "single-file",
-      "file": ".antigravity/rules.md",
-      "format": "markdown-index",
-      "autoSync": true
-    },
     "codex": {
       "name": "Codex",
       "description": "Codex AI Agent",
       "type": "single-file",
-      "file": ".codex/rules.md",
+      "file": "AGENTS.md",
       "format": "markdown-index",
       "autoSync": true
     },
@@ -75,17 +62,16 @@
       "name": "OpenCode",
       "description": "OpenCode AI Agent",
       "type": "single-file",
-      "file": ".opencode/rules.md",
+      "file": "AGENTS.md",
       "format": "markdown-index",
       "autoSync": true
     },
     "windsurf": {
       "name": "Windsurf",
-      "description": "Windsurf AI Agent",
-      "type": "multi-file",
-      "directory": ".windsurf/rules",
-      "format": "markdown",
-      "extension": ".md",
+      "description": "Windsurf IDE by Codeium",
+      "type": "single-file",
+      "file": ".windsurfrules",
+      "format": "markdown-index",
       "autoSync": true
     },
     "qoder": {

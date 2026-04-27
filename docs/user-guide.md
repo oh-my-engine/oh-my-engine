@@ -15,63 +15,76 @@
 
 ## Installation
 
-### One-Line Install
+### Install the CLI
 
 ```bash
-git clone https://github.com/yourusername/oh-my-engine.git
+npm install -g oh-my-engine
+ome --help
+```
+
+The `ome` CLI is the primary runtime for project initialization, rules sync, spec workflow, memory, evolution, and guidance.
+
+### Install from GitHub
+
+```bash
+git clone https://github.com/<your-org>/oh-my-engine.git
 cd oh-my-engine
+npm install
+npm run build
+npm link
+ome --help
+```
+
+### Install Claude Code / Codex Skills
+
+Skills are optional native entry points for Claude Code and Codex:
+
+```bash
+./install.sh --agent claude
+./install.sh --agent codex
 ./install.sh --agent both
 ```
 
-This copies the skills into `~/.claude/skills/` and/or `~/.codex/skills/`, depending on the selected agent target.
-
-### Manual Install
+The one-line GitHub installer copies skills only:
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/oh-my-engine.git
-
-# Create skills directories if they don't exist
-mkdir -p ~/.claude/skills
-mkdir -p ~/.codex/skills
-
-# Copy each skill
-cd oh-my-engine/skills
-for skill in oh-my-engine*; do
-  cp -R "$skill" ~/.claude/skills/
-  cp -R "$skill" ~/.codex/skills/
-done
+curl -fsSL https://raw.githubusercontent.com/<your-org>/oh-my-engine/main/quick-install.sh | bash -s -- --agent both
 ```
+
+Install the CLI separately with npm or `npm link`.
 
 ### Verify Installation
 
 ```bash
-# Check if skills are installed for Claude Code
-ls -la ~/.claude/skills/ | grep oh-my-engine
-
-# Check if skills are installed for Codex
-ls -la ~/.codex/skills/ | grep oh-my-engine
+ome doctor
+ome rules validate
+ome adapters list
 ```
 
-You should see 9 skills listed.
+Optional skill checks:
+
+```bash
+ls -la ~/.claude/skills/ | grep oh-my-engine
+ls -la ~/.codex/skills/ | grep oh-my-engine
+```
 
 ## Quick Start
 
 ### 1. Initialize a Project
 
-Navigate to your project directory and invoke the installed init workflow:
+Navigate to your project directory and use the unified CLI:
 
 ```bash
-# Claude Code
-/oh-my-engine-init
-
-# Codex
-oh-my-engine-init
+ome init
+ome doctor
+ome rules sync
 ```
 
 This creates the `.oh-my-engine/` directory with default configuration.
 
 It also creates an `openspec/` workspace for long-lived capability specs and in-progress changes.
+
+`ome rules sync` generates the rule files consumed by Claude Code, Codex, Trae, Cursor, Windsurf, OpenCode, Qoder, and Antigravity.
 
 ### 2. Configure Your Project
 
@@ -129,25 +142,61 @@ Use descriptive keys: `screen.home.welcome` not `text1`
 ```bash
 # Restore UI from Figma
 /oh-my-engine-ui
-./skills/oh-my-engine-ui/scripts/prepare-context.sh https://mastergo.com/goto/demo
+ome guidance ui-restore --input "https://mastergo.com/goto/demo"
 
 # Generate a component
 /oh-my-engine-comp
-./skills/oh-my-engine-comp/scripts/prepare-context.sh UserCard
+ome guidance component-gen --input "UserCard"
 
 # Integrate an API
 /oh-my-engine-api
-./skills/oh-my-engine-api/scripts/prepare-context.sh ./specs/user-api.yaml
+ome guidance api-integration --input "./specs/user-api.yaml"
 
 # Analyze a bug
 /oh-my-engine-bug
-./skills/oh-my-engine-bug/scripts/prepare-context.sh "Login button click does nothing"
+ome guidance bug-analysis --input "Login button click does nothing"
 
 # Start a prompt-driven spec change
-/oh-my-engine-spec import user-authentication
-/oh-my-engine-spec decompose user-authentication
-/oh-my-engine-spec plan user-authentication
+ome spec import user-authentication --source-file docs/prd.md
+ome spec decompose user-authentication
+ome spec plan user-authentication
 ```
+
+### 5. Use with Different AI Tools
+
+Claude Code:
+
+```bash
+ome rules sync claude-code
+/oh-my-engine-init
+/oh-my-engine-bug "Login button click does nothing"
+```
+
+Codex:
+
+```bash
+ome rules sync codex
+```
+
+Then invoke installed skills by name:
+
+```text
+oh-my-engine-init
+oh-my-engine-spec propose add-auth
+```
+
+Trae / Cursor / Windsurf / OpenCode / Qoder / Antigravity:
+
+```bash
+ome rules sync trae
+ome rules sync cursor
+ome rules sync windsurf
+ome rules sync opencode
+ome rules sync qoder
+ome rules sync antigravity
+```
+
+Detailed install and platform usage is documented in `docs/installation-and-usage.md`.
 
 ## Core Concepts
 
@@ -215,7 +264,7 @@ Initialize Oh My Engine in a project.
 **Usage**:
 ```bash
 cd /path/to/project
-/oh-my-engine-init
+ome init
 ```
 
 ### `/oh-my-engine-ui`
@@ -250,7 +299,7 @@ Restore UI from design files (Figma, Sketch, etc.).
 **Usage**:
 ```bash
 /oh-my-engine-ui
-./skills/oh-my-engine-ui/scripts/prepare-context.sh <design-url>
+ome guidance ui-restore --input "<design-url>"
 # Follow prompts to provide design file URL
 ```
 
@@ -284,7 +333,7 @@ Generate a new component with best practices.
 **Usage**:
 ```bash
 /oh-my-engine-comp
-./skills/oh-my-engine-comp/scripts/prepare-context.sh <component-name>
+ome guidance component-gen --input "<component-name>"
 # Specify component name and type
 ```
 
@@ -318,7 +367,7 @@ Integrate an API endpoint.
 **Usage**:
 ```bash
 /oh-my-engine-api
-./skills/oh-my-engine-api/scripts/prepare-context.sh <api-spec>
+ome guidance api-integration --input "<api-spec>"
 # Provide API endpoint details
 ```
 
@@ -340,16 +389,16 @@ Manage an OpenSpec-compatible change lifecycle inside Oh My Engine.
 
 **Usage**:
 ```bash
-/oh-my-engine-spec init
-/oh-my-engine-spec import user-authentication
-/oh-my-engine-spec decompose user-authentication
-/oh-my-engine-spec propose user-authentication
-/oh-my-engine-spec plan user-authentication
-/oh-my-engine-spec apply user-authentication
-/oh-my-engine-spec apply user-authentication --task "Implement the change"
-/oh-my-engine-spec status user-authentication
-/oh-my-engine-spec verify user-authentication
-/oh-my-engine-spec archive user-authentication
+ome spec init
+ome spec import user-authentication --source-file docs/prd.md
+ome spec decompose user-authentication
+ome spec propose user-authentication
+ome spec plan user-authentication
+ome spec apply user-authentication
+ome spec apply user-authentication --task "Implement the change"
+ome spec status user-authentication
+ome spec verify user-authentication
+ome spec archive user-authentication
 ```
 
 **Current limits**:
@@ -388,7 +437,7 @@ Analyze and fix bugs.
 **Usage**:
 ```bash
 /oh-my-engine-bug
-./skills/oh-my-engine-bug/scripts/prepare-context.sh "Describe the bug or provide error logs"
+ome guidance bug-analysis --input "Describe the bug or provide error logs"
 # Describe the bug or provide error logs
 ```
 
@@ -699,7 +748,7 @@ Example generated skill artifact:
 
 These directives are consumed directly by:
 - `spec` via `plan/apply` and `context/engine-memory.md`
-- `bug/ui/comp/api` via each workflow's `./scripts/prepare-context.sh`
+- `bug/ui/comp/api` via `ome guidance <workflow> --input <text>`
 
 ### Configuration
 
@@ -786,6 +835,10 @@ Configuration should be shared, memory should not.
 
 **Solution**:
 ```bash
+# First verify the CLI
+ome --help
+ome doctor
+
 # Claude Code install location
 ls ~/.claude/skills/ | grep oh-my-engine
 
@@ -798,6 +851,13 @@ cd /path/to/oh-my-engine
 ./install.sh --agent codex
 ```
 
+If you do not need native Claude Code/Codex skill entry points, use the CLI directly:
+
+```bash
+ome guidance ui-restore --input "<design-url>"
+ome spec propose <change-id>
+```
+
 ### Configuration Not Loading
 
 **Problem**: Rules not being applied
@@ -806,6 +866,7 @@ cd /path/to/oh-my-engine
 1. Check config.json syntax (must be valid JSON)
 2. Verify workflow is enabled
 3. Check rule files exist in `.oh-my-engine/rules/`
+4. Run `ome rules sync` for the target tool
 
 ### Memory Not Saving
 

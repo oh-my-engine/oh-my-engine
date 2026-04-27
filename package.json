@@ -1,0 +1,41 @@
+{
+  "name": "oh-my-engine",
+  "version": "0.1.0",
+  "description": "Cross-agent workflow engine for rules, memory, specs, and skills.",
+  "type": "commonjs",
+  "bin": {
+    "ome": "./bin/ome"
+  },
+  "files": [
+    "bin/",
+    "dist/adapters/",
+    "dist/bin/",
+    "dist/cli/",
+    "dist/core/",
+    "dist/scripts/",
+    "dist/skills/",
+    "schemas/",
+    "skills/",
+    "docs/installation-and-usage.md",
+    "docs/generated-artifacts.md",
+    ".oh-my-engine/rules/",
+    ".oh-my-engine/platforms.json",
+    "README.md"
+  ],
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "npm run clean && tsc -p tsconfig.json && node dist/scripts/restore-shebangs.js",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node --test dist/tests/*.test.js",
+    "verify": "npm run check && npm test",
+    "prepack": "npm run verify",
+    "test:built": "node --test dist/tests/*.test.js"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

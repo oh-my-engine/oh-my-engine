@@ -49,31 +49,36 @@ tags: [workflow, automation, evolution, learning]
 ## 使用方法
 
 ```bash
-# 执行工作流
-/oh-my-engine ui-restore <mastergo-url>
-/oh-my-engine bug-analysis <issue-description>
-/oh-my-engine component-gen <component-name>
-/oh-my-engine api-integration <api-spec>
-/oh-my-engine spec <change-id>
-/oh-my-engine spec apply <change-id>
-/oh-my-engine spec verify <change-id>
+# CLI 主入口
+ome init
+ome doctor
+ome rules sync
 
-# 进化相关
-/oh-my-engine evolve              # 触发进化分析
-/oh-my-engine memory              # 查看记忆统计
-/oh-my-engine skills              # 查看已生成的 Skills
+# 工作流 guidance
+ome guidance ui-restore --input "<mastergo-url>"
+ome guidance bug-analysis --input "<issue-description>"
+ome guidance component-gen --input "<component-name>"
+ome guidance api-integration --input "<api-spec>"
 
-# 配置管理
-/oh-my-engine init                # 初始化项目配置
-/oh-my-engine config              # 查看当前配置
+# Spec 流程
+ome spec propose <change-id>
+ome spec plan <change-id>
+ome spec apply <change-id>
+ome spec verify <change-id>
+ome spec archive <change-id>
+
+# 记忆和进化
+ome memory view --format json
+ome evolve analyze --format json
 ```
 
-Claude Code 可直接使用上面的 slash command 形式。
-Codex 请按技能名 `oh-my-engine` 触发，并传入相同子命令和参数。
+Claude Code 可使用 `/oh-my-engine-*` skills 作为原生入口。
+Codex 请按 skill 名触发，例如 `oh-my-engine-spec propose <change-id>`。
+Trae / Cursor / Windsurf / OpenCode 等工具通过 `ome rules sync` 生成的规则文件使用。
 
 ## 执行流程
 
-当用户调用 `/oh-my-engine <command>` 时：
+当用户调用 `ome <command>` 或通过 agent skill 触发时：
 
 ### Step 1: 配置检测
 ```
@@ -175,7 +180,7 @@ oh-my-engine/
 ## 实现逻辑
 
 ### 配置加载
-```javascript
+```typescript
 function loadConfig(cwd) {
   // 1. 检测项目配置
   const projectConfig = checkPath(`${cwd}/.oh-my-engine/config.json`);
@@ -189,7 +194,7 @@ function loadConfig(cwd) {
 ```
 
 ### 工作流调度
-```javascript
+```typescript
 function dispatchWorkflow(command, args, config) {
   // 1. 查找工作流定义
   const workflow = findWorkflow(command, config);
@@ -211,7 +216,7 @@ function dispatchWorkflow(command, args, config) {
 ```
 
 ### 记忆保存
-```javascript
+```typescript
 function saveMemory(result) {
   const timestamp = Date.now();
   const executionId = generateId();

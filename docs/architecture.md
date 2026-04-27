@@ -2,13 +2,24 @@
 
 ## Overview
 
-Oh My Engine is a two-layer architecture that combines global skills with project-specific configurations to create intelligent, context-aware workflows. Spec-driven work uses an OpenSpec-compatible workspace so long-lived specs and active changes stay separate from project memory.
+Oh My Engine is a two-layer architecture that combines a TypeScript-driven `ome` CLI with optional agent skills and project-specific configurations. Spec-driven work uses an OpenSpec-compatible workspace so long-lived specs and active changes stay separate from project memory.
 
 ## Architecture Layers
 
-### Layer 1: Global Skills (`~/.claude/skills/`)
+### Layer 1: CLI Runtime (`ome`)
 
-Global skills are installed once and available across all projects. They contain the core workflow logic.
+The `ome` CLI is the source of truth for engine operations:
+
+- `ome init`
+- `ome rules sync`
+- `ome spec ...`
+- `ome guidance ...`
+- `ome memory view`
+- `ome evolve ...`
+
+### Layer 2: Optional Agent Skills (`~/.claude/skills/`, `~/.codex/skills/`)
+
+Agent skills are optional native entry points for Claude Code and Codex. They should delegate engine operations to `ome` rather than reintroducing shell or JavaScript compatibility wrappers.
 
 ```
 ~/.claude/skills/
@@ -23,7 +34,7 @@ Global skills are installed once and available across all projects. They contain
 └── oh-my-engine-evolve/   # Evolution analyzer
 ```
 
-### Layer 2: Project Configuration (`.oh-my-engine/`)
+### Layer 3: Project Configuration (`.oh-my-engine/`)
 
 Each project has its own configuration that customizes how workflows behave.
 
@@ -178,10 +189,10 @@ Rules are loaded automatically based on workflow configuration and applied durin
 ```
 
 Non-spec workflow helpers can now consume adopted engine knowledge directly through:
-- `skills/oh-my-engine-bug/scripts/prepare-context.sh`
-- `skills/oh-my-engine-ui/scripts/prepare-context.sh`
-- `skills/oh-my-engine-comp/scripts/prepare-context.sh`
-- `skills/oh-my-engine-api/scripts/prepare-context.sh`
+- `ome guidance bug-analysis --input "<issue>"`
+- `ome guidance ui-restore --input "<design-url>"`
+- `ome guidance component-gen --input "<component-name>"`
+- `ome guidance api-integration --input "<api-spec>"`
 
 ## Context Loading Strategy
 

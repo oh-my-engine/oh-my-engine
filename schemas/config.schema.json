@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Oh My Engine Project Config",
+  "type": "object",
+  "required": ["version", "project", "workflows", "memory", "evolution"],
+  "properties": {
+    "version": { "type": "string" },
+    "project": { "type": "object", "required": ["name"] },
+    "workflows": { "type": "object" },
+    "memory": { "type": "object", "required": ["enabled", "captureMode"] },
+    "evolution": { "type": "object", "required": ["enabled"] }
+  }
+}

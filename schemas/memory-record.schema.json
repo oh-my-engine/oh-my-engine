@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Oh My Engine Memory Record",
+  "type": "object",
+  "required": ["id", "timestamp", "source", "workflow", "phase", "status", "summary"],
+  "properties": {
+    "id": { "type": "string" },
+    "timestamp": { "type": "string" },
+    "source": { "type": "string" },
+    "workflow": { "type": "string" },
+    "phase": { "type": "string" },
+    "status": { "type": "string" },
+    "summary": { "type": "string" }
+  }
+}

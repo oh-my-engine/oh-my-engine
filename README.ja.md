@@ -4,6 +4,8 @@
 
 ---
 
+> Current usage note: `ome` is the TypeScript-driven source of truth. Install the CLI with `npm install -g oh-my-engine`, initialize projects with `ome init && ome rules sync`, and use optional Claude Code/Codex skills only for native agent entry points. See [docs/installation-and-usage.md](docs/installation-and-usage.md).
+
 > メモリと学習機能を備えた自己進化型ワークフローエンジン（Claude Code and Codex 用）
 
 Oh My Engine は、Claude Code and Codex をインテリジェントなワークフローシステムに変換する強力なフレームワークです。使用パターンから学習し、設定を記憶し、自動的に進化してカスタムワークフローを作成します。
@@ -111,26 +113,26 @@ oh-my-engine-init
 
 ```bash
 # spec ワークスペースを初期化
-oh-my-engine-spec init
+ome spec init
 
 # PRD 入力とオペレーター意図を取り込む
-oh-my-engine-spec import user-authentication
+ome spec import user-authentication
 
 # 取り込んだコンテキストから proposal/design/tasks/spec delta を準備
-oh-my-engine-spec decompose user-authentication
+ome spec decompose user-authentication
 
 # 手動 scaffold パスも引き続き利用可能
-oh-my-engine-spec propose user-authentication
+ome spec propose user-authentication
 
 # 実行コンテキストを精緻化して読み込む
-oh-my-engine-spec plan user-authentication
-oh-my-engine-spec apply user-authentication
-oh-my-engine-spec apply user-authentication --task "Implement the change"
-oh-my-engine-spec status user-authentication
+ome spec plan user-authentication
+ome spec apply user-authentication
+ome spec apply user-authentication --task "Implement the change"
+ome spec status user-authentication
 
 # 変更を検証してアーカイブ
-oh-my-engine-spec verify user-authentication
-oh-my-engine-spec archive user-authentication
+ome spec verify user-authentication
+ome spec archive user-authentication
 ```
 
 `import` は、正規化されたソーステキスト、プロンプト、来歴情報、コピーした添付ファイルを `openspec/changes/<change-id>/context/` に保存します。`decompose` は、その intake コンテキストを `analysis.md`、`proposal.md`、`design.md`、`tasks.md`、spec delta に変換し、ソース参照を変更に紐付けたまま保持します。`apply` はライフサイクル状態を更新し、タスクや受け入れ条件の進捗を反映しつつ、エージェントが読み込むべきファイルを表示します。プロダクションコードは自動生成しません。`status` は現在のフェーズと残件を要約します。`archive` は初回受け入れ時に長期 capability spec を作成し、受け入れ済み delta から canonical な summary、requirements、compatibility を再構築し、現在の受け入れ snapshot と履歴の両方を保持します。

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Oh My Engine Spec State",
+  "type": "object",
+  "required": ["changeId", "changeSlug", "capability", "mode", "status", "phase", "updatedAt"],
+  "properties": {
+    "changeId": { "type": "string" },
+    "changeSlug": { "type": "string" },
+    "capability": { "type": "string" },
+    "mode": { "type": "string" },
+    "status": { "type": "string" },
+    "phase": { "type": "string" },
+    "updatedAt": { "type": "string" },
+    "openTasks": { "type": "number" },
+    "completedTasks": { "type": "number" },
+    "openAcceptanceCriteria": { "type": "number" },
+    "archivedPath": { "type": "string" }
+  }
+}

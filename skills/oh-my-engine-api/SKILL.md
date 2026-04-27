@@ -14,7 +14,7 @@ tags: [api, integration, openapi, swagger]
 
 ```bash
 /oh-my-engine-api <api-spec> [options]
-./scripts/prepare-context.sh <api-spec>
+ome guidance api-integration --input "<api-spec>"
 ```
 
 Claude Code 可直接使用上面的 slash command。
@@ -41,7 +41,7 @@ Codex 请按技能名 `oh-my-engine-api` 触发，并沿用相同参数。
 ## 执行流程
 
 1. **解析 API 规范**
-   - 先运行 `./scripts/prepare-context.sh` 加载 adopted learnings / generated skill directives
+   - 先运行/读取 `ome guidance api-integration --input "<api-spec>"` 加载 adopted learnings / generated skill directives
    - 读取 API 规范（OpenAPI/Swagger）
    - 提取接口定义
    - 生成类型定义

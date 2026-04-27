@@ -65,9 +65,9 @@ Codex 请按技能名 `oh-my-engine-evolve` 触发，并沿用相同参数。
    - 输出报告，不直接安装 skill
 
 5. **独立验证与采用**
-   - `verify-learning-candidate.js` 校验 learning candidate schema 和状态
+   - `ome evolve verify-learning --slug <slug>` 校验 learning candidate schema 和状态
    - learning candidate adopt 结果写入 `.oh-my-engine/memory/learnings/adopted/`
-   - `verify-skill-candidate.js` 校验 candidate schema 和状态
+   - `ome evolve verify-skill --slug <slug>` 校验 candidate schema 和状态
    - 只有 `verified` candidate 才能 adopt
    - adopt 结果写入 `.oh-my-engine/generated-skills/`
 
@@ -111,20 +111,20 @@ Adopted preferences:
 }
 ```
 
-## 当前脚本
+## 当前 CLI
 
 ```bash
-node skills/oh-my-engine-evolve/scripts/run-evolve.js --format json
-node skills/oh-my-engine-evolve/scripts/verify-learning-candidate.js --slug spec-verify-verified-the-spec-change-and-acceptance-state
-node skills/oh-my-engine/scripts/adopt-learning-candidate.js --slug spec-verify-verified-the-spec-change-and-acceptance-state
-node skills/oh-my-engine-evolve/scripts/verify-skill-candidate.js --slug react-event-handler-invocation
-node skills/oh-my-engine/scripts/adopt-skill-candidate.js --slug react-event-handler-invocation
+ome evolve analyze --format json
+ome evolve verify-learning --slug spec-verify-verified-the-spec-change-and-acceptance-state
+ome evolve adopt-learning --slug spec-verify-verified-the-spec-change-and-acceptance-state
+ome evolve verify-skill --slug react-event-handler-invocation
+ome evolve adopt-skill --slug react-event-handler-invocation
 ```
 
 ## 相关命令
 
 - `/oh-my-engine-memory` - 查看执行 / preference / candidate 记忆
-- `/oh-my-engine-init` - 初始化 selective memory 默认配置
+- `ome init` - 初始化 selective memory 默认配置
 
 ---
 

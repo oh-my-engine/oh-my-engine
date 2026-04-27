@@ -4,6 +4,8 @@
 
 ---
 
+> Current usage note: `ome` is the TypeScript-driven source of truth. Install the CLI with `npm install -g oh-my-engine`, initialize projects with `ome init && ome rules sync`, and use optional Claude Code/Codex skills only for native agent entry points. See [docs/installation-and-usage.md](docs/installation-and-usage.md).
+
 > 메모리와 학습 기능을 갖춘 자체 진화 워크플로우 엔진 (Claude Code and Codex용)
 
 Oh My Engine은 Claude Code and Codex를 지능형 워크플로우 시스템으로 변환하는 강력한 프레임워크입니다. 사용 패턴에서 학습하고, 선호도를 기억하며, 자동으로 진화하여 맞춤형 워크플로우를 생성합니다.
@@ -111,26 +113,26 @@ oh-my-engine-init
 
 ```bash
 # spec 작업 공간 초기화
-oh-my-engine-spec init
+ome spec init
 
 # PRD 입력과 작업자 의도를 가져오기
-oh-my-engine-spec import user-authentication
+ome spec import user-authentication
 
 # 가져온 컨텍스트에서 proposal/design/tasks/spec delta 준비
-oh-my-engine-spec decompose user-authentication
+ome spec decompose user-authentication
 
 # 수동 scaffold 경로도 계속 사용 가능
-oh-my-engine-spec propose user-authentication
+ome spec propose user-authentication
 
 # 실행 컨텍스트 정제 및 로드
-oh-my-engine-spec plan user-authentication
-oh-my-engine-spec apply user-authentication
-oh-my-engine-spec apply user-authentication --task "Implement the change"
-oh-my-engine-spec status user-authentication
+ome spec plan user-authentication
+ome spec apply user-authentication
+ome spec apply user-authentication --task "Implement the change"
+ome spec status user-authentication
 
 # 변경 검증 및 아카이브
-oh-my-engine-spec verify user-authentication
-oh-my-engine-spec archive user-authentication
+ome spec verify user-authentication
+ome spec archive user-authentication
 ```
 
 `import`는 정규화된 소스 텍스트, 프롬프트 입력, 추적 정보, 복사된 첨부 파일을 `openspec/changes/<change-id>/context/` 아래에 저장합니다. `decompose`는 이 intake 컨텍스트를 `analysis.md`, `proposal.md`, `design.md`, `tasks.md`, spec delta로 변환하면서 소스 참조를 변경과 함께 유지합니다. `apply`는 라이프사이클 상태를 갱신하고, 작업과 수용 기준 진행 상황을 표시할 수 있으며, 에이전트가 로드해야 할 파일을 출력합니다. 프로덕션 코드를 자동 생성하지는 않습니다. `status`는 현재 단계와 남은 항목을 요약합니다. `archive`는 첫 수용 시 장기 capability spec을 만들고, 수용된 delta로부터 canonical summary, requirements, compatibility를 다시 구성하며, 현재 수용된 스냅샷과 아카이브 이력을 모두 유지합니다.

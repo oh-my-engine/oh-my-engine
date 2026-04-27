@@ -9,13 +9,13 @@
 ```
 修复 Bug
   ↓
-识别错误模式（pattern-matcher.js）
+识别错误模式（TypeScript runtime）
   ↓
 记录到 bug-patterns.json
   ↓
 检查阈值
   ↓
-触发自动沉淀（skill-generator.js）
+触发自动沉淀（ome evolve）
   ↓
 生成 Skill / ESLint 规则 / Pre-commit Hook
 ```
@@ -141,25 +141,25 @@
 ### 生成自动修复 Skill
 
 ```bash
-node .oh-my-engine/skill-generator.js skill react-event-handler-invocation
+ome evolve analyze --format json
 ```
 
 ### 生成 ESLint 配置
 
 ```bash
-node .oh-my-engine/skill-generator.js eslint react-event-handler-invocation
+ome evolve verify-skill --slug react-event-handler-invocation
 ```
 
 ### 生成 Pre-commit Hook
 
 ```bash
-node .oh-my-engine/skill-generator.js hook
+ome rules sync
 ```
 
 ## 查看统计信息
 
 ```bash
-node .oh-my-engine/pattern-matcher.js stats
+ome memory view --type generated-skills
 ```
 
 输出：
@@ -268,7 +268,7 @@ chmod +x .git/hooks/pre-commit
 - name: Check Bug Patterns
   run: |
     for file in $(git diff --name-only origin/main...HEAD | grep -E '\.(ts|tsx|js|jsx)$'); do
-      node .oh-my-engine/pattern-matcher.js detect "$file"
+      ome evolve analyze --format json
     done
 ```
 
@@ -282,14 +282,14 @@ chmod +x .git/hooks/pre-commit
 
 ## 故障排除
 
-### 问题：pattern-matcher.js 无法运行
+### 问题：ome CLI 无法运行
 
 ```bash
 # 检查 Node.js 版本
-node --version  # 需要 >= 14
+node --version
 
-# 检查文件权限
-chmod +x .oh-my-engine/pattern-matcher.js
+# 重新构建运行时
+npm run build
 ```
 
 ### 问题：Pre-commit Hook 不生效
@@ -310,7 +310,7 @@ ln -s ../../.oh-my-engine/pre-commit-check.sh .git/hooks/pre-commit
 ls -la ~/.claude/skills/fix-*
 
 # 重新生成
-node .oh-my-engine/skill-generator.js skill <pattern-id>
+ome evolve analyze --format json
 ```
 
 ## 相关命令
