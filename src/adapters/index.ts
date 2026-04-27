@@ -1,4 +1,5 @@
 const { fileExists, projectPath, readJsonFile } = require('../core/project');
+const { enginePath } = require('../core/paths');
 const { getAdapter } = require('./registry');
 
 import type { PlatformAdapterStatus } from './types';
@@ -6,7 +7,7 @@ import type { PlatformAdapterStatus } from './types';
 export type PlatformAdapter = PlatformAdapterStatus;
 
 export function listAdapters(projectRoot: string = process.cwd()): PlatformAdapterStatus[] {
-  const platformsPath = projectPath('.oh-my-engine', 'platforms.json');
+  const platformsPath = enginePath(projectRoot, 'platforms.json');
   if (!fileExists(platformsPath)) return [];
 
   const config = readJsonFile(platformsPath);

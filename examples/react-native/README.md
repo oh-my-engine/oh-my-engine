@@ -29,7 +29,7 @@ This example shows how to configure Oh My Engine for a React Native + Expo proje
 ## Project Structure
 
 ```
-.oh-my-engine/
+.ome/
 ├── config.json           # Main configuration
 ├── rules/                # Project-specific rules
 │   ├── i18n.md          # Translation guidelines
@@ -46,21 +46,21 @@ After initializing Oh My Engine in your React Native project:
 
 ```bash
 # Restore UI from Figma
-/oh-my-engine-ui
+/ome-ui
 
 # Generate a new component
-/oh-my-engine-comp
+/ome-comp
 
 # Integrate an API
-/oh-my-engine-api
+/ome-api
 
 # Analyze a bug
-/oh-my-engine-bug
+/ome-bug
 ```
 
 ## Customization
 
-Edit the files in `.oh-my-engine/rules/` to match your project's specific requirements:
+Edit the files in `.ome/rules/` to match your project's specific requirements:
 
 - Add more languages to `i18n.md`
 - Customize theme tokens in `theme.md`

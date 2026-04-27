@@ -3,7 +3,7 @@
 Oh My Engine has two layers:
 
 1. **CLI runtime**: the `ome` command. This is the source of truth for project initialization, rules sync, spec workflow, memory, evolution, and guidance.
-2. **Agent skills and rule files**: optional entry points for Claude Code/Codex, plus generated rule files for tools such as Trae, Cursor, Windsurf, OpenCode, Qoder, and Antigravity.
+2. **Agent commands and rule files**: optional global `ome-*` entries for supported agents, plus project rule files for Trae, Cursor, Windsurf, OpenCode, Qoder, and Antigravity.
 
 Do not run removed compatibility scripts directly. Use `ome ...` for engine operations.
 
@@ -22,7 +22,7 @@ Then initialize any project:
 cd your-project
 ome init
 ome doctor
-ome rules sync
+ome agents install
 ```
 
 ### From GitHub
@@ -36,15 +36,15 @@ npm link
 ome --help
 ```
 
-Install Claude Code/Codex skills from the cloned repo when you want native agent commands:
+Install global Agent commands when you want native `/ome-*` or skill-name entries:
 
 ```bash
-./install.sh --agent claude
-./install.sh --agent codex
-./install.sh --agent both
+ome agents install
+ome agents install --all
+ome agents doctor
 ```
 
-For one-line skill installation from GitHub:
+Legacy one-line skill installation from GitHub remains available only for deprecated `/oh-my-engine-*` compatibility:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/<your-org>/oh-my-engine/main/quick-install.sh | bash -s -- --agent both
@@ -63,6 +63,7 @@ ome init
 ome doctor
 ome rules validate
 ome rules sync
+ome agents list
 ```
 
 Spec workflow:
@@ -89,6 +90,9 @@ ome evolve adopt-skill --slug <skill-slug>
 Workflow guidance:
 
 ```bash
+ome bug "Login button click does nothing"
+ome-bug "Login button click does nothing"
+ome-spec propose add-auth
 ome guidance bug-analysis --input "Login button click does nothing"
 ome guidance ui-restore --input "https://mastergo.com/goto/demo"
 ome guidance component-gen --input "UserCard"
@@ -97,18 +101,18 @@ ome guidance api-integration --input "./specs/user-api.yaml"
 
 ### Claude Code
 
-Install skills:
+Install global commands:
 
 ```bash
-./install.sh --agent claude
+ome agents install claude-code
 ```
 
 Use slash commands:
 
 ```bash
-/oh-my-engine-init
-/oh-my-engine-spec propose add-auth
-/oh-my-engine-bug "Login button click does nothing"
+/ome-init
+/ome-spec propose add-auth
+/ome-bug "Login button click does nothing"
 ```
 
 Run this in the project to generate/update `CLAUDE.md`:
@@ -119,18 +123,18 @@ ome rules sync claude-code
 
 ### Codex
 
-Install skills:
+Install global skills:
 
 ```bash
-./install.sh --agent codex
+ome agents install codex
 ```
 
 Invoke installed skills by name:
 
 ```text
-oh-my-engine-init
-oh-my-engine-spec propose add-auth
-oh-my-engine-bug Login button click does nothing
+ome-init
+ome-spec propose add-auth
+ome-bug Login button click does nothing
 ```
 
 Run this in the project to generate/update `AGENTS.md`:
@@ -148,7 +152,7 @@ ome init
 ome rules sync trae
 ```
 
-Generated target:
+Generated rules target:
 
 ```text
 .trae/rules/*.md
@@ -161,7 +165,7 @@ ome init
 ome rules sync cursor
 ```
 
-Generated target:
+Generated rules target:
 
 ```text
 .cursor/rules/*.mdc
@@ -174,7 +178,7 @@ ome init
 ome rules sync opencode
 ```
 
-Generated target:
+Generated rules target:
 
 ```text
 AGENTS.md
@@ -187,7 +191,7 @@ ome init
 ome rules sync windsurf
 ```
 
-Generated target:
+Generated rules target:
 
 ```text
 .windsurfrules
@@ -200,7 +204,7 @@ ome init
 ome rules sync qoder
 ```
 
-Generated target:
+Generated rules target:
 
 ```text
 .qoder/rules/*.md
@@ -213,10 +217,16 @@ ome init
 ome rules sync antigravity
 ```
 
-Generated target:
+Generated rules target:
 
 ```text
 .agents/rules/*.md
+```
+
+Project command/workflow files such as `.cursor/commands/*.md`, `.windsurf/workflows/*.md`, `.qoder/commands/*.md`, `.opencode/command/*.md`, and `.agent/workflows/*.md` are generated only when you run:
+
+```bash
+ome agents install --project
 ```
 
 ## What to Commit
@@ -224,8 +234,8 @@ Generated target:
 Commit project configuration and rules:
 
 ```text
-.oh-my-engine/config.json
-.oh-my-engine/rules/
+.ome/config.json
+.ome/rules/
 openspec/project.md
 openspec/specs/
 ```
@@ -245,7 +255,7 @@ AGENTS.md
 Do not commit local memory by default:
 
 ```text
-.oh-my-engine/memory/
+.ome/memory/
 ```
 
 ## Publisher Checklist
@@ -266,7 +276,7 @@ npm publish
 For GitHub:
 
 ```bash
-git tag v0.1.0
+git tag v0.2.0
 git push origin main --tags
 ```
 

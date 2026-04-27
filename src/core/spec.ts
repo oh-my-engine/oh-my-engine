@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const { initializeProject, parseInitArgs } = require('./init');
+const { ENGINE_DIR, enginePath } = require('./paths');
 
 
 const SPEC_COMMANDS = ['init', 'import', 'decompose', 'propose', 'plan', 'apply', 'status', 'verify', 'archive'];
@@ -135,7 +136,7 @@ export function runSpecPropose(args: string[]): void {
 
   const changeDirectory = path.join(options.projectRoot, 'openspec', 'changes', changeSlug);
   const changeSpecDirectory = path.join(changeDirectory, 'specs', capabilitySlug);
-  const memoryFile = path.join(options.projectRoot, '.oh-my-engine', 'memory', 'specs', `${changeSlug}.json`);
+  const memoryFile = enginePath(options.projectRoot, 'memory', 'specs', `${changeSlug}.json`);
 
   if (fs.existsSync(changeDirectory) && !options.force) {
     const hasExistingChange = ['proposal.md', 'design.md', 'tasks.md'].some(name => fs.existsSync(path.join(changeDirectory, name))) || fs.existsSync(path.join(changeDirectory, 'specs'));
@@ -207,7 +208,7 @@ export function runSpecPropose(args: string[]): void {
       `openspec/changes/${changeSlug}/design.md`,
       `openspec/changes/${changeSlug}/tasks.md`,
       `openspec/changes/${changeSlug}/specs/${capabilitySlug}/spec.md`,
-      `.oh-my-engine/memory/specs/${changeSlug}.json`
+      `${ENGINE_DIR}/memory/specs/${changeSlug}.json`
     ],
     testsRun: [],
     errors: [],
@@ -219,7 +220,7 @@ export function runSpecPropose(args: string[]): void {
   process.stdout.write(`  - openspec/changes/${changeSlug}/design.md\n`);
   process.stdout.write(`  - openspec/changes/${changeSlug}/tasks.md\n`);
   process.stdout.write(`  - openspec/changes/${changeSlug}/specs/${capabilitySlug}/spec.md\n`);
-  process.stdout.write(`  - .oh-my-engine/memory/specs/${changeSlug}.json\n`);
+  process.stdout.write(`  - ${ENGINE_DIR}/memory/specs/${changeSlug}.json\n`);
 }
 
 
@@ -235,7 +236,7 @@ function ensureChangeContext(changeInput: string): { changeSlug: string; project
   const changeSlug = slugify(changeInput);
   const projectRoot = process.cwd();
   const changeDirectory = path.join(projectRoot, 'openspec', 'changes', changeSlug);
-  const memoryFile = path.join(projectRoot, '.oh-my-engine', 'memory', 'specs', `${changeSlug}.json`);
+  const memoryFile = enginePath(projectRoot, 'memory', 'specs', `${changeSlug}.json`);
 
   if (!fs.existsSync(changeDirectory)) {
     throw new Error(`Change does not exist: ${changeInput}`);
@@ -364,7 +365,7 @@ function recordLifecycleMemory(projectRoot: string, memory: Record<string, any>,
       `openspec/changes/${memory.changeSlug}/proposal.md`,
       `openspec/changes/${memory.changeSlug}/design.md`,
       `openspec/changes/${memory.changeSlug}/tasks.md`,
-      `.oh-my-engine/memory/specs/${memory.changeSlug}.json`
+      `${ENGINE_DIR}/memory/specs/${memory.changeSlug}.json`
     ],
     testsRun: [],
     errors: [],
@@ -442,7 +443,7 @@ export function runSpecApply(args: string[]): void {
 
   process.stdout.write(`Apply context for change: ${options.changeId}\n`);
   process.stdout.write('Load these files before implementing:\n');
-  process.stdout.write('  - .oh-my-engine/config.json\n');
+  process.stdout.write(`  - ${ENGINE_DIR}/config.json\n`);
   process.stdout.write('  - openspec/project.md\n');
   printExistingReviewFiles(changeDirectory, changeSlug);
   process.stdout.write(`  - openspec/changes/${changeSlug}/proposal.md\n`);
@@ -465,7 +466,7 @@ export function runSpecStatus(args: string[]): void {
   const changeSlug = slugify(changeInput);
   const projectRoot = process.cwd();
   const changeDirectory = path.join(projectRoot, 'openspec', 'changes', changeSlug);
-  const memoryFile = path.join(projectRoot, '.oh-my-engine', 'memory', 'specs', `${changeSlug}.json`);
+  const memoryFile = enginePath(projectRoot, 'memory', 'specs', `${changeSlug}.json`);
 
   if (!fs.existsSync(memoryFile)) {
     throw new Error(`Missing memory file for change: ${changeInput}`);
@@ -666,7 +667,7 @@ export function runSpecImport(args: string[]): void {
   const assetDirectory = path.join(contextDirectory, 'assets');
   if (options.force) fs.rmSync(contextDirectory, { recursive: true, force: true });
   ensureDirectory(assetDirectory);
-  ensureDirectory(path.join(projectRoot, '.oh-my-engine', 'memory', 'specs'));
+  ensureDirectory(enginePath(projectRoot, 'memory', 'specs'));
 
   const importedAt = utcIso();
   const templateRoot = path.join(repoRoot, 'skills', 'oh-my-engine-spec', 'templates');
@@ -685,7 +686,7 @@ export function runSpecImport(args: string[]): void {
   const references = { changeId: options.changeId, changeSlug, importedAt, sourceType: options.sourceType, sourceReference, promptReference, attachments };
   writeJson(path.join(contextDirectory, 'references.json'), references);
 
-  const memoryFile = path.join(projectRoot, '.oh-my-engine', 'memory', 'specs', `${changeSlug}.json`);
+  const memoryFile = enginePath(projectRoot, 'memory', 'specs', `${changeSlug}.json`);
   writeJson(memoryFile, { changeId: options.changeId, changeSlug, capability: changeSlug, mode: 'import', status: 'imported', phase: 'import', updatedAt: importedAt, openTasks: 0, completedTasks: 0, openAcceptanceCriteria: 0, archivedPath: '' });
 
   recordLifecycleMemory(projectRoot, readJson(memoryFile), 'import', 'imported', 'Imported source context for spec decomposition.');
@@ -717,7 +718,7 @@ export function runSpecDecompose(args: string[]): void {
   const analysisContent = renderTemplate(path.join(templateRoot, 'analysis.md'), { '<change-id>': options.changeId, '<change-slug>': changeSlug, '<capability>': capabilitySlug });
   writeFile(path.join(contextDirectory, 'analysis.md'), analysisContent);
 
-  const memoryFile = path.join(projectRoot, '.oh-my-engine', 'memory', 'specs', `${changeSlug}.json`);
+  const memoryFile = enginePath(projectRoot, 'memory', 'specs', `${changeSlug}.json`);
   const memory = readJson(memoryFile);
   memory.status = 'decomposed';
   memory.phase = 'decompose';
@@ -753,7 +754,7 @@ function hasConcreteScenario(deltaPath: string): boolean {
 }
 
 function getVerifyCommands(projectRoot: string): string[] {
-  const configPath = path.join(projectRoot, '.oh-my-engine', 'config.json');
+  const configPath = enginePath(projectRoot, 'config.json');
   if (!fs.existsSync(configPath)) return [];
   const config = readJson(configPath);
   const commands = config.workflows?.spec?.options?.verifyCommands || config.spec?.verifyCommands || [];

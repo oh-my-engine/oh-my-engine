@@ -1,24 +1,24 @@
 ---
-name: oh-my-engine-api
+name: ome-api
 version: 1.0.0
 description: 集成 API 接口
 author: yunxi
 tags: [api, integration, openapi, swagger]
 ---
 
-# oh-my-engine-api
+# ome-api
 
 快速集成和测试 API 接口。
 
 ## 使用方法
 
 ```bash
-/oh-my-engine-api <api-spec> [options]
+/ome-api <api-spec> [options]
 ome guidance api-integration --input "<api-spec>"
 ```
 
 Claude Code 可直接使用上面的 slash command。
-Codex 请按技能名 `oh-my-engine-api` 触发，并沿用相同参数。
+Codex 请按技能名 `ome-api` 触发，并沿用相同参数。
 
 ## 参数
 
@@ -29,13 +29,13 @@ Codex 请按技能名 `oh-my-engine-api` 触发，并沿用相同参数。
 
 ```bash
 # OpenAPI 规范
-/oh-my-engine-api https://api.example.com/openapi.json
+/ome-api https://api.example.com/openapi.json
 
 # 本地文件
-/oh-my-engine-api ./specs/user-api.yaml
+/ome-api ./specs/user-api.yaml
 
 # 指定服务名
-/oh-my-engine-api ./specs/user-api.yaml --service UserService
+/ome-api ./specs/user-api.yaml --service UserService
 ```
 
 ## 执行流程
@@ -63,7 +63,7 @@ Codex 请按技能名 `oh-my-engine-api` 触发，并沿用相同参数。
 
 ## 配置
 
-### 项目配置（.oh-my-engine/config.json）
+### 项目配置（.ome/config.json）
 
 ```json
 {
@@ -109,8 +109,8 @@ Codex 请按技能名 `oh-my-engine-api` 触发，并沿用相同参数。
 
 ## 相关命令
 
-- `/oh-my-engine-memory` - 查看集成历史
-- `/oh-my-engine-evolve` - 触发进化分析
+- `/ome-memory` - 查看集成历史
+- `/ome-evolve` - 触发进化分析
 
 ---
 

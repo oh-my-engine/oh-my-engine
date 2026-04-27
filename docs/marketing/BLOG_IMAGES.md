@@ -23,7 +23,7 @@ graph TB
     
     subgraph "Storage Layer"
         F[~/.claude/skills/<br/>~/.codex/skills/]
-        G[.oh-my-engine/<br/>项目配置]
+        G[.ome/<br/>项目配置]
     end
     
     A --> B
@@ -164,7 +164,7 @@ pie title 时间节省比例
 
 ```mermaid
 flowchart TD
-    Start([用户: /oh-my-engine-ui]) --> A{检测设计稿}
+    Start([用户: /ome-ui]) --> A{检测设计稿}
     A -->|Figma| B[解析 Figma URL]
     A -->|Sketch| C[解析 Sketch 文件]
     A -->|图片| D[AI 视觉分析]
@@ -207,7 +207,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    Start([用户: /oh-my-engine-bug]) --> A[读取错误日志]
+    Start([用户: /ome-bug]) --> A[读取错误日志]
     A --> B[分析错误堆栈]
     B --> C[定位问题代码]
     
@@ -406,7 +406,7 @@ timeline
 
 Oh My Engine:
 ┌─────────────────────────────────────────────────┐
-│ 👤 用户: /oh-my-engine-ui                        │
+│ 👤 用户: /ome-ui                        │
 │ 🧠 Engine: "检测到 Figma 链接，开始还原..."       │
 │    ✓ 分析设计稿结构                              │
 │    ✓ 生成组件代码（使用 Tailwind）               │
@@ -440,7 +440,7 @@ Oh My Engine:
 
 Oh My Engine:
 ┌─────────────────────────────────────────────────┐
-│ 👤 用户: /oh-my-engine-bug                       │
+│ 👤 用户: /ome-bug                       │
 │ 🧠 Engine: "开始分析 Bug..."                     │
 │    ✓ 读取错误日志                                │
 │    ✓ 检查相关代码                                │
@@ -528,7 +528,7 @@ graph TD
 ## 9. 项目配置结构图
 
 ```
-.oh-my-engine/
+.ome/
 ├── 📄 config.json              # 项目配置
 │   ├── project                 # 项目信息
 │   ├── preferences             # 用户偏好

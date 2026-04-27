@@ -57,7 +57,7 @@ function recordPreference(workspace: string, statement: string): void {
 function findExecutionFiles(workspace: string, workflow: string): string[] {
   const directory = path.join(
     workspace,
-    '.oh-my-engine',
+    '.ome',
     'memory',
     'executions',
     workflow
@@ -382,7 +382,7 @@ test('project init writes selective memory defaults', () => {
 
   const config = JSON.parse(
     fs.readFileSync(
-      path.join(workspace, '.oh-my-engine', 'config.json'),
+      path.join(workspace, '.ome', 'config.json'),
       'utf8'
     )
   );
@@ -450,7 +450,7 @@ test('explicit remembered preferences are stored and visible in the memory viewe
 
   const preferenceFile = path.join(
     workspace,
-    '.oh-my-engine',
+    '.ome',
     'memory',
     'preferences',
     'user.json'
@@ -490,7 +490,7 @@ test('evolve analyzer persists learning and skill candidates from repeated patte
 
   const learningCandidateFile = path.join(
     workspace,
-    '.oh-my-engine',
+    '.ome',
     'memory',
     'learnings',
     'candidates',
@@ -498,7 +498,7 @@ test('evolve analyzer persists learning and skill candidates from repeated patte
   );
   const skillCandidateFile = path.join(
     workspace,
-    '.oh-my-engine',
+    '.ome',
     'memory',
     'skill-candidates',
     'react-event-handler-invocation.json'
@@ -589,7 +589,7 @@ test('learning candidates must be verified before adoption and preserve adopted 
 
   const adoptedLearningPath = path.join(
     workspace,
-    '.oh-my-engine',
+    '.ome',
     'memory',
     'learnings',
     'adopted',
@@ -670,7 +670,7 @@ test('skill candidates must be verified before adoption and preserve adopted sta
 
   const generatedSkillPath = path.join(
     workspace,
-    '.oh-my-engine',
+    '.ome',
     'generated-skills',
     'react-event-handler-invocation.json'
   );
@@ -797,7 +797,7 @@ test('spec plan and apply load adopted engine memory context', () => {
     fs.readFileSync(
       path.join(
         workspace,
-        '.oh-my-engine',
+        '.ome',
         'generated-skills',
         'react-event-handler-invocation.json'
       ),

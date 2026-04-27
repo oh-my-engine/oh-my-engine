@@ -15,6 +15,8 @@ test('ome help lists productized command groups', () => {
   const output = runOme(['--help']);
 
   assert.match(output, /rules validate/);
+  assert.match(output, /agents <command>/);
+  assert.match(output, /bug <description>/);
   assert.match(output, /spec <command>/);
   assert.match(output, /guidance <workflow>/);
   assert.match(output, /memory view/);
@@ -42,6 +44,14 @@ test('ome adapters list reports configured platforms', () => {
 
   assert.match(output, /claude-code/);
   assert.match(output, /codex/);
+});
+
+test('ome bug renders project workflow guidance', () => {
+  const output = runOme(['bug', 'login fails']);
+
+  assert.match(output, /Bug Analysis Workflow/);
+  assert.match(output, /\.ome\/rules/);
+  assert.match(output, /login fails/);
 });
 
 export {};

@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const { fileExists, listMarkdownFiles, projectPath, readJsonFile } = require('./project');
+const { ENGINE_DIR, enginePath } = require('./paths');
 
 export interface RulesValidationIssue {
   severity: 'error' | 'warning';
@@ -27,17 +28,17 @@ export interface RulesSyncResult {
 }
 
 function loadProjectConfig(root: string = process.cwd()): Record<string, any> {
-  const configPath = path.join(root, '.oh-my-engine', 'config.json');
+  const configPath = enginePath(root, 'config.json');
   return fs.existsSync(configPath) ? readJsonFile(configPath) : {};
 }
 
 function loadPlatformsConfig(root: string = process.cwd()): Record<string, any> {
-  const platformsPath = path.join(root, '.oh-my-engine', 'platforms.json');
+  const platformsPath = enginePath(root, 'platforms.json');
   return fs.existsSync(platformsPath) ? readJsonFile(platformsPath) : { enabled: [], platforms: {} };
 }
 
 function loadRules(root: string = process.cwd()): Record<string, string> {
-  const rulesDirectory = path.join(root, '.oh-my-engine', 'rules');
+  const rulesDirectory = enginePath(root, 'rules');
   if (!fs.existsSync(rulesDirectory)) return {};
 
   return fs
@@ -54,6 +55,24 @@ function loadRules(root: string = process.cwd()): Record<string, string> {
 function writeFile(filePath: string, content: string): void {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, content, 'utf8');
+}
+
+function writeManagedFileBlock(filePath: string, content: string): void {
+  const start = '<!-- OME:START -->';
+  const end = '<!-- OME:END -->';
+  const block = `${start}\n${content.trimEnd()}\n${end}\n`;
+
+  if (!fs.existsSync(filePath)) {
+    writeFile(filePath, block);
+    return;
+  }
+
+  const current = fs.readFileSync(filePath, 'utf8');
+  const pattern = new RegExp(`${start.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?${end.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\n?`);
+  const next = pattern.test(current)
+    ? current.replace(pattern, block)
+    : `${current.trimEnd()}\n\n${block}`;
+  writeFile(filePath, next);
 }
 
 export function getMappedFilename(ruleName: string, platform: string, platformsConfig: Record<string, any>): string {
@@ -93,7 +112,7 @@ function categorizeRules(rules: Record<string, string>, config: Record<string, a
   for (const ruleName of Object.keys(rules).sort()) {
     const record = {
       name: ruleName,
-      file: `.oh-my-engine/rules/${ruleName}.md`,
+      file: `${ENGINE_DIR}/rules/${ruleName}.md`,
       description: ruleDescription(config, ruleName)
     };
 
@@ -116,13 +135,13 @@ export function generateIndexContent(config: Record<string, any>, rules: Record<
 
   content += `## ⚠️ 重要说明\n\n`;
   content += `**本文件是规则索引文件，不包含完整规则内容。**\n\n`;
-  content += `- 📁 **规则源**：\`.oh-my-engine/rules/\`\n`;
-  content += `- 🔄 **维护方式**：只需编辑 \`.oh-my-engine/rules/*.md\`，无需修改本文件\n`;
+  content += `- 📁 **规则源**：\`${ENGINE_DIR}/rules/\`\n`;
+  content += `- 🔄 **维护方式**：只需编辑 \`${ENGINE_DIR}/rules/*.md\`，无需修改本文件\n`;
   content += `- 📖 **使用方式**：执行任务前，请先读取对应的规则文件\n\n`;
 
   content += `## 规则优先级\n\n`;
   content += `当遇到规则冲突时，按以下优先级执行：\n\n`;
-  content += `1. **\`.oh-my-engine/rules/*.md\`** (最高优先级) - 详细规则，请直接读取\n`;
+  content += `1. **\`${ENGINE_DIR}/rules/*.md\`** (最高优先级) - 详细规则，请直接读取\n`;
   content += `2. **本文件** (中等优先级) - 索引和快速参考\n`;
   content += `3. **平台默认规则** (最低优先级) - 平台内置规则\n\n`;
 
@@ -144,7 +163,7 @@ export function generateIndexContent(config: Record<string, any>, rules: Record<
     if (workflowConfig.description) content += `**说明**: ${workflowConfig.description}\n\n`;
     if (workflowConfig.rules?.length) {
       content += `**应用规则**:\n`;
-      for (const ruleName of workflowConfig.rules) content += `- 📄 [\`${ruleName}.md\`](.oh-my-engine/rules/${ruleName}.md)\n`;
+      for (const ruleName of workflowConfig.rules) content += `- 📄 [\`${ruleName}.md\`](${ENGINE_DIR}/rules/${ruleName}.md)\n`;
       content += `\n`;
     }
     if (workflowConfig.skills?.length) content += `**使用 Skills**: ${workflowConfig.skills.join(', ')}\n\n`;
@@ -156,33 +175,33 @@ export function generateIndexContent(config: Record<string, any>, rules: Record<
   content += `2. **执行任务时**：严格遵循规则文件中的强制要求\n`;
   content += `3. **完成任务后**：对照规则文件中的验证清单检查代码\n\n`;
   content += `### 对于开发者\n\n`;
-  content += `1. **修改规则**：编辑 \`.oh-my-engine/rules/*.md\`\n`;
+  content += `1. **修改规则**：编辑 \`${ENGINE_DIR}/rules/*.md\`\n`;
   content += `2. **同步规则**：运行 \`ome rules sync\`\n`;
-  content += `3. **添加规则**：在 \`.oh-my-engine/rules/\` 中创建新的 \`.md\` 文件\n\n`;
+  content += `3. **添加规则**：在 \`${ENGINE_DIR}/rules/\` 中创建新的 \`.md\` 文件\n\n`;
 
   return content;
 }
 
 function generatePlatformHeader(platformConfig: Record<string, any>): string {
-  return `# ${platformConfig.name} Rules\n\n> 本文件由 .oh-my-engine/rules/ 自动生成，请勿手动编辑\n> 运行 \`ome rules sync\` 更新\n\n`;
+  return `# ${platformConfig.name} Rules\n\n> 本文件由 ${ENGINE_DIR}/rules/ 自动生成，请勿手动编辑 OME 标记块\n> 运行 \`ome rules sync\` 更新\n\n`;
 }
 
 function generatePlatformFooter(platform: string, platformConfig: Record<string, any>): string {
   let footer = `\n---\n\n## 平台特定说明 (${platform})\n\n`;
   switch (platform) {
     case 'claude-code':
-      footer += `- 使用 \`/oh-my-engine-*\` 命令时，会自动加载对应 workflow 的特定规则\n`;
-      footer += `- 本文件是索引文件，详细规则请读取 \`.oh-my-engine/rules/\` 中的文件\n`;
-      footer += `- 使用 Read 工具读取规则文件：\`Read .oh-my-engine/rules/theme.md\`\n`;
+      footer += `- 使用 \`/ome-*\` 命令时，会自动加载对应 workflow 的特定规则\n`;
+      footer += `- 本文件是索引文件，详细规则请读取 \`${ENGINE_DIR}/rules/\` 中的文件\n`;
+      footer += `- 使用 Read 工具读取规则文件：\`Read ${ENGINE_DIR}/rules/theme.md\`\n`;
       break;
     case 'cursor':
     case 'trae':
       footer += `- 本文件在 ${platformConfig.name} 中自动生效\n`;
-      footer += `- 规则源文件：\`.oh-my-engine/rules/\`\n`;
+      footer += `- 规则源文件：\`${ENGINE_DIR}/rules/\`\n`;
       footer += `- 修改规则请编辑源文件，然后运行同步脚本\n`;
       break;
     default:
-      footer += `- 本文件是规则索引，详细规则在 \`.oh-my-engine/rules/\` 目录\n`;
+      footer += `- 本文件是规则索引，详细规则在 \`${ENGINE_DIR}/rules/\` 目录\n`;
       footer += `- 执行任务前，请根据任务类型读取对应的规则文件\n`;
       break;
   }
@@ -192,18 +211,12 @@ function generatePlatformFooter(platform: string, platformConfig: Record<string,
 function processSingleFilePlatform(platform: string, platformConfig: Record<string, any>, config: Record<string, any>, rules: Record<string, string>, root: string): RulesSyncResult {
   const filePath = path.join(root, platformConfig.file);
   const content = generatePlatformHeader(platformConfig) + generateIndexContent(config, rules) + generatePlatformFooter(platform, platformConfig);
-  writeFile(filePath, content);
+  writeManagedFileBlock(filePath, content);
   return { platform, target: path.relative(root, filePath) };
 }
 
 function processMultiFilePlatform(platform: string, platformConfig: Record<string, any>, config: Record<string, any>, rules: Record<string, string>, platformsConfig: Record<string, any>, root: string): RulesSyncResult {
   const directory = path.join(root, platformConfig.directory);
-  if (fs.existsSync(directory)) {
-    for (const fileName of fs.readdirSync(directory)) {
-      if (fileName.endsWith(platformConfig.extension || '.md')) fs.rmSync(path.join(directory, fileName), { force: true });
-    }
-  }
-
   const files: string[] = [];
   let index = 1;
   for (const [ruleName, ruleContent] of Object.entries(rules)) {
@@ -220,12 +233,12 @@ function processMultiFilePlatform(platform: string, platformConfig: Record<strin
 
 export function validateRules(): RulesValidationReport {
   const config = loadProjectConfig();
-  const ruleFiles = listMarkdownFiles(projectPath('.oh-my-engine', 'rules'));
+  const ruleFiles = listMarkdownFiles(enginePath(process.cwd(), 'rules'));
   const ruleNames = ruleFiles.map((name: string) => path.basename(name, '.md'));
   const ruleSet = new Set(ruleNames);
   const issues: RulesValidationIssue[] = [];
 
-  if (ruleFiles.length === 0) issues.push({ severity: 'error', message: 'No rule files found under .oh-my-engine/rules' });
+  if (ruleFiles.length === 0) issues.push({ severity: 'error', message: `No rule files found under ${ENGINE_DIR}/rules` });
 
   for (const [workflowName, workflowConfig] of Object.entries(config.workflows || {}) as Array<[string, any]>) {
     for (const ruleName of workflowConfig.rules || []) {

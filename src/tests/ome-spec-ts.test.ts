@@ -30,7 +30,7 @@ test('ome spec propose creates scaffold and status through TypeScript implementa
   assert.equal(fs.existsSync(path.join(changeDir, 'tasks.md')), true);
   assert.equal(fs.existsSync(path.join(changeDir, 'specs', 'auth', 'spec.md')), true);
 
-  const memory = JSON.parse(fs.readFileSync(path.join(workspace, '.oh-my-engine', 'memory', 'specs', 'user-authentication.json'), 'utf8'));
+  const memory = JSON.parse(fs.readFileSync(path.join(workspace, '.ome', 'memory', 'specs', 'user-authentication.json'), 'utf8'));
   assert.equal(memory.changeId, 'User Authentication');
   assert.equal(memory.changeSlug, 'user-authentication');
   assert.equal(memory.capability, 'auth');
@@ -68,7 +68,7 @@ test('ome spec plan and apply update lifecycle state through TypeScript implemen
   const changeDir = path.join(workspace, 'openspec', 'changes', 'checkout-flow');
   assert.match(fs.readFileSync(path.join(changeDir, 'design.md'), 'utf8'), /Planning Notes/);
 
-  let memory = JSON.parse(fs.readFileSync(path.join(workspace, '.oh-my-engine', 'memory', 'specs', 'checkout-flow.json'), 'utf8'));
+  let memory = JSON.parse(fs.readFileSync(path.join(workspace, '.ome', 'memory', 'specs', 'checkout-flow.json'), 'utf8'));
   assert.equal(memory.status, 'planned');
   assert.equal(memory.phase, 'plan');
 
@@ -93,7 +93,7 @@ test('ome spec plan and apply update lifecycle state through TypeScript implemen
   const proposal = fs.readFileSync(path.join(changeDir, 'proposal.md'), 'utf8');
   assert.match(proposal, /- \[x\] TBD: Add the first acceptance criterion/);
 
-  memory = JSON.parse(fs.readFileSync(path.join(workspace, '.oh-my-engine', 'memory', 'specs', 'checkout-flow.json'), 'utf8'));
+  memory = JSON.parse(fs.readFileSync(path.join(workspace, '.ome', 'memory', 'specs', 'checkout-flow.json'), 'utf8'));
   assert.equal(memory.status, 'in_progress');
   assert.equal(memory.phase, 'apply');
   assert.equal(memory.completedTasks, 1);
@@ -177,7 +177,7 @@ test('ome spec verify and archive are TypeScript-backed', () => {
   const specPath = path.join(workspace, 'openspec', 'specs', 'checkout', 'spec.md');
   assert.match(fs.readFileSync(specPath, 'utf8'), /Saved Checkout Flow/);
 
-  const memory = JSON.parse(fs.readFileSync(path.join(workspace, '.oh-my-engine', 'memory', 'specs', 'accepted-flow.json'), 'utf8'));
+  const memory = JSON.parse(fs.readFileSync(path.join(workspace, '.ome', 'memory', 'specs', 'accepted-flow.json'), 'utf8'));
   assert.equal(memory.status, 'archived');
   assert.equal(memory.phase, 'archive');
   assert.match(memory.archivedPath, /openspec\/archive\//);

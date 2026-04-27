@@ -1,11 +1,18 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
+const { ENGINE_DIR, currentEnginePath, migrateLegacyEngineDirectory, repoEnginePath } = require('./paths');
+const { syncRules } = require('./rules');
+
 export interface InitOptions {
   force: boolean;
   template: string;
   projectRoot: string;
   repoRoot: string;
+  sync?: boolean;
+  migrate?: boolean;
+  installAgents?: boolean;
+  home?: string;
 }
 
 export interface InitResult {
@@ -15,18 +22,21 @@ export interface InitResult {
   projectCreated: boolean;
   rulesUpdated: number;
   directories: string[];
+  migratedLegacy: boolean;
+  syncedTargets: string[];
+  installedAgentTargets: string[];
 }
 
 const ENGINE_DIRECTORIES = [
-  '.oh-my-engine/workflows',
-  '.oh-my-engine/rules',
-  '.oh-my-engine/generated-skills',
-  '.oh-my-engine/memory/executions',
-  '.oh-my-engine/memory/learnings/candidates',
-  '.oh-my-engine/memory/learnings/adopted',
-  '.oh-my-engine/memory/preferences',
-  '.oh-my-engine/memory/skill-candidates',
-  '.oh-my-engine/memory/specs',
+  `${ENGINE_DIR}/workflows`,
+  `${ENGINE_DIR}/rules`,
+  `${ENGINE_DIR}/generated-skills`,
+  `${ENGINE_DIR}/memory/executions`,
+  `${ENGINE_DIR}/memory/learnings/candidates`,
+  `${ENGINE_DIR}/memory/learnings/adopted`,
+  `${ENGINE_DIR}/memory/preferences`,
+  `${ENGINE_DIR}/memory/skill-candidates`,
+  `${ENGINE_DIR}/memory/specs`,
   'openspec/changes',
   'openspec/specs',
   'openspec/archive'
@@ -109,7 +119,7 @@ function buildConfig(projectName: string, template: string): string {
           changesDir: 'openspec/changes',
           specsDir: 'openspec/specs',
           archiveDir: 'openspec/archive',
-          memoryDir: '.oh-my-engine/memory/specs',
+          memoryDir: `${ENGINE_DIR}/memory/specs`,
           defaultFlow: 'import-decompose-plan-apply-verify-archive',
           manualFlow: 'propose-plan-apply-verify-archive',
           contextDirName: 'context',
@@ -155,7 +165,11 @@ export function parseInitArgs(args: string[], defaults: Partial<InitOptions> = {
     force: false,
     template: 'default',
     projectRoot: defaults.projectRoot || process.cwd(),
-    repoRoot: defaults.repoRoot || process.env.OME_REPO_ROOT || path.resolve(__dirname, '..', '..')
+    repoRoot: defaults.repoRoot || process.env.OME_REPO_ROOT || path.resolve(__dirname, '..', '..'),
+    sync: defaults.sync ?? true,
+    migrate: defaults.migrate ?? true,
+    installAgents: defaults.installAgents ?? false,
+    home: defaults.home
   };
 
   for (let index = 0; index < args.length; index += 1) {
@@ -163,6 +177,21 @@ export function parseInitArgs(args: string[], defaults: Partial<InitOptions> = {
 
     if (argument === '--force') {
       options.force = true;
+      continue;
+    }
+
+    if (argument === '--no-sync') {
+      options.sync = false;
+      continue;
+    }
+
+    if (argument === '--no-migrate') {
+      options.migrate = false;
+      continue;
+    }
+
+    if (argument === '--install-agents') {
+      options.installAgents = true;
       continue;
     }
 
@@ -184,6 +213,15 @@ export function parseInitArgs(args: string[], defaults: Partial<InitOptions> = {
       continue;
     }
 
+    if (argument === '--home') {
+      if (index + 1 >= args.length) {
+        throw new Error('Missing value for --home');
+      }
+      options.home = path.resolve(args[index + 1]);
+      index += 1;
+      continue;
+    }
+
     throw new Error(`Unknown option: ${argument}`);
   }
 
@@ -191,6 +229,7 @@ export function parseInitArgs(args: string[], defaults: Partial<InitOptions> = {
 }
 
 export function initializeProject(options: InitOptions): InitResult {
+  const migration = options.migrate !== false ? migrateLegacyEngineDirectory(options.projectRoot) : { migrated: false };
   const projectName = path.basename(options.projectRoot);
   const createdDirectories: string[] = [];
 
@@ -201,7 +240,7 @@ export function initializeProject(options: InitOptions): InitResult {
   }
 
   const configCreated = writeFileIfNeeded(
-    path.join(options.projectRoot, '.oh-my-engine', 'config.json'),
+    currentEnginePath(options.projectRoot, 'config.json'),
     buildConfig(projectName, options.template),
     options.force
   );
@@ -213,8 +252,8 @@ export function initializeProject(options: InitOptions): InitResult {
   );
 
   copyFileIfNeeded(
-    path.join(options.repoRoot, '.oh-my-engine', 'platforms.json'),
-    path.join(options.projectRoot, '.oh-my-engine', 'platforms.json'),
+    repoEnginePath(options.repoRoot, 'platforms.json'),
+    currentEnginePath(options.projectRoot, 'platforms.json'),
     options.force
   );
 
@@ -222,13 +261,23 @@ export function initializeProject(options: InitOptions): InitResult {
   for (const rule of DEFAULT_RULES) {
     const updated = copyFileIfNeeded(
       path.join(options.repoRoot, 'skills', 'oh-my-engine', 'rules', `${rule}-template.md`),
-      path.join(options.projectRoot, '.oh-my-engine', 'rules', `${rule}.md`),
+      currentEnginePath(options.projectRoot, 'rules', `${rule}.md`),
       options.force
     );
     if (updated) rulesUpdated += 1;
   }
 
-  appendGitignoreOnce(options.projectRoot, '.oh-my-engine/memory/');
+  appendGitignoreOnce(options.projectRoot, `${ENGINE_DIR}/memory/`);
+
+  const syncedTargets = options.sync !== false
+    ? syncRules([], options.projectRoot).map((result: Record<string, any>) => `${result.platform}: ${result.target}`)
+    : [];
+
+  let installedAgentTargets: string[] = [];
+  if (options.installAgents === true) {
+    const { installAgents } = require('./agents');
+    installedAgentTargets = installAgents({ platforms: [], all: true, home: options.home }).map((result: Record<string, any>) => `${result.platform}: ${result.target}`);
+  }
 
   return {
     projectRoot: options.projectRoot,
@@ -236,7 +285,10 @@ export function initializeProject(options: InitOptions): InitResult {
     configCreated,
     projectCreated,
     rulesUpdated,
-    directories: createdDirectories
+    directories: createdDirectories,
+    migratedLegacy: Boolean(migration.migrated),
+    syncedTargets,
+    installedAgentTargets
   };
 }
 
@@ -244,11 +296,16 @@ export function renderInitResult(result: InitResult): string {
   return [
     `Initialized Oh My Engine project in ${result.projectRoot}`,
     `Template: ${result.template}`,
+    `Legacy .oh-my-engine migration: ${result.migratedLegacy ? 'migrated to .ome' : 'not needed'}`,
     `Config: ${result.configCreated ? 'created' : 'preserved'}`,
     `openspec/project.md: ${result.projectCreated ? 'created' : 'preserved'}`,
     `Rule files updated: ${result.rulesUpdated}`,
+    `Integration targets synced: ${result.syncedTargets.length}`,
+    ...result.syncedTargets.map(target => `  - ${target}`),
+    `Agent commands installed: ${result.installedAgentTargets.length}`,
+    ...result.installedAgentTargets.map(target => `  - ${target}`),
     'Created directories:',
-    '  - .oh-my-engine/',
+    `  - ${ENGINE_DIR}/`,
     '  - openspec/'
   ].join('\n') + '\n';
 }

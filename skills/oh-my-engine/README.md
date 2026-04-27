@@ -6,7 +6,7 @@
 
 ### 1. 可复用框架
 - **全局框架**: oh-my-engine skill 提供通用引擎
-- **项目配置**: 每个项目可自定义 `.oh-my-engine/` 配置
+- **项目配置**: 每个项目可自定义 `.ome/` 配置
 - **配置继承**: 项目配置覆盖默认模板
 - **易于分享**: 配置文件可跨项目复用
 
@@ -54,20 +54,20 @@ oh-my-engine/
 
 ```bash
 # 调用 oh-my-engine skill
-/oh-my-engine ui-restore <mastergo-url>
+ome ui <mastergo-url>
 ```
 
 ### 2. 项目配置
 
-在项目根目录创建 `.oh-my-engine/` 目录：
+在项目根目录创建 `.ome/` 目录：
 
 ```bash
-mkdir -p .oh-my-engine/{workflows,rules,memory}
+mkdir -p .ome/{workflows,rules,memory}
 ```
 
 ### 3. 自定义工作流
 
-创建 `.oh-my-engine/workflows/my-workflow.md`：
+创建 `.ome/workflows/my-workflow.md`：
 
 ```markdown
 ---
@@ -87,7 +87,7 @@ description: 我的自定义工作流
 
 ### 4. 自定义规则
 
-创建 `.oh-my-engine/rules/my-rules.md`：
+创建 `.ome/rules/my-rules.md`：
 
 ```markdown
 ---
@@ -107,7 +107,7 @@ priority: high
 
 从 MasterGo 设计稿生成 React Native 代码。
 
-**触发**: `/oh-my-engine ui-restore <url>`
+**触发**: `ome ui <url>`
 
 **步骤**:
 1. 解析 MasterGo URL
@@ -120,7 +120,7 @@ priority: high
 
 分析 Bug 并生成修复方案。
 
-**触发**: `/oh-my-engine bug-analysis <issue-id>`
+**触发**: `ome bug <issue-id>`
 
 **步骤**:
 1. 获取 Bug 信息
@@ -133,7 +133,7 @@ priority: high
 
 生成符合项目规范的组件。
 
-**触发**: `/oh-my-engine component-gen <type> <name>`
+**触发**: `ome comp <type> <name>`
 
 **步骤**:
 1. 选择组件模板
@@ -146,7 +146,7 @@ priority: high
 
 集成后端 API。
 
-**触发**: `/oh-my-engine api-integration <api-spec>`
+**触发**: `ome api <api-spec>`
 
 **步骤**:
 1. 解析 API 规范
@@ -297,7 +297,7 @@ priority: high
 
 ```bash
 # 从 MasterGo 生成 React Native 代码
-/oh-my-engine ui-restore https://mastergo.com/goto/xxxx
+ome ui https://mastergo.com/goto/xxxx
 ```
 
 **执行流程**:
@@ -317,7 +317,7 @@ priority: high
 
 ```bash
 # 分析 Bug 并生成修复方案
-/oh-my-engine bug-analysis #123
+ome bug #123
 ```
 
 **执行流程**:
@@ -335,7 +335,7 @@ priority: high
 
 ```bash
 # 生成表单组件
-/oh-my-engine component-gen form UserProfileForm
+ome comp form UserProfileForm
 ```
 
 **执行流程**:
@@ -413,7 +413,7 @@ priority: high
 
 ### 项目配置
 
-创建 `.oh-my-engine/config.json`：
+创建 `.ome/config.json`：
 
 ```json
 {

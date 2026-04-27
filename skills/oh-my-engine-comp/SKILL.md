@@ -1,24 +1,24 @@
 ---
-name: oh-my-engine-comp
+name: ome-comp
 version: 1.0.0
 description: 生成可复用组件
 author: yunxi
 tags: [component, generator, react, react-native]
 ---
 
-# oh-my-engine-comp
+# ome-comp
 
 快速生成符合项目规范的可复用组件。
 
 ## 使用方法
 
 ```bash
-/oh-my-engine-comp <component-name> [options]
+/ome-comp <component-name> [options]
 ome guidance component-gen --input "<component-name>"
 ```
 
 Claude Code 可直接使用上面的 slash command。
-Codex 请按技能名 `oh-my-engine-comp` 触发，并沿用相同参数。
+Codex 请按技能名 `ome-comp` 触发，并沿用相同参数。
 
 ## 参数
 
@@ -30,13 +30,13 @@ Codex 请按技能名 `oh-my-engine-comp` 触发，并沿用相同参数。
 
 ```bash
 # 基础用法
-/oh-my-engine-comp CustomButton
+/ome-comp CustomButton
 
 # 指定类型
-/oh-my-engine-comp LoginForm --type form
+/ome-comp LoginForm --type form
 
 # 带属性
-/oh-my-engine-comp UserCard --props "name:string,avatar:string,onPress:function"
+/ome-comp UserCard --props "name:string,avatar:string,onPress:function"
 ```
 
 ## 执行流程
@@ -66,7 +66,7 @@ Codex 请按技能名 `oh-my-engine-comp` 触发，并沿用相同参数。
 
 ## 配置
 
-### 项目配置（.oh-my-engine/config.json）
+### 项目配置（.ome/config.json）
 
 ```json
 {
@@ -113,8 +113,8 @@ Codex 请按技能名 `oh-my-engine-comp` 触发，并沿用相同参数。
 
 ## 相关命令
 
-- `/oh-my-engine-ui` - 从设计稿生成组件
-- `/oh-my-engine-memory` - 查看生成历史
+- `/ome-ui` - 从设计稿生成组件
+- `/ome-memory` - 查看生成历史
 
 ---
 

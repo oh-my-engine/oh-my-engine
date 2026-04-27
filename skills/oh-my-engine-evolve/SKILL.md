@@ -1,12 +1,12 @@
 ---
-name: oh-my-engine-evolve
+name: ome-evolve
 version: 1.0.0
 description: 触发系统进化分析
 author: yunxi
 tags: [evolution, optimization, learning]
 ---
 
-# oh-my-engine-evolve
+# ome-evolve
 
 分析已存储的 execution / preference memory，产出 candidate 级别的学习结果。
 
@@ -21,11 +21,11 @@ tags: [evolution, optimization, learning]
 ## 使用方法
 
 ```bash
-/oh-my-engine-evolve [options]
+/ome-evolve [options]
 ```
 
 Claude Code 可直接使用上面的 slash command。
-Codex 请按技能名 `oh-my-engine-evolve` 触发，并沿用相同参数。
+Codex 请按技能名 `ome-evolve` 触发，并沿用相同参数。
 
 ## 参数
 
@@ -36,10 +36,10 @@ Codex 请按技能名 `oh-my-engine-evolve` 触发，并沿用相同参数。
 
 ```bash
 # 分析当前项目记忆
-/oh-my-engine-evolve
+/ome-evolve
 
 # 输出 JSON 报告
-/oh-my-engine-evolve --format json
+/ome-evolve --format json
 ```
 
 ## 执行流程
@@ -60,16 +60,16 @@ Codex 请按技能名 `oh-my-engine-evolve` 触发，并沿用相同参数。
    - adopted preference summary（默认阈值 ≥2）
 
 4. **生成优化建议**
-   - 写入 `.oh-my-engine/memory/learnings/candidates/`
-   - 写入 `.oh-my-engine/memory/skill-candidates/`
+   - 写入 `.ome/memory/learnings/candidates/`
+   - 写入 `.ome/memory/skill-candidates/`
    - 输出报告，不直接安装 skill
 
 5. **独立验证与采用**
    - `ome evolve verify-learning --slug <slug>` 校验 learning candidate schema 和状态
-   - learning candidate adopt 结果写入 `.oh-my-engine/memory/learnings/adopted/`
+   - learning candidate adopt 结果写入 `.ome/memory/learnings/adopted/`
    - `ome evolve verify-skill --slug <slug>` 校验 candidate schema 和状态
    - 只有 `verified` candidate 才能 adopt
-   - adopt 结果写入 `.oh-my-engine/generated-skills/`
+   - adopt 结果写入 `.ome/generated-skills/`
 
 ## 输出示例
 
@@ -93,7 +93,7 @@ Adopted preferences:
 
 ## 配置
 
-### 项目配置（.oh-my-engine/config.json）
+### 项目配置（.ome/config.json）
 
 ```json
 {
@@ -123,7 +123,7 @@ ome evolve adopt-skill --slug react-event-handler-invocation
 
 ## 相关命令
 
-- `/oh-my-engine-memory` - 查看执行 / preference / candidate 记忆
+- `/ome-memory` - 查看执行 / preference / candidate 记忆
 - `ome init` - 初始化 selective memory 默认配置
 
 ---

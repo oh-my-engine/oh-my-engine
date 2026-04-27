@@ -9,7 +9,7 @@ Edit these files directly:
 - `src/**/*.ts`
 - `schemas/*.schema.json`
 - `skills/**/*.md`
-- `.oh-my-engine/rules/*.md`
+- `.ome/rules/*.md`
 - documentation files
 
 ## Generated Runtime Artifacts
@@ -23,7 +23,7 @@ npm test
 
 Use `npm run verify` before release; `prepack` runs the same verification automatically for package creation.
 
-Root-level compatibility JavaScript such as `core/**/*.js`, `cli/**/*.js`, `tests/**/*.js`, `skills/**/scripts/**/*.js`, and `.oh-my-engine/*.js` has been removed.
+Root-level compatibility JavaScript such as `core/**/*.js`, `cli/**/*.js`, `tests/**/*.js`, `skills/**/scripts/**/*.js`, and `.ome/*.js` has been removed.
 
 The only supported runtime entry point is `ome`. Installation and multi-tool usage are documented in `docs/installation-and-usage.md`.
 

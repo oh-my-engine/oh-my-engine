@@ -52,7 +52,7 @@ function buildGeneratedSkillArtifact(record: MemoryRecord, adoptedAt: string): M
     summary: record.summary,
     evidenceCount: record.evidenceCount,
     adoptedAt,
-    adoptedFrom: `.oh-my-engine/memory/skill-candidates/${record.slug}.json`,
+    adoptedFrom: `.ome/memory/skill-candidates/${record.slug}.json`,
     source: record.source,
     status: 'adopted',
     executionDirectives

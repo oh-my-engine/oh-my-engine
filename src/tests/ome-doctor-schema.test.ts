@@ -27,7 +27,7 @@ test('ome doctor validates schemas for initialized projects', () => {
 test('ome doctor reports schema failures', () => {
   const workspace = createWorkspace();
   runOme(['init'], workspace);
-  fs.writeFileSync(path.join(workspace, '.oh-my-engine', 'config.json'), '{"version":"1.0.0"}\n', 'utf8');
+  fs.writeFileSync(path.join(workspace, '.ome', 'config.json'), '{"version":"1.0.0"}\n', 'utf8');
 
   const result = spawnSync(OME_BIN, ['doctor'], { cwd: workspace, encoding: 'utf8' });
   assert.notEqual(result.status, 0);

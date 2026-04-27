@@ -12,7 +12,7 @@ Oh My Engine 以 `ome` CLI 为核心，提供项目初始化、规则同步、Sp
 
 - **🧠 记忆系统**：记住执行历史、学习内容和用户偏好
 - **🔄 自我进化**：自动识别模式并生成新的技能
-- **⚙️ 项目配置**：通过 `.oh-my-engine/` 实现项目级工作流定制
+- **⚙️ 项目配置**：通过 `.ome/` 实现项目级工作流定制
 - **📋 丰富的工作流**：预置 UI 还原、Bug 分析、组件生成和 API 集成等工作流
 - **📝 Spec 模式**：提供兼容 OpenSpec 的提案、计划、执行、验证和归档流程
 - **🎯 智能上下文**：自动加载项目特定的规则和配置
@@ -30,6 +30,7 @@ Oh My Engine 以 `ome` CLI 为核心，提供项目初始化、规则同步、Sp
 ```bash
 npm install -g oh-my-engine
 ome --help
+ome agents list
 ```
 
 然后在任意项目中初始化：
@@ -38,7 +39,6 @@ ome --help
 cd your-project
 ome init
 ome doctor
-ome rules sync
 ```
 
 #### 方式 2：从 GitHub 安装
@@ -52,18 +52,17 @@ npm link
 ome --help
 ```
 
-#### 方式 3：安装 Claude Code / Codex Skills
+#### 方式 3：安装全局 Agent 命令
 
-`ome` CLI 可以在任何终端使用。只有当你希望在 Claude Code 使用 slash command，或在 Codex 按 skill 名调用时，才需要安装 skills：
+`ome` CLI 可以在任何终端使用。如果希望在 Claude Code、Codex、Cursor、Windsurf、Qoder、OpenCode 等工具中使用短命令入口，执行：
 
 ```bash
-./install.sh
-./install.sh --agent claude   # 仅 Claude Code
-./install.sh --agent codex    # 仅 Codex
-./install.sh --agent both     # 两者
+ome agents install          # 交互式安装，默认全选
+ome agents install --all    # 非交互全量安装
+ome agents doctor
 ```
 
-GitHub 一行安装 skills：
+旧的 GitHub skills 安装器仍保留，仅用于 deprecated 的 `/oh-my-engine-*` 兼容入口：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quick-install.sh | bash -s -- --agent both
@@ -84,10 +83,9 @@ curl -fsSL https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quic
 ```bash
 ome init
 ome doctor
-ome rules sync
 ```
 
-这会创建一个 `.oh-my-engine/` 目录，包含：
+这会创建一个 `.ome/` 目录，包含：
 - `config.json` - 工作流配置
 - `rules/` - 项目特定规则
 - `memory/` - 执行历史和学习内容（git 忽略）
@@ -100,9 +98,11 @@ ome rules sync
 
 ### 可用命令
 
-- Claude Code：`/oh-my-engine-init`、`/oh-my-engine-ui`、`/oh-my-engine-bug`、`/oh-my-engine-comp`、`/oh-my-engine-api`、`/oh-my-engine-spec`、`/oh-my-engine-memory`、`/oh-my-engine-evolve`
-- Codex 技能名：`oh-my-engine-init`、`oh-my-engine-ui`、`oh-my-engine-bug`、`oh-my-engine-comp`、`oh-my-engine-api`、`oh-my-engine-spec`、`oh-my-engine-memory`、`oh-my-engine-evolve`
-- Trae / Cursor / Windsurf / OpenCode / Qoder / Antigravity：在项目中运行 `ome rules sync <platform>`，由工具读取生成的规则文件
+- 终端：`ome`、`ome-init`、`ome-bug`、`ome-ui`、`ome-comp`、`ome-api`、`ome-spec`、`ome-memory`、`ome-evolve`
+- Claude Code：`/ome-init`、`/ome-bug`、`/ome-ui`、`/ome-comp`、`/ome-api`、`/ome-spec`、`/ome-memory`、`/ome-evolve`
+- Codex 技能名：`ome-init`、`ome-bug`、`ome-ui`、`ome-comp`、`ome-api`、`ome-spec`、`ome-memory`、`ome-evolve`
+- Cursor / Windsurf / Qoder / OpenCode / Antigravity：`ome agents install --project` 可生成项目级 command/workflow 入口
+- Trae / Cursor / Windsurf / OpenCode / Qoder / Antigravity：`ome init` 会生成项目 rules
 
 ### Spec 工作流
 
@@ -131,7 +131,7 @@ ome spec archive user-authentication
 ```
 
 `import` 会把归一化后的来源文本、提示词、追踪信息和附件复制到 `openspec/changes/<change-id>/context/`。`decompose` 会基于这些 intake artifacts 准备 `analysis.md`、`proposal.md`、`design.md`、`tasks.md` 和 spec delta，并保留来源引用。`apply` 会更新生命周期状态，也可以回写任务和验收项进度，并输出应加载的上下文文件，但不会自动生成业务代码。`status` 用于查看当前 phase 和剩余待办。`archive` 现在会在首次接受时创建长期 capability spec，并基于已接受 delta 重建 canonical summary/requirements/compatibility，同时保留当前接受快照和归档历史。
-你可以在 `.oh-my-engine/config.json` 的 `workflows.spec.options.verifyCommands` 中配置真实校验命令；`verify` 会按顺序执行，遇到首个非零退出码就失败。`verify` 还会阻止未替换的 `TBD:` 模板标记，并要求每个 spec delta 必须且只能选中一种 change type，且写出至少一条具体 requirement 和 WHEN/THEN 场景。
+你可以在 `.ome/config.json` 的 `workflows.spec.options.verifyCommands` 中配置真实校验命令；`verify` 会按顺序执行，遇到首个非零退出码就失败。`verify` 还会阻止未替换的 `TBD:` 模板标记，并要求每个 spec delta 必须且只能选中一种 change type，且写出至少一条具体 requirement 和 WHEN/THEN 场景。
 
 ## 📖 文档
 
@@ -157,14 +157,14 @@ ome spec archive user-authentication
 
 ```markdown
 ---
-name: oh-my-engine-deploy
+name: ome-deploy
 description: 带预检查的应用部署
 ---
 
 # 部署工作流
 
 ## 上下文加载
-1. 加载 `.oh-my-engine/config.json`
+1. 加载 `.ome/config.json`
 2. 检查部署配置
 3. 验证环境变量
 
@@ -188,17 +188,17 @@ description: 带预检查的应用部署
 ```
 ~/.claude/skills/           # 全局技能（由 install.sh 安装）
 ├── oh-my-engine/          # 核心框架
-├── oh-my-engine-init/     # 项目初始化
-├── oh-my-engine-ui/       # UI 还原工作流
-├── oh-my-engine-bug/      # Bug 分析工作流
-├── oh-my-engine-comp/     # 组件生成工作流
-├── oh-my-engine-api/      # API 集成工作流
-├── oh-my-engine-spec/     # 兼容 OpenSpec 的规范工作流
-├── oh-my-engine-memory/   # 记忆查看器
-└── oh-my-engine-evolve/   # 进化分析器
+├── ome-init/              # 项目初始化
+├── ome-ui/                # UI 还原工作流
+├── ome-bug/               # Bug 分析工作流
+├── ome-comp/              # 组件生成工作流
+├── ome-api/               # API 集成工作流
+├── ome-spec/              # 兼容 OpenSpec 的规范工作流
+├── ome-memory/            # 记忆查看器
+└── ome-evolve/            # 进化分析器
 
 project/
-├── .oh-my-engine/         # 项目特定配置和记忆
+├── .ome/                  # 项目特定配置和记忆
 │   ├── config.json        # 工作流设置
 │   ├── rules/             # 项目规则（提交到 git）
 │   └── memory/            # 执行历史（git 忽略）

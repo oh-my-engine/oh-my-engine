@@ -15,7 +15,7 @@ coverage/
 # Build
 dist/
 build/
-.oh-my-engine/memory/
+.ome/memory/
 
 # Oh My Engine generated platform rule outputs
 .agents/

@@ -9,28 +9,28 @@
     "ui-restore": {
       "enabled": true,
       "description": "从设计稿还原 UI 组件",
-      "skills": ["oh-my-engine-ui"],
+      "skills": ["ome-ui"],
       "rules": ["theme", "i18n", "design-tokens"],
       "options": {}
     },
     "bug-analysis": {
       "enabled": true,
       "description": "分析和修复 Bug",
-      "skills": ["oh-my-engine-bug"],
+      "skills": ["ome-bug"],
       "rules": ["code-style"],
       "options": {}
     },
     "component-gen": {
       "enabled": true,
       "description": "生成可复用组件",
-      "skills": ["oh-my-engine-comp"],
+      "skills": ["ome-comp"],
       "rules": ["theme", "i18n", "design-tokens"],
       "options": {}
     },
     "api-integration": {
       "enabled": true,
       "description": "集成 API 接口",
-      "skills": ["oh-my-engine-api"],
+      "skills": ["ome-api"],
       "rules": ["code-style"],
       "options": {}
     }

@@ -1,24 +1,24 @@
 ---
-name: oh-my-engine-bug
+name: ome-bug
 version: 1.0.0
 description: 分析和修复 Bug
 author: yunxi
 tags: [bug, debug, analysis, fix]
 ---
 
-# oh-my-engine-bug
+# ome-bug
 
 系统化分析和修复 Bug，结合飞书文档、代码记忆和调试流程。
 
 ## 使用方法
 
 ```bash
-/oh-my-engine-bug <issue-description>
+/ome-bug <issue-description>
 ome guidance bug-analysis --input "<issue-description>"
 ```
 
 Claude Code 可直接使用上面的 slash command。
-Codex 请按技能名 `oh-my-engine-bug` 触发，并沿用相同参数。
+Codex 请按技能名 `ome-bug` 触发，并沿用相同参数。
 
 ## 参数
 
@@ -28,13 +28,13 @@ Codex 请按技能名 `oh-my-engine-bug` 触发，并沿用相同参数。
 
 ```bash
 # 描述 Bug
-/oh-my-engine-bug "登录按钮点击无响应"
+/ome-bug "登录按钮点击无响应"
 
 # 使用 Issue ID
-/oh-my-engine-bug #123
+/ome-bug #123
 
 # 详细描述
-/oh-my-engine-bug "用户在 iOS 设备上无法上传图片，Android 正常"
+/ome-bug "用户在 iOS 设备上无法上传图片，Android 正常"
 ```
 
 ## 执行流程
@@ -77,7 +77,7 @@ Codex 请按技能名 `oh-my-engine-bug` 触发，并沿用相同参数。
 
 ## 配置
 
-### 项目配置（.oh-my-engine/config.json）
+### 项目配置（.ome/config.json）
 
 ```json
 {
@@ -128,8 +128,8 @@ Codex 请按技能名 `oh-my-engine-bug` 触发，并沿用相同参数。
 
 ## 相关命令
 
-- `/oh-my-engine-memory` - 查看 Bug 修复历史
-- `/oh-my-engine-evolve` - 触发进化分析
+- `/ome-memory` - 查看 Bug 修复历史
+- `/ome-evolve` - 触发进化分析
 
 ---
 

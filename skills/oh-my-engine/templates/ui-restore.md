@@ -62,7 +62,7 @@ skills: []
 
 ### Step 4: 应用规则验证
 ```
-1. 加载项目规则（.oh-my-engine/rules/ 或全局默认）
+1. 加载项目规则（.ome/rules/ 或全局默认）
 2. 验证 i18n 规则（文本是否需要国际化）
 3. 验证 theme 规则（颜色是否使用主题变量）
 4. 验证 design-tokens 规则（间距是否使用 token）
@@ -235,27 +235,27 @@ skills: []
 
 ### 基础用法
 ```bash
-/oh-my-engine ui-restore https://mastergo.com/goto/abc123
+ome ui https://mastergo.com/goto/abc123
 ```
 
 ### 指定组件名
 ```bash
-/oh-my-engine ui-restore https://mastergo.com/goto/abc123 --name LoginButton
+ome ui https://mastergo.com/goto/abc123 --name LoginButton
 ```
 
 ### 指定输出目录
 ```bash
-/oh-my-engine ui-restore https://mastergo.com/goto/abc123 --output src/components
+ome ui https://mastergo.com/goto/abc123 --output src/components
 ```
 
 ### 跳过验证
 ```bash
-/oh-my-engine ui-restore https://mastergo.com/goto/abc123 --skip-validation
+ome ui https://mastergo.com/goto/abc123 --skip-validation
 ```
 
 ## 配置项
 
-### 项目配置（.oh-my-engine/config.json）
+### 项目配置（.ome/config.json）
 ```json
 {
   "workflows": {

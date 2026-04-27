@@ -65,7 +65,7 @@ export function adoptSkillCandidate(projectRootInput: string, slug: string): Mem
     ...current,
     status: 'adopted',
     adoptedAt,
-    adoptedFrom: `.oh-my-engine/generated-skills/${current.slug}.json`
+    adoptedFrom: `.ome/generated-skills/${current.slug}.json`
   }));
 
   return {

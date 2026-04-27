@@ -5,7 +5,7 @@
 **单一规则源 + 智能同步 = 所有平台一致**
 
 ```
-.oh-my-engine/rules/          ← 唯一的规则源（你只需维护这里）
+.ome/rules/          ← 唯一的规则源（你只需维护这里）
 ├── code-style.md
 ├── architecture.md
 ├── i18n.md
@@ -50,9 +50,9 @@ ome rules sync
 ```
 
 **自动完成**：
-- ✅ 创建 `.oh-my-engine/` 和 `openspec/` 工作区
+- ✅ 创建 `.ome/` 和 `openspec/` 工作区
 - ✅ 写入默认规则和工作流配置
-- ✅ 保存到 `.oh-my-engine/rules/`（唯一的规则源）
+- ✅ 保存到 `.ome/rules/`（唯一的规则源）
 - ✅ 同步到 Claude Code、Codex、Trae、Cursor 等平台规则文件
 - ✅ 开箱即用
 
@@ -60,7 +60,7 @@ ome rules sync
 
 ```bash
 # 修改规则（唯一需要编辑的地方）
-vim .oh-my-engine/rules/theme.md
+vim .ome/rules/theme.md
 
 # 同步到所有平台
 ome rules sync
@@ -82,7 +82,7 @@ ome rules sync
 
 ```bash
 #!/bin/bash
-if git diff --cached --name-only | grep -q ".oh-my-engine/rules/"; then
+if git diff --cached --name-only | grep -q ".ome/rules/"; then
   echo "🔄 检测到 rules 修改，自动同步..."
   ome rules sync
   git add CLAUDE.md AGENTS.md .cursor/rules/ .trae/rules/ .agents/rules/ .windsurfrules .qoder/rules/
@@ -103,16 +103,16 @@ fi
 ## ⚠️ 重要说明
 本文件是规则索引文件，不包含完整规则内容。
 
-- 📁 规则源：`.oh-my-engine/rules/`
+- 📁 规则源：`.ome/rules/`
 - 📖 使用方式：执行任务前，请先读取对应的规则文件
 
 ## 📚 规则索引
-- 📄 [code-style.md](.oh-my-engine/rules/code-style.md)
-- 📄 [i18n.md](.oh-my-engine/rules/i18n.md)
-- 📄 [theme.md](.oh-my-engine/rules/theme.md)
+- 📄 [code-style.md](.ome/rules/code-style.md)
+- 📄 [i18n.md](.ome/rules/i18n.md)
+- 📄 [theme.md](.ome/rules/theme.md)
 ```
 
-**AI Agent 会自动读取 `.oh-my-engine/rules/` 中的源文件。**
+**AI Agent 会自动读取 `.ome/rules/` 中的源文件。**
 
 ### 多文件平台（完整规则）
 
@@ -172,7 +172,7 @@ description: "主题系统规则"
 
 **使用 Oh My Engine 后**：
 ```
-✅ 只维护 .oh-my-engine/rules/
+✅ 只维护 .ome/rules/
 ✅ 一键同步到所有平台
 ✅ 保证所有平台一致
 ✅ 维护成本降低 90%
@@ -330,7 +330,7 @@ ome rules sync
 
 ```bash
 # 检查 platforms.json 配置
-cat .oh-my-engine/platforms.json
+cat .ome/platforms.json
 
 # 重新生成
 ome rules sync
@@ -340,7 +340,7 @@ ome rules sync
 
 ```bash
 # 检查平台是否在 enabled 列表中
-grep -A 10 '"enabled"' .oh-my-engine/platforms.json
+grep -A 10 '"enabled"' .ome/platforms.json
 
 # 指定平台生成
 ome rules sync cursor
@@ -353,7 +353,7 @@ ome rules sync trae
 
 ```bash
 # ✅ 正确
-vim .oh-my-engine/rules/theme.md
+vim .ome/rules/theme.md
 ome rules sync
 
 # ❌ 错误（生成的文件会被覆盖）
@@ -366,7 +366,7 @@ vim .cursor/rules/theme-system.mdc
 # 设置一次，永久自动化
 cat > .git/hooks/pre-commit << 'EOF'
 #!/bin/bash
-if git diff --cached --name-only | grep -q ".oh-my-engine/rules/"; then
+if git diff --cached --name-only | grep -q ".ome/rules/"; then
   ome rules sync
   git add CLAUDE.md AGENTS.md .cursor/rules/ .trae/rules/ .agents/rules/ .windsurfrules .qoder/rules/
 fi
@@ -378,7 +378,7 @@ chmod +x .git/hooks/pre-commit
 
 ```bash
 # 推荐：提交所有文件
-git add .oh-my-engine/rules/
+git add .ome/rules/
 git add CLAUDE.md AGENTS.md .cursor/rules/ .trae/rules/ .agents/rules/ .windsurfrules .qoder/rules/
 git commit -m "feat: 更新规则"
 
@@ -397,14 +397,14 @@ git status
 
 ## 相关文档
 
-- [智能初始化](../skills/oh-my-engine-init/SKILL.md)
-- [平台配置](../.oh-my-engine/platforms.json)
+- [智能初始化](../skills/ome-init/SKILL.md)
+- [平台配置](../.ome/platforms.json)
 - [规则同步实现](../src/core/rules.ts)
 
 ## 总结
 
 **核心优势**：
-- ✅ 单一规则源（`.oh-my-engine/rules/`）
+- ✅ 单一规则源（`.ome/rules/`）
 - ✅ 自动同步到 9+ 平台
 - ✅ 支持多种格式（.mdc, .md, 索引）
 - ✅ 智能文件名映射
@@ -413,6 +413,6 @@ git status
 
 **使用流程**：
 1. 运行 `ome init` 初始化
-2. 编辑 `.oh-my-engine/rules/*.md`
+2. 编辑 `.ome/rules/*.md`
 3. 运行 `ome rules sync` 同步
 4. 所有平台自动更新

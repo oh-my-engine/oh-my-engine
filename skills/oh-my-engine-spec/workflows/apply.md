@@ -17,7 +17,7 @@ Implement a change while treating specs as the source of truth.
 
 ### Step 1: Load context
 ```
-1. Load .oh-my-engine/config.json
+1. Load .ome/config.json
 2. Load openspec/project.md
 3. Load context/source.md, context/prompt.md, context/analysis.md, and context/engine-memory.md when present
 4. Load proposal.md, design.md, tasks.md

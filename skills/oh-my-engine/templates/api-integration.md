@@ -64,6 +64,6 @@ skills: []
 ## 示例用法
 
 ```bash
-/oh-my-engine api-integration https://api.example.com/openapi.json
-/oh-my-engine api-integration ./specs/user-api.yaml --service UserService
+ome api https://api.example.com/openapi.json
+ome api ./specs/user-api.yaml --service UserService
 ```

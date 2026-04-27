@@ -3,13 +3,14 @@ const path = require('node:path');
 
 const { mergeMemoryConfig, decideCapture } = require('./memory-policy');
 const { getErrorMessage } = require('../../../core/errors');
+const { enginePath } = require('../../../core/paths');
 
 type Dirent = import('node:fs').Dirent;
 type MemoryRecord = Record<string, any>;
 type MemoryMutator = MemoryRecord | ((record: MemoryRecord) => MemoryRecord);
 
 function loadProjectConfig(projectRoot: string): MemoryRecord {
-  const configPath = path.join(projectRoot, '.oh-my-engine', 'config.json');
+  const configPath = enginePath(projectRoot, 'config.json');
 
   if (!fs.existsSync(configPath)) {
     return {};
@@ -37,65 +38,27 @@ function generateId(prefix: string): string {
 
 function executionFilePath(projectRoot: string, workflow: string, timestamp: string): string {
   const day = timestamp.slice(0, 10);
-  return path.join(
-    projectRoot,
-    '.oh-my-engine',
-    'memory',
-    'executions',
-    workflow,
-    `${day}.jsonl`
-  );
+  return enginePath(projectRoot, 'memory', 'executions', workflow, `${day}.jsonl`);
 }
 
 function preferenceFilePath(projectRoot: string, scope: string): string {
-  return path.join(
-    projectRoot,
-    '.oh-my-engine',
-    'memory',
-    'preferences',
-    `${scope}.json`
-  );
+  return enginePath(projectRoot, 'memory', 'preferences', `${scope}.json`);
 }
 
 function learningCandidateFilePath(projectRoot: string, slug: string): string {
-  return path.join(
-    projectRoot,
-    '.oh-my-engine',
-    'memory',
-    'learnings',
-    'candidates',
-    `${slug}.json`
-  );
+  return enginePath(projectRoot, 'memory', 'learnings', 'candidates', `${slug}.json`);
 }
 
 function adoptedLearningFilePath(projectRoot: string, slug: string): string {
-  return path.join(
-    projectRoot,
-    '.oh-my-engine',
-    'memory',
-    'learnings',
-    'adopted',
-    `${slug}.json`
-  );
+  return enginePath(projectRoot, 'memory', 'learnings', 'adopted', `${slug}.json`);
 }
 
 function skillCandidateFilePath(projectRoot: string, slug: string): string {
-  return path.join(
-    projectRoot,
-    '.oh-my-engine',
-    'memory',
-    'skill-candidates',
-    `${slug}.json`
-  );
+  return enginePath(projectRoot, 'memory', 'skill-candidates', `${slug}.json`);
 }
 
 function generatedSkillFilePath(projectRoot: string, slug: string): string {
-  return path.join(
-    projectRoot,
-    '.oh-my-engine',
-    'generated-skills',
-    `${slug}.json`
-  );
+  return enginePath(projectRoot, 'generated-skills', `${slug}.json`);
 }
 
 function slugifyForFile(value: unknown): string {
@@ -279,12 +242,7 @@ function recordPreferenceMemory(projectRoot: string, event: MemoryRecord): Memor
 }
 
 function listExecutionRecords(projectRoot: string, filters: MemoryRecord = {}): MemoryRecord[] {
-  const baseDirectory = path.join(
-    projectRoot,
-    '.oh-my-engine',
-    'memory',
-    'executions'
-  );
+  const baseDirectory = enginePath(projectRoot, 'memory', 'executions');
 
   if (!fs.existsSync(baseDirectory)) {
     return [];
@@ -325,12 +283,7 @@ function listExecutionRecords(projectRoot: string, filters: MemoryRecord = {}): 
 }
 
 function listPreferenceRecords(projectRoot: string, filters: MemoryRecord = {}): MemoryRecord[] {
-  const baseDirectory = path.join(
-    projectRoot,
-    '.oh-my-engine',
-    'memory',
-    'preferences'
-  );
+  const baseDirectory = enginePath(projectRoot, 'memory', 'preferences');
 
   if (!fs.existsSync(baseDirectory)) {
     return [];
@@ -561,25 +514,25 @@ function listJsonRecordsFromDirectory(directoryPath: string): MemoryRecord[] {
 
 function listLearningCandidateRecords(projectRoot: string): MemoryRecord[] {
   return listJsonRecordsFromDirectory(
-    path.join(projectRoot, '.oh-my-engine', 'memory', 'learnings', 'candidates')
+    enginePath(projectRoot, 'memory', 'learnings', 'candidates')
   );
 }
 
 function listAdoptedLearningRecords(projectRoot: string): MemoryRecord[] {
   return listJsonRecordsFromDirectory(
-    path.join(projectRoot, '.oh-my-engine', 'memory', 'learnings', 'adopted')
+    enginePath(projectRoot, 'memory', 'learnings', 'adopted')
   );
 }
 
 function listSkillCandidateRecords(projectRoot: string): MemoryRecord[] {
   return listJsonRecordsFromDirectory(
-    path.join(projectRoot, '.oh-my-engine', 'memory', 'skill-candidates')
+    enginePath(projectRoot, 'memory', 'skill-candidates')
   );
 }
 
 function listGeneratedSkillArtifacts(projectRoot: string): MemoryRecord[] {
   return listJsonRecordsFromDirectory(
-    path.join(projectRoot, '.oh-my-engine', 'generated-skills')
+    enginePath(projectRoot, 'generated-skills')
   );
 }
 

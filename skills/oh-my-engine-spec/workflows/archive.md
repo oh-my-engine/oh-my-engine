@@ -24,7 +24,7 @@ Close the loop by promoting change-level spec deltas into long-lived capability 
 
 ### Step 2: Persist memory
 ```
-1. Write execution summary to .oh-my-engine/memory/specs/<change-id>.json
+1. Write execution summary to .ome/memory/specs/<change-id>.json
 2. Record notable patterns and residual risks
 3. Trigger learning/evolution if thresholds are met
 ```

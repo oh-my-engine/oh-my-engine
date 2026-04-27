@@ -2,6 +2,15 @@
 const fs = require('node:fs');
 
 const executableFiles = [
+  'dist/bin/ome.js',
+  'dist/bin/ome-init.js',
+  'dist/bin/ome-bug.js',
+  'dist/bin/ome-ui.js',
+  'dist/bin/ome-comp.js',
+  'dist/bin/ome-api.js',
+  'dist/bin/ome-spec.js',
+  'dist/bin/ome-memory.js',
+  'dist/bin/ome-evolve.js',
   'dist/scripts/restore-shebangs.js',
   'dist/skills/oh-my-engine/scripts/adopt-learning-candidate.js',
   'dist/skills/oh-my-engine/scripts/adopt-skill-candidate.js',

@@ -111,7 +111,7 @@ I built a TypeScript-driven workflow engine that learns from usage patterns, man
 **Key Features:**
 - 🧠 Memory system that tracks executions and learnings
 - 🔄 Self-evolution mechanism that improves over time
-- ⚙️ Project-level configuration with `.oh-my-engine/` directory
+- ⚙️ Project-level configuration with `.ome/` directory
 - 🎯 Smart context loading for project-specific rules
 - 🔧 Extensible - easy to create custom workflows
 
@@ -152,7 +152,7 @@ Automatically identifies patterns and generates new skills when it detects:
 - Operation sequences (≥5 times) → Quick commands
 
 ⚙️ Project Configuration
-Per-project customization with `.oh-my-engine/` directory for workflows, rules, and memory.
+Per-project customization with `.ome/` directory for workflows, rules, and memory.
 
 📋 Pre-built Workflows
 - UI restoration from design files

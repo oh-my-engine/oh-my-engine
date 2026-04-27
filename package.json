@@ -1,10 +1,18 @@
 {
   "name": "oh-my-engine",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "description": "Cross-agent workflow engine for rules, memory, specs, and skills.",
   "type": "commonjs",
   "bin": {
-    "ome": "bin/ome"
+    "ome": "dist/bin/ome.js",
+    "ome-init": "dist/bin/ome-init.js",
+    "ome-bug": "dist/bin/ome-bug.js",
+    "ome-ui": "dist/bin/ome-ui.js",
+    "ome-comp": "dist/bin/ome-comp.js",
+    "ome-api": "dist/bin/ome-api.js",
+    "ome-spec": "dist/bin/ome-spec.js",
+    "ome-memory": "dist/bin/ome-memory.js",
+    "ome-evolve": "dist/bin/ome-evolve.js"
   },
   "files": [
     "bin/",
@@ -18,8 +26,8 @@
     "skills/",
     "docs/installation-and-usage.md",
     "docs/generated-artifacts.md",
-    ".oh-my-engine/rules/",
-    ".oh-my-engine/platforms.json",
+    ".ome/rules/",
+    ".ome/platforms.json",
     "README.md"
   ],
   "scripts": {

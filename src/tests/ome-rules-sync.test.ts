@@ -9,10 +9,10 @@ const { OME_BIN, repoPath } = require('./helpers');
 
 function createWorkspace(): string {
   const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'oh-my-engine-rules-'));
-  fs.mkdirSync(path.join(workspace, '.oh-my-engine'), { recursive: true });
-  fs.cpSync(repoPath('.oh-my-engine', 'config.json'), path.join(workspace, '.oh-my-engine', 'config.json'));
-  fs.cpSync(repoPath('.oh-my-engine', 'platforms.json'), path.join(workspace, '.oh-my-engine', 'platforms.json'));
-  fs.cpSync(repoPath('.oh-my-engine', 'rules'), path.join(workspace, '.oh-my-engine', 'rules'), { recursive: true });
+  fs.mkdirSync(path.join(workspace, '.ome'), { recursive: true });
+  fs.cpSync(repoPath('.ome', 'config.json'), path.join(workspace, '.ome', 'config.json'));
+  fs.cpSync(repoPath('.ome', 'platforms.json'), path.join(workspace, '.ome', 'platforms.json'));
+  fs.cpSync(repoPath('.ome', 'rules'), path.join(workspace, '.ome', 'rules'), { recursive: true });
   fs.mkdirSync(path.join(workspace, 'node_modules'), { recursive: true });
   return workspace;
 }
@@ -39,14 +39,27 @@ test('ome rules sync writes single-file and multi-file platform targets through 
   assert.match(fs.readFileSync(cursorRule, 'utf8'), /description:/);
 });
 
-test('ome rules sync replaces legacy .oh-my-engine/rules-sync.js entrypoint', () => {
+test('ome rules sync replaces legacy .ome/rules-sync.js entrypoint', () => {
   const workspace = createWorkspace();
 
   const output = runOme(['rules', 'sync', 'windsurf'], workspace);
 
   assert.match(output, /windsurf/);
   assert.equal(fs.existsSync(path.join(workspace, '.windsurfrules')), true);
-  assert.equal(fs.existsSync(path.join(workspace, '.oh-my-engine', 'rules-sync.js')), false);
+  assert.equal(fs.existsSync(path.join(workspace, '.ome', 'rules-sync.js')), false);
+});
+
+test('ome rules sync preserves user content in single-file targets', () => {
+  const workspace = createWorkspace();
+  const agentsPath = path.join(workspace, 'AGENTS.md');
+  fs.writeFileSync(agentsPath, '# User rules\n\nKeep this section.\n', 'utf8');
+
+  runOme(['rules', 'sync', 'codex'], workspace);
+
+  const content = fs.readFileSync(agentsPath, 'utf8');
+  assert.match(content, /Keep this section/);
+  assert.match(content, /<!-- OME:START -->/);
+  assert.match(content, /<!-- OME:END -->/);
 });
 
 export {};

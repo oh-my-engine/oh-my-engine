@@ -24,22 +24,22 @@ Agent skills are optional native entry points for Claude Code and Codex. They sh
 ```
 ~/.claude/skills/
 ├── oh-my-engine/          # Core framework and utilities
-├── oh-my-engine-init/     # Project initialization
-├── oh-my-engine-ui/       # UI restoration workflow
-├── oh-my-engine-bug/      # Bug analysis workflow
-├── oh-my-engine-comp/     # Component generation workflow
-├── oh-my-engine-api/      # API integration workflow
-├── oh-my-engine-spec/     # OpenSpec-compatible spec workflow
-├── oh-my-engine-memory/   # Memory system viewer
-└── oh-my-engine-evolve/   # Evolution analyzer
+├── ome-init/              # Project initialization
+├── ome-ui/                # UI restoration workflow
+├── ome-bug/               # Bug analysis workflow
+├── ome-comp/              # Component generation workflow
+├── ome-api/               # API integration workflow
+├── ome-spec/              # OpenSpec-compatible spec workflow
+├── ome-memory/            # Memory system viewer
+└── ome-evolve/            # Evolution analyzer
 ```
 
-### Layer 3: Project Configuration (`.oh-my-engine/`)
+### Layer 3: Project Configuration (`.ome/`)
 
 Each project has its own configuration that customizes how workflows behave.
 
 ```
-project/.oh-my-engine/
+project/.ome/
 ├── config.json            # Workflow configurations
 ├── rules/                 # Project-specific rules
 │   ├── i18n.md
@@ -198,7 +198,7 @@ Non-spec workflow helpers can now consume adopted engine knowledge directly thro
 
 When a workflow starts, it loads context in this order:
 
-1. **Project Config**: `.oh-my-engine/config.json`
+1. **Project Config**: `.ome/config.json`
 2. **Project Spec Context**: `openspec/project.md`
 3. **Workflow Config**: Specific workflow settings
 4. **Active Change Docs**: `openspec/changes/<change-id>/`
@@ -238,7 +238,7 @@ See [Prompt-Driven Spec Intake Architecture](spec-intake-architecture.md) for th
 
 ### Custom Workflows
 
-Create custom workflows in `.oh-my-engine/workflows/`:
+Create custom workflows in `.ome/workflows/`:
 
 ```markdown
 ---
@@ -254,7 +254,7 @@ description: Custom workflow for specific task
 
 ### Custom Rules
 
-Add project-specific rules in `.oh-my-engine/rules/`:
+Add project-specific rules in `.ome/rules/`:
 
 ```markdown
 ---
@@ -273,7 +273,7 @@ description: API integration conventions
 The evolution system can generate new skills automatically:
 
 ```
-.oh-my-engine/generated-skills/
+.ome/generated-skills/
 ├── fix-common-error-123/
 ├── extract-date-formatter/
 └── optimize-image-loading/

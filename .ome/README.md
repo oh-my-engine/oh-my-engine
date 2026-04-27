@@ -2,7 +2,7 @@
 
 ## 概述
 
-当使用 `/oh-my-engine-bug` 修复 Bug 时，系统会自动识别错误模式并记录。当同类问题重复出现时，自动生成预防措施。
+当使用 `/ome-bug` 修复 Bug 时，系统会自动识别错误模式并记录。当同类问题重复出现时，自动生成预防措施。
 
 ## 工作流程
 
@@ -25,7 +25,7 @@
 ### 1. 第一次修复
 
 ```bash
-/oh-my-engine-bug "修复 LoginButton.tsx 的 onClick={handleClick()} 问题"
+/ome-bug "修复 LoginButton.tsx 的 onClick={handleClick()} 问题"
 ```
 
 输出：
@@ -42,7 +42,7 @@
 ### 2. 第三次修复（触发 Skill 生成）
 
 ```bash
-/oh-my-engine-bug "又是 onClick={handleClick()} 的问题"
+/ome-bug "又是 onClick={handleClick()} 的问题"
 ```
 
 输出：
@@ -92,7 +92,7 @@
 ### 4. 第五次修复（触发 ESLint 规则生成）
 
 ```bash
-/oh-my-engine-bug "还是 onClick 的问题"
+/ome-bug "还是 onClick 的问题"
 ```
 
 输出：
@@ -105,7 +105,7 @@
 
 📚 自动沉淀：
   ✅ 生成 ESLint 规则: react/jsx-no-bind
-  📄 配置文件: .oh-my-engine/eslint-rules.json
+  📄 配置文件: .ome/eslint-rules.json
   
 修复完成 ✅
 
@@ -115,7 +115,7 @@
 ### 5. 第十次修复（触发 Pre-commit Hook 生成）
 
 ```bash
-/oh-my-engine-bug "又又又是 onClick 的问题"
+/ome-bug "又又又是 onClick 的问题"
 ```
 
 输出：
@@ -128,12 +128,12 @@
 
 📚 自动沉淀：
   ✅ 生成 Pre-commit Hook
-  📄 脚本位置: .oh-my-engine/pre-commit-check.sh
+  📄 脚本位置: .ome/pre-commit-check.sh
   
 修复完成 ✅
 
 💡 提示：运行以下命令启用 Pre-commit Hook：
-   ln -s ../../.oh-my-engine/pre-commit-check.sh .git/hooks/pre-commit
+   ln -s ../../.ome/pre-commit-check.sh .git/hooks/pre-commit
 ```
 
 ## 手动触发沉淀
@@ -199,7 +199,7 @@ ome memory view --type generated-skills
 
 ## 自定义错误模式
 
-编辑 `.oh-my-engine/bug-patterns.json` 添加自定义模式：
+编辑 `.ome/bug-patterns.json` 添加自定义模式：
 
 ```json
 {
@@ -247,17 +247,17 @@ ome memory view --type generated-skills
 
 ```bash
 # 将生成的规则合并到项目的 .eslintrc.js
-cat .oh-my-engine/eslint-rules.json
+cat .ome/eslint-rules.json
 ```
 
 ### 2. 启用 Pre-commit Hook
 
 ```bash
 # 创建软链接
-ln -s ../../.oh-my-engine/pre-commit-check.sh .git/hooks/pre-commit
+ln -s ../../.ome/pre-commit-check.sh .git/hooks/pre-commit
 
 # 或者复制文件
-cp .oh-my-engine/pre-commit-check.sh .git/hooks/pre-commit
+cp .ome/pre-commit-check.sh .git/hooks/pre-commit
 chmod +x .git/hooks/pre-commit
 ```
 
@@ -278,7 +278,7 @@ chmod +x .git/hooks/pre-commit
 2. **及时集成 ESLint 规则**：防止问题在代码审查前就被发现
 3. **使用 Pre-commit Hook**：在提交前自动检查
 4. **定期更新错误模式**：根据项目实际情况调整阈值和规则
-5. **团队共享**：将 `.oh-my-engine/` 目录提交到版本控制
+5. **团队共享**：将 `.ome/` 目录提交到版本控制
 
 ## 故障排除
 
@@ -300,7 +300,7 @@ ls -la .git/hooks/pre-commit
 
 # 重新创建软链接
 rm .git/hooks/pre-commit
-ln -s ../../.oh-my-engine/pre-commit-check.sh .git/hooks/pre-commit
+ln -s ../../.ome/pre-commit-check.sh .git/hooks/pre-commit
 ```
 
 ### 问题：生成的 Skill 找不到
@@ -315,6 +315,6 @@ ome evolve analyze --format json
 
 ## 相关命令
 
-- `/oh-my-engine-bug` - 分析和修复 Bug
-- `/oh-my-engine-memory` - 查看 Bug 修复历史
-- `/oh-my-engine-evolve` - 触发进化分析
+- `/ome-bug` - 分析和修复 Bug
+- `/ome-memory` - 查看 Bug 修复历史
+- `/ome-evolve` - 触发进化分析

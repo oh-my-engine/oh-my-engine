@@ -63,7 +63,7 @@ export function adoptLearningCandidate(projectRootInput: string, slug: string): 
     reusability: record.reusability,
     evidenceCount: record.evidenceCount,
     adoptedAt,
-    adoptedFrom: `.oh-my-engine/memory/learnings/candidates/${record.slug}.json`,
+    adoptedFrom: `.ome/memory/learnings/candidates/${record.slug}.json`,
     source: record.source,
     status: 'adopted'
   });
@@ -72,7 +72,7 @@ export function adoptLearningCandidate(projectRootInput: string, slug: string): 
     ...current,
     status: 'adopted',
     adoptedAt,
-    adoptedFrom: `.oh-my-engine/memory/learnings/adopted/${current.slug}.json`
+    adoptedFrom: `.ome/memory/learnings/adopted/${current.slug}.json`
   }));
 
   return {

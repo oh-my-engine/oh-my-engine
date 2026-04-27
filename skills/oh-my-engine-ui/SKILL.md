@@ -1,24 +1,24 @@
 ---
-name: oh-my-engine-ui
+name: ome-ui
 version: 1.0.0
 description: 从设计稿还原 UI 组件
 author: yunxi
 tags: [ui, design, mastergo, figma, code-generation]
 ---
 
-# oh-my-engine-ui
+# ome-ui
 
 从 MasterGo/Figma 设计稿自动生成 UI 组件代码。
 
 ## 使用方法
 
 ```bash
-/oh-my-engine-ui <design-url>
+/ome-ui <design-url>
 ome guidance ui-restore --input "<design-url>"
 ```
 
 Claude Code 可直接使用上面的 slash command。
-Codex 请按技能名 `oh-my-engine-ui` 触发，并沿用相同参数。
+Codex 请按技能名 `ome-ui` 触发，并沿用相同参数。
 
 ## 参数
 
@@ -28,10 +28,10 @@ Codex 请按技能名 `oh-my-engine-ui` 触发，并沿用相同参数。
 
 ```bash
 # MasterGo 设计稿
-/oh-my-engine-ui https://mastergo.com/goto/xxxxx
+/ome-ui https://mastergo.com/goto/xxxxx
 
 # Figma 设计稿
-/oh-my-engine-ui https://www.figma.com/file/xxxxx
+/ome-ui https://www.figma.com/file/xxxxx
 ```
 
 ## 执行流程
@@ -53,7 +53,7 @@ Codex 请按技能名 `oh-my-engine-ui` 触发，并沿用相同参数。
    - 分析布局结构
 
 4. **应用规则验证**
-   - 加载项目规则（.oh-my-engine/rules/）
+   - 加载项目规则（.ome/rules/）
    - 验证 i18n、theme、design-tokens 规则
    - 记录验证结果
 
@@ -81,7 +81,7 @@ Codex 请按技能名 `oh-my-engine-ui` 触发，并沿用相同参数。
 
 ## 配置
 
-### 项目配置（.oh-my-engine/config.json）
+### 项目配置（.ome/config.json）
 
 ```json
 {
@@ -102,7 +102,7 @@ Codex 请按技能名 `oh-my-engine-ui` 触发，并沿用相同参数。
 
 ### 全局默认配置
 
-如果项目没有 `.oh-my-engine/` 配置，将使用全局默认模板：
+如果项目没有 `.ome/` 配置，将使用全局默认模板：
 - 位置：`~/.claude/skills/oh-my-engine/templates/ui-restore.md`
 - 规则：`~/.claude/skills/oh-my-engine/rules/`
 
@@ -136,8 +136,8 @@ Codex 请按技能名 `oh-my-engine-ui` 触发，并沿用相同参数。
 ## 相关命令
 
 - `ome init` - 初始化项目配置
-- `/oh-my-engine-memory` - 查看执行历史
-- `/oh-my-engine-evolve` - 触发进化分析
+- `/ome-memory` - 查看执行历史
+- `/ome-evolve` - 触发进化分析
 
 ---
 

@@ -114,8 +114,8 @@ skills: [bug-decision-flow, systematic-debugging]
 ## 示例用法
 
 ```bash
-/oh-my-engine bug-analysis "登录按钮点击无响应"
-/oh-my-engine bug-analysis "数据加载失败" --severity critical
+ome bug "登录按钮点击无响应"
+ome bug "数据加载失败" --severity critical
 ```
 
 ---

@@ -67,6 +67,6 @@ skills: []
 ## 示例用法
 
 ```bash
-/oh-my-engine component-gen CustomButton
-/oh-my-engine component-gen LoginForm --type form
+ome comp CustomButton
+ome comp LoginForm --type form
 ```

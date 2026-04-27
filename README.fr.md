@@ -14,7 +14,7 @@ Oh My Engine est un framework puissant qui transforme Claude Code et Codex en un
 
 - **🧠 Système de Mémoire** : Mémorise l'historique d'exécution, les apprentissages et les préférences utilisateur
 - **🔄 Auto-Évolution** : Identifie automatiquement les modèles et génère de nouvelles compétences
-- **⚙️ Configuration de Projet** : Personnalisation des workflows par projet avec `.oh-my-engine/`
+- **⚙️ Configuration de Projet** : Personnalisation des workflows par projet avec `.ome/`
 - **📋 Workflows Riches** : Workflows préconstruits pour la restauration d'UI, l'analyse de bugs, la génération de composants et l'intégration d'API
 - **📝 Mode Spec** : Workflow compatible OpenSpec pour proposer, planifier, appliquer, vérifier et archiver des changements
 - **🎯 Contexte Intelligent** : Charge automatiquement les règles et configurations spécifiques au projet
@@ -85,15 +85,15 @@ Dans votre répertoire de projet :
 
 **Claude Code :**
 ```bash
-/oh-my-engine-init
+/ome-init
 ```
 
 **Codex :**
 ```bash
-oh-my-engine-init
+ome-init
 ```
 
-Cela crée un répertoire `.oh-my-engine/` avec :
+Cela crée un répertoire `.ome/` avec :
 - `config.json` - Configurations de workflow
 - `rules/` - Règles spécifiques au projet
 - `memory/` - Historique d'exécution et apprentissages (ignoré par git)
@@ -106,8 +106,8 @@ Cela crée aussi un espace `openspec/` pour les specs durables et les changement
 
 ### Commandes Disponibles
 
-- Claude Code : `/oh-my-engine-init`, `/oh-my-engine-ui`, `/oh-my-engine-bug`, `/oh-my-engine-comp`, `/oh-my-engine-api`, `/oh-my-engine-spec`, `/oh-my-engine-memory`, `/oh-my-engine-evolve`
-- Noms de skill Codex : `oh-my-engine-init`, `oh-my-engine-ui`, `oh-my-engine-bug`, `oh-my-engine-comp`, `oh-my-engine-api`, `oh-my-engine-spec`, `oh-my-engine-memory`, `oh-my-engine-evolve`
+- Claude Code : `/ome-init`, `/ome-ui`, `/ome-bug`, `/ome-comp`, `/ome-api`, `/ome-spec`, `/ome-memory`, `/ome-evolve`
+- Noms de skill Codex : `ome-init`, `ome-ui`, `ome-bug`, `ome-comp`, `ome-api`, `ome-spec`, `ome-memory`, `ome-evolve`
 
 ### Workflow Spec
 
@@ -136,7 +136,7 @@ ome spec archive user-authentication
 ```
 
 `import` enregistre le texte source normalisé, le prompt, la traçabilité et les pièces jointes copiées sous `openspec/changes/<change-id>/context/`. `decompose` transforme ce contexte d'entrée en `analysis.md`, `proposal.md`, `design.md`, `tasks.md` et spec deltas, tout en conservant les références de source liées au changement. `apply` met à jour l'état du cycle de vie, peut marquer la progression des tâches et des critères d'acceptation, et affiche les fichiers que l'agent doit charger. Il ne génère pas automatiquement le code de production. `status` résume la phase courante et les éléments restants. `archive` crée la capability spec durable lors de la première acceptation, reconstruit le résumé canonique, les exigences et la compatibilité à partir des deltas acceptés, et conserve à la fois le snapshot courant accepté et l'historique archivé.
-Vous pouvez ajouter de vraies vérifications projet sous `workflows.spec.options.verifyCommands` dans `.oh-my-engine/config.json` ; `verify` les exécute séquentiellement et échoue à la première sortie non nulle. `verify` bloque aussi les marqueurs `TBD:` non résolus et exige que chaque spec delta sélectionne exactement un type de changement ainsi qu'au moins une exigence concrète et un scénario WHEN/THEN.
+Vous pouvez ajouter de vraies vérifications projet sous `workflows.spec.options.verifyCommands` dans `.ome/config.json` ; `verify` les exécute séquentiellement et échoue à la première sortie non nulle. `verify` bloque aussi les marqueurs `TBD:` non résolus et exige que chaque spec delta sélectionne exactement un type de changement ainsi qu'au moins une exigence concrète et un scénario WHEN/THEN.
 
 ## 📖 Documentation
 
@@ -168,7 +168,7 @@ description: Déploiement d'application avec vérifications préalables
 # Workflow de Déploiement
 
 ## Chargement du Contexte
-1. Charger `.oh-my-engine/config.json`
+1. Charger `.ome/config.json`
 2. Vérifier la configuration de déploiement
 3. Vérifier les variables d'environnement
 
@@ -193,17 +193,17 @@ description: Déploiement d'application avec vérifications préalables
 ~/.claude/skills/           # Skills Claude Code
 ~/.codex/skills/            # Skills Codex
 ├── oh-my-engine/          # Framework principal
-├── oh-my-engine-init/     # Initialisation de projet
-├── oh-my-engine-ui/       # Workflow de restauration d'UI
-├── oh-my-engine-bug/      # Workflow d'analyse de bugs
-├── oh-my-engine-comp/     # Workflow de génération de composants
-├── oh-my-engine-api/      # Workflow d'intégration d'API
-├── oh-my-engine-spec/     # Workflow spec compatible OpenSpec
-├── oh-my-engine-memory/   # Visualiseur de mémoire
-└── oh-my-engine-evolve/   # Analyseur d'évolution
+├── ome-init/     # Initialisation de projet
+├── ome-ui/       # Workflow de restauration d'UI
+├── ome-bug/      # Workflow d'analyse de bugs
+├── ome-comp/     # Workflow de génération de composants
+├── ome-api/      # Workflow d'intégration d'API
+├── ome-spec/     # Workflow spec compatible OpenSpec
+├── ome-memory/   # Visualiseur de mémoire
+└── ome-evolve/   # Analyseur d'évolution
 
 project/
-├── .oh-my-engine/         # Configuration et mémoire spécifiques au projet
+├── .ome/         # Configuration et mémoire spécifiques au projet
 │   ├── config.json        # Paramètres de workflow
 │   ├── rules/             # Règles du projet (commitées dans git)
 │   └── memory/            # Historique d'exécution (ignoré par git)

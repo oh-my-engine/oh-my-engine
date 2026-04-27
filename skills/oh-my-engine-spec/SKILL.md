@@ -1,12 +1,12 @@
 ---
-name: oh-my-engine-spec
+name: ome-spec
 version: 1.0.0
 description: OpenSpec-compatible spec-driven workflow for Oh My Engine
 author: yunxi
 tags: [spec, openspec, workflow, planning, verification]
 ---
 
-# oh-my-engine-spec
+# ome-spec
 
 基于规范驱动的开发工作流，兼容 OpenSpec 的目录和生命周期，同时保持 Oh My Engine 的 skill 分发和记忆系统。
 
@@ -14,38 +14,38 @@ tags: [spec, openspec, workflow, planning, verification]
 
 ```bash
 # 初始化 spec 工作区
-/oh-my-engine-spec init
+/ome-spec init
 
 # 导入 PRD / 提示词 / 附件
-/oh-my-engine-spec import <change-id>
+/ome-spec import <change-id>
 
 # 基于导入上下文拆解 spec 草案
-/oh-my-engine-spec decompose <change-id>
+/ome-spec decompose <change-id>
 
 # 手工创建变更提案（保留）
-/oh-my-engine-spec propose <change-id>
+/ome-spec propose <change-id>
 
 # 约束较强的变更
-/oh-my-engine-spec propose <change-id> --design-first
+/ome-spec propose <change-id> --design-first
 
 # Bug 修复
-/oh-my-engine-spec propose <change-id> --bugfix
+/ome-spec propose <change-id> --bugfix
 
 # 细化设计与任务
-/oh-my-engine-spec plan <change-id>
+/ome-spec plan <change-id>
 
 # 执行开发
-/oh-my-engine-spec apply <change-id>
+/ome-spec apply <change-id>
 
 # 验证完成度
-/oh-my-engine-spec verify <change-id>
+/ome-spec verify <change-id>
 
 # 归档并更新长期规范
-/oh-my-engine-spec archive <change-id>
+/ome-spec archive <change-id>
 ```
 
 Claude Code 可直接使用上面的 slash command。
-Codex 请按技能名 `oh-my-engine-spec` 触发，并沿用相同子命令和参数。
+Codex 请按技能名 `ome-spec` 触发，并沿用相同子命令和参数。
 
 ## 可执行入口
 
@@ -112,14 +112,14 @@ openspec/
 ### Oh My Engine 记忆
 
 ```text
-.oh-my-engine/
+.ome/
 ├── config.json
 └── memory/
     └── specs/
         └── <change-id>.json
 ```
 
-`openspec/` 保存长期规范和当前变更，`.oh-my-engine/` 保存执行记忆和学习结果。两者职责分离，不混存。
+`openspec/` 保存长期规范和当前变更，`.ome/` 保存执行记忆和学习结果。两者职责分离，不混存。
 
 ## 生命周期
 
@@ -130,7 +130,7 @@ openspec/
 - `openspec/changes/`
 - `openspec/specs/`
 - `openspec/archive/`
-- `.oh-my-engine/memory/specs/`
+- `.ome/memory/specs/`
 
 ### 2. propose
 
@@ -177,13 +177,13 @@ openspec/
 ### 4. apply
 
 执行实现时应加载：
-1. `.oh-my-engine/config.json`
+1. `.ome/config.json`
 2. `openspec/project.md`
 3. 当前 change 的 `context/source.md`、`context/prompt.md`、`context/analysis.md`、`context/engine-memory.md`（如果存在）
 4. 当前 change 的 `proposal.md`、`design.md`、`tasks.md`
 5. 相关 capability 的长期 `openspec/specs/<capability>/spec.md`（如果该 capability 已经被接受过）
-6. `.oh-my-engine/rules/`
-7. `.oh-my-engine/memory/`
+6. `.ome/rules/`
+7. `.ome/memory/`
 
 ### 5. verify
 
@@ -200,11 +200,11 @@ openspec/
 完成后：
 1. 将 change 下的 spec delta 提升到 `openspec/specs/`（必要时创建 capability spec，并重建 canonical sections）
 2. 将 change 移入 `openspec/archive/`
-3. 将执行摘要写入 `.oh-my-engine/memory/specs/<change-id>.json`
+3. 将执行摘要写入 `.ome/memory/specs/<change-id>.json`
 
 ## 配置
 
-### 项目配置（.oh-my-engine/config.json）
+### 项目配置（.ome/config.json）
 
 ```json
 {
@@ -217,7 +217,7 @@ openspec/
         "changesDir": "openspec/changes",
         "specsDir": "openspec/specs",
         "archiveDir": "openspec/archive",
-        "memoryDir": ".oh-my-engine/memory/specs",
+        "memoryDir": ".ome/memory/specs",
         "defaultFlow": "import-decompose-plan-apply-verify-archive",
         "manualFlow": "propose-plan-apply-verify-archive",
         "contextDirName": "context",
@@ -263,14 +263,14 @@ Created:
 Next:
   1. Replace TBD markers using context/source.md and context/prompt.md
   2. Refine design.md and tasks.md
-  3. Execute /oh-my-engine-spec plan user-authentication
+  3. Execute /ome-spec plan user-authentication
 ```
 
 ## 相关命令
 
-- `/oh-my-engine spec <change-id>` - 通过主 skill 委托 spec 工作流
-- `/oh-my-engine-memory` - 查看 spec 执行记忆
-- `/oh-my-engine-evolve` - 触发学习和进化分析
+- `ome spec <change-id>` - 通过主 skill 委托 spec 工作流
+- `/ome-memory` - 查看 spec 执行记忆
+- `/ome-evolve` - 触发学习和进化分析
 
 ---
 

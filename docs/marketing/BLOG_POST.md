@@ -52,9 +52,9 @@ GitHub: https://github.com/oh-my-engine/oh-my-engine
 - **操作序列**（≥5次）→ 快捷命令
 
 ### ⚙️ 项目配置
-每个项目都有独立的 `.oh-my-engine/` 目录：
+每个项目都有独立的 `.ome/` 目录：
 ```
-.oh-my-engine/
+.ome/
 ├── config.json          # 项目配置
 ├── workflows/           # 自定义工作流
 ├── rules/              # 项目规则
@@ -87,7 +87,7 @@ AI: "好的..."
 
 **使用 Oh My Engine：**
 ```
-你: /oh-my-engine-ui
+你: /ome-ui
 AI: "检测到 Figma 链接，开始还原..."
     ✓ 分析设计稿结构
     ✓ 生成组件代码（使用 Tailwind）
@@ -115,7 +115,7 @@ AI: "好的..."
 
 **使用 Oh My Engine：**
 ```
-你: /oh-my-engine-bug
+你: /ome-bug
 AI: "开始分析 Bug..."
     ✓ 读取错误日志
     ✓ 检查相关代码
@@ -156,7 +156,7 @@ AI: "让我添加重试逻辑..."
 ✓ 进化：生成新技能 "api-retry-handler"
 
 新技能已生成！
-使用: /oh-my-engine-api-retry
+使用: /ome-api-retry
 ```
 
 **第四次：一键解决**
@@ -223,7 +223,7 @@ THEN 生成新技能
 
 ### 3. 项目配置
 
-**`.oh-my-engine/config.json`：**
+**`.ome/config.json`：**
 ```json
 {
   "project": {
@@ -309,7 +309,7 @@ memory:
            │                    │
            ▼                    ▼
     ┌─────────────┐      ┌──────────────┐
-    │  ~/.claude/ │      │ .oh-my-engine/│
+    │  ~/.claude/ │      │ .ome/│
     │  ~/.codex/  │      │  (project)    │
     └─────────────┘      └──────────────┘
 ```
@@ -377,41 +377,41 @@ cd oh-my-engine
 cd your-project
 
 # 在 Claude Code 或 Codex 中运行
-/oh-my-engine-init
+/ome-init
 ```
 
-这会创建 `.oh-my-engine/` 目录并生成配置文件。
+这会创建 `.ome/` 目录并生成配置文件。
 
 ### 使用工作流
 
 **UI 还原：**
 ```
-/oh-my-engine-ui
+/ome-ui
 ```
 
 **Bug 分析：**
 ```
-/oh-my-engine-bug
+/ome-bug
 ```
 
 **组件生成：**
 ```
-/oh-my-engine-comp
+/ome-comp
 ```
 
 **API 集成：**
 ```
-/oh-my-engine-api
+/ome-api
 ```
 
 **查看记忆：**
 ```
-/oh-my-engine-memory
+/ome-memory
 ```
 
 **手动进化：**
 ```
-/oh-my-engine-evolve
+/ome-evolve
 ```
 
 ---
@@ -461,7 +461,7 @@ Oh My Engine：
 
 ### 自定义工作流
 
-创建 `.oh-my-engine/workflows/my-workflow.yaml`：
+创建 `.ome/workflows/my-workflow.yaml`：
 
 ```yaml
 name: my-custom-workflow
@@ -494,7 +494,7 @@ memory:
 
 ### 自定义规则
 
-编辑 `.oh-my-engine/rules/coding-standards.md`：
+编辑 `.ome/rules/coding-standards.md`：
 
 ```markdown
 # 编码规范
@@ -519,29 +519,29 @@ memory:
 
 ```bash
 # 查看执行历史
-/oh-my-engine-memory --type history
+/ome-memory --type history
 
 # 查看学习内容
-/oh-my-engine-memory --type learnings
+/ome-memory --type learnings
 
 # 查看用户偏好
-/oh-my-engine-memory --type preferences
+/ome-memory --type preferences
 
 # 清除记忆
-/oh-my-engine-memory --clear
+/ome-memory --clear
 ```
 
 ### 手动触发进化
 
 ```bash
 # 分析当前模式
-/oh-my-engine-evolve --analyze
+/ome-evolve --analyze
 
 # 生成新技能
-/oh-my-engine-evolve --generate
+/ome-evolve --generate
 
 # 查看进化历史
-/oh-my-engine-evolve --history
+/ome-evolve --history
 ```
 
 ---
@@ -578,13 +578,13 @@ memory:
 ## 常见问题
 
 ### Q: Oh My Engine 会收集我的代码吗？
-**A:** 不会。所有数据都存储在本地（`~/.claude/` 或 `~/.codex/` 和 `.oh-my-engine/`），不会上传到任何服务器。
+**A:** 不会。所有数据都存储在本地（`~/.claude/` 或 `~/.codex/` 和 `.ome/`），不会上传到任何服务器。
 
 ### Q: 支持哪些编程语言？
 **A:** 理论上支持所有语言，但预置工作流主要针对 Web 开发（React、Vue、Next.js 等）。你可以自定义工作流来支持其他语言。
 
 ### Q: 可以在团队中使用吗？
-**A:** 可以。`.oh-my-engine/` 目录可以提交到 Git，团队成员共享配置和规则。但记忆系统是个人的（存储在 `~/.claude/` 或 `~/.codex/`）。
+**A:** 可以。`.ome/` 目录可以提交到 Git，团队成员共享配置和规则。但记忆系统是个人的（存储在 `~/.claude/` 或 `~/.codex/`）。
 
 ### Q: 如何卸载？
 **A:** 删除 `~/.claude/skills/oh-my-engine/` 或 `~/.codex/skills/oh-my-engine/` 目录即可。
@@ -593,7 +593,7 @@ memory:
 **A:** 进化引擎只在模式出现多次（≥5次）且成功率高（≥95%）时才生成技能。生成后你可以审查和修改。
 
 ### Q: 可以禁用自动进化吗？
-**A:** 可以。在 `.oh-my-engine/config.json` 中设置 `"autoEvolve": false`。
+**A:** 可以。在 `.ome/config.json` 中设置 `"autoEvolve": false`。
 
 ### Q: 支持其他 AI 代理吗？
 **A:** CLI 可在任意终端使用；规则同步已覆盖 Claude Code、Codex、Trae、Cursor、Windsurf、OpenCode、Qoder 和 Antigravity。Claude Code / Codex 还支持可选 skills 入口。
@@ -662,13 +662,13 @@ curl -fsSL https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quic
 # 2. 初始化项目
 cd your-project
 # 在 Claude Code 或 Codex 中运行
-/oh-my-engine-init
+/ome-init
 
 # 3. 开始使用
-/oh-my-engine-ui    # UI 还原
-/oh-my-engine-bug   # Bug 分析
-/oh-my-engine-comp  # 组件生成
-/oh-my-engine-api   # API 集成
+/ome-ui    # UI 还原
+/ome-bug   # Bug 分析
+/ome-comp  # 组件生成
+/ome-api   # API 集成
 ```
 
 **GitHub:** https://github.com/oh-my-engine/oh-my-engine

@@ -1,12 +1,12 @@
 ---
-name: oh-my-engine-memory
+name: ome-memory
 version: 1.0.0
 description: 查看系统记忆和学习数据
 author: yunxi
 tags: [memory, statistics, learning]
 ---
 
-# oh-my-engine-memory
+# ome-memory
 
 查看系统记忆统计。
 
@@ -17,11 +17,11 @@ tags: [memory, statistics, learning]
 ## 使用方法
 
 ```bash
-/oh-my-engine-memory [options]
+/ome-memory [options]
 ```
 
 Claude Code 可直接使用上面的 slash command。
-Codex 请按技能名 `oh-my-engine-memory` 触发，并沿用相同参数。
+Codex 请按技能名 `ome-memory` 触发，并沿用相同参数。
 
 ## 参数
 
@@ -35,28 +35,28 @@ Codex 请按技能名 `oh-my-engine-memory` 触发，并沿用相同参数。
 
 ```bash
 # 查看执行记忆
-/oh-my-engine-memory
+/ome-memory
 
 # 查看 spec 工作流执行记忆
-/oh-my-engine-memory --type executions --workflow spec
+/ome-memory --type executions --workflow spec
 
 # 查看显式记住的偏好
-/oh-my-engine-memory --type preferences --scope user
+/ome-memory --type preferences --scope user
 
 # 查看 learning candidates
-/oh-my-engine-memory --type learnings
+/ome-memory --type learnings
 
 # 查看 adopted learnings
-/oh-my-engine-memory --type adopted-learnings
+/ome-memory --type adopted-learnings
 
 # 查看 skill candidates
-/oh-my-engine-memory --type skill-candidates
+/ome-memory --type skill-candidates
 
 # 查看 adopted generated skills
-/oh-my-engine-memory --type generated-skills
+/ome-memory --type generated-skills
 
 # 以 JSON 输出
-/oh-my-engine-memory --type executions --format json
+/ome-memory --type executions --format json
 ```
 
 ## 输出示例
@@ -103,7 +103,7 @@ ome memory view --type generated-skills
 
 ## 相关命令
 
-- `/oh-my-engine-evolve` - 触发进化分析
+- `/ome-evolve` - 触发进化分析
 - `ome init` - 初始化项目配置
 
 ---

@@ -14,7 +14,7 @@ Oh My Engine es un framework poderoso que transforma Claude Code y Codex en un s
 
 - **🧠 Sistema de Memoria**: Recuerda el historial de ejecución, aprendizajes y preferencias del usuario
 - **🔄 Auto-Evolución**: Identifica patrones automáticamente y genera nuevas habilidades
-- **⚙️ Configuración de Proyecto**: Personalización de flujos de trabajo por proyecto con `.oh-my-engine/`
+- **⚙️ Configuración de Proyecto**: Personalización de flujos de trabajo por proyecto con `.ome/`
 - **📋 Flujos de Trabajo Ricos**: Flujos de trabajo preconstruidos para restauración de UI, análisis de bugs, generación de componentes e integración de APIs
 - **📝 Modo Spec**: Flujo compatible con OpenSpec para proponer, planificar, aplicar, verificar y archivar cambios
 - **🎯 Contexto Inteligente**: Carga automáticamente reglas y configuraciones específicas del proyecto
@@ -85,15 +85,15 @@ En tu directorio de proyecto:
 
 **Claude Code:**
 ```bash
-/oh-my-engine-init
+/ome-init
 ```
 
 **Codex:**
 ```bash
-oh-my-engine-init
+ome-init
 ```
 
-Esto crea un directorio `.oh-my-engine/` con:
+Esto crea un directorio `.ome/` con:
 - `config.json` - Configuraciones de flujo de trabajo
 - `rules/` - Reglas específicas del proyecto
 - `memory/` - Historial de ejecución y aprendizajes (ignorado por git)
@@ -106,8 +106,8 @@ También crea un espacio `openspec/` para especificaciones de largo plazo y camb
 
 ### Comandos Disponibles
 
-- Claude Code: `/oh-my-engine-init`, `/oh-my-engine-ui`, `/oh-my-engine-bug`, `/oh-my-engine-comp`, `/oh-my-engine-api`, `/oh-my-engine-spec`, `/oh-my-engine-memory`, `/oh-my-engine-evolve`
-- Nombres de skill en Codex: `oh-my-engine-init`, `oh-my-engine-ui`, `oh-my-engine-bug`, `oh-my-engine-comp`, `oh-my-engine-api`, `oh-my-engine-spec`, `oh-my-engine-memory`, `oh-my-engine-evolve`
+- Claude Code: `/ome-init`, `/ome-ui`, `/ome-bug`, `/ome-comp`, `/ome-api`, `/ome-spec`, `/ome-memory`, `/ome-evolve`
+- Nombres de skill en Codex: `ome-init`, `ome-ui`, `ome-bug`, `ome-comp`, `ome-api`, `ome-spec`, `ome-memory`, `ome-evolve`
 
 ### Flujo Spec
 
@@ -136,7 +136,7 @@ ome spec archive user-authentication
 ```
 
 `import` guarda el texto fuente normalizado, el prompt, la trazabilidad y los adjuntos copiados en `openspec/changes/<change-id>/context/`. `decompose` convierte ese contexto de entrada en `analysis.md`, `proposal.md`, `design.md`, `tasks.md` y spec deltas, manteniendo las referencias de origen unidas al cambio. `apply` actualiza el estado del ciclo de vida, puede marcar el progreso de tareas y criterios de aceptación, y muestra qué archivos debe cargar el agente. No genera código de producción automáticamente. `status` resume la fase actual y los elementos pendientes. `archive` crea la capability spec de largo plazo en la primera aceptación, reconstruye el resumen canónico, los requisitos y la compatibilidad a partir de los deltas aceptados, y conserva tanto el snapshot actual aceptado como el historial archivado.
-Puedes añadir comprobaciones reales del proyecto en `workflows.spec.options.verifyCommands` dentro de `.oh-my-engine/config.json`; `verify` las ejecuta secuencialmente y falla en el primer código de salida distinto de cero. `verify` también bloquea marcadores `TBD:` sin resolver y exige que cada spec delta seleccione exactamente un tipo de cambio y contenga al menos un requisito concreto y un escenario WHEN/THEN.
+Puedes añadir comprobaciones reales del proyecto en `workflows.spec.options.verifyCommands` dentro de `.ome/config.json`; `verify` las ejecuta secuencialmente y falla en el primer código de salida distinto de cero. `verify` también bloquea marcadores `TBD:` sin resolver y exige que cada spec delta seleccione exactamente un tipo de cambio y contenga al menos un requisito concreto y un escenario WHEN/THEN.
 
 ## 📖 Documentación
 
@@ -168,7 +168,7 @@ description: Despliegue de aplicación con verificaciones previas
 # Flujo de Trabajo de Despliegue
 
 ## Carga de Contexto
-1. Cargar `.oh-my-engine/config.json`
+1. Cargar `.ome/config.json`
 2. Verificar configuración de despliegue
 3. Verificar variables de entorno
 
@@ -193,17 +193,17 @@ description: Despliegue de aplicación con verificaciones previas
 ~/.claude/skills/           # Skills de Claude Code
 ~/.codex/skills/            # Skills de Codex
 ├── oh-my-engine/          # Framework principal
-├── oh-my-engine-init/     # Inicialización de proyecto
-├── oh-my-engine-ui/       # Flujo de trabajo de restauración de UI
-├── oh-my-engine-bug/      # Flujo de trabajo de análisis de bugs
-├── oh-my-engine-comp/     # Flujo de trabajo de generación de componentes
-├── oh-my-engine-api/      # Flujo de trabajo de integración de API
-├── oh-my-engine-spec/     # Flujo spec compatible con OpenSpec
-├── oh-my-engine-memory/   # Visor de memoria
-└── oh-my-engine-evolve/   # Analizador de evolución
+├── ome-init/     # Inicialización de proyecto
+├── ome-ui/       # Flujo de trabajo de restauración de UI
+├── ome-bug/      # Flujo de trabajo de análisis de bugs
+├── ome-comp/     # Flujo de trabajo de generación de componentes
+├── ome-api/      # Flujo de trabajo de integración de API
+├── ome-spec/     # Flujo spec compatible con OpenSpec
+├── ome-memory/   # Visor de memoria
+└── ome-evolve/   # Analizador de evolución
 
 project/
-├── .oh-my-engine/         # Configuración y memoria específicas del proyecto
+├── .ome/         # Configuración y memoria específicas del proyecto
 │   ├── config.json        # Configuración de flujos de trabajo
 │   ├── rules/             # Reglas del proyecto (comprometidas en git)
 │   └── memory/            # Historial de ejecución (ignorado por git)

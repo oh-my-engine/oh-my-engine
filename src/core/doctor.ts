@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const { directoryExists, fileExists, projectPath } = require('./project');
+const { ENGINE_DIR, enginePath } = require('./paths');
 const { validateRules } = require('./rules');
 const { schemaPath, validateJsonFile } = require('./schema/validator');
 
@@ -29,16 +30,17 @@ export function runDoctorReport(projectRoot: string = process.cwd()): DoctorRepo
   const issues: string[] = [];
   const checks: DoctorLine[] = [
     { name: 'Node', value: process.version },
-    { name: 'Project config', value: fileExists(projectPath('.oh-my-engine', 'config.json')) ? 'found' : 'missing' },
-    { name: 'Rules directory', value: directoryExists(projectPath('.oh-my-engine', 'rules')) ? 'found' : 'missing' },
-    { name: 'Memory directory', value: directoryExists(projectPath('.oh-my-engine', 'memory')) ? 'found' : 'missing' },
+    { name: 'Project config', value: fileExists(enginePath(projectRoot, 'config.json')) ? 'found' : 'missing' },
+    { name: 'Rules directory', value: directoryExists(enginePath(projectRoot, 'rules')) ? 'found' : 'missing' },
+    { name: 'Memory directory', value: directoryExists(enginePath(projectRoot, 'memory')) ? 'found' : 'missing' },
     { name: 'OpenSpec workspace', value: directoryExists(projectPath('openspec')) ? 'found' : 'missing' }
   ];
 
-  checks.push({ name: 'Config schema', value: validateSchemaFile('Config schema', path.join(projectRoot, '.oh-my-engine', 'config.json'), 'config.schema.json', issues) });
-  checks.push({ name: 'Platforms schema', value: validateSchemaFile('Platforms schema', path.join(projectRoot, '.oh-my-engine', 'platforms.json'), 'platforms.schema.json', issues) });
+  checks.push({ name: 'Engine directory', value: ENGINE_DIR });
+  checks.push({ name: 'Config schema', value: validateSchemaFile('Config schema', enginePath(projectRoot, 'config.json'), 'config.schema.json', issues) });
+  checks.push({ name: 'Platforms schema', value: validateSchemaFile('Platforms schema', enginePath(projectRoot, 'platforms.json'), 'platforms.schema.json', issues) });
 
-  const specStateDirectory = path.join(projectRoot, '.oh-my-engine', 'memory', 'specs');
+  const specStateDirectory = enginePath(projectRoot, 'memory', 'specs');
   if (fs.existsSync(specStateDirectory)) {
     for (const fileName of fs.readdirSync(specStateDirectory).filter((name: string) => name.endsWith('.json'))) {
       validateSchemaFile(`Spec state ${fileName}`, path.join(specStateDirectory, fileName), 'spec-state.schema.json', issues);

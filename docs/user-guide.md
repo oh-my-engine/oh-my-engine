@@ -80,7 +80,7 @@ ome doctor
 ome rules sync
 ```
 
-This creates the `.oh-my-engine/` directory with default configuration.
+This creates the `.ome/` directory with default configuration.
 
 It also creates an `openspec/` workspace for long-lived capability specs and in-progress changes.
 
@@ -88,7 +88,7 @@ It also creates an `openspec/` workspace for long-lived capability specs and in-
 
 ### 2. Configure Your Project
 
-Edit `.oh-my-engine/config.json`:
+Edit `.ome/config.json`:
 
 ```json
 {
@@ -117,7 +117,7 @@ Edit `.oh-my-engine/config.json`:
 
 ### 3. Add Project Rules
 
-Create rules in `.oh-my-engine/rules/`:
+Create rules in `.ome/rules/`:
 
 **i18n.md**:
 ```markdown
@@ -141,19 +141,19 @@ Use descriptive keys: `screen.home.welcome` not `text1`
 
 ```bash
 # Restore UI from Figma
-/oh-my-engine-ui
+/ome-ui
 ome guidance ui-restore --input "https://mastergo.com/goto/demo"
 
 # Generate a component
-/oh-my-engine-comp
+/ome-comp
 ome guidance component-gen --input "UserCard"
 
 # Integrate an API
-/oh-my-engine-api
+/ome-api
 ome guidance api-integration --input "./specs/user-api.yaml"
 
 # Analyze a bug
-/oh-my-engine-bug
+/ome-bug
 ome guidance bug-analysis --input "Login button click does nothing"
 
 # Start a prompt-driven spec change
@@ -168,8 +168,8 @@ Claude Code:
 
 ```bash
 ome rules sync claude-code
-/oh-my-engine-init
-/oh-my-engine-bug "Login button click does nothing"
+/ome-init
+/ome-bug "Login button click does nothing"
 ```
 
 Codex:
@@ -181,8 +181,8 @@ ome rules sync codex
 Then invoke installed skills by name:
 
 ```text
-oh-my-engine-init
-oh-my-engine-spec propose add-auth
+ome-init
+ome-spec propose add-auth
 ```
 
 Trae / Cursor / Windsurf / OpenCode / Qoder / Antigravity:
@@ -207,7 +207,7 @@ Detailed install and platform usage is documented in `docs/installation-and-usag
 - Contains workflow logic
 - Shared across all projects
 
-**Project Layer** (`.oh-my-engine/`)
+**Project Layer** (`.ome/`)
 - Project-specific configuration
 - Custom rules and preferences
 - Execution history and learnings
@@ -250,12 +250,12 @@ This ensures every workflow has complete context.
 
 ## Available Workflows
 
-### `/oh-my-engine-init`
+### `/ome-init`
 
 Initialize Oh My Engine in a project.
 
 **What it does**:
-- Creates `.oh-my-engine/` directory structure
+- Creates `.ome/` directory structure
 - Generates default `config.json`
 - Creates example rules
 - Initializes memory system
@@ -267,7 +267,7 @@ cd /path/to/project
 ome init
 ```
 
-### `/oh-my-engine-ui`
+### `/ome-ui`
 
 Restore UI from design files (Figma, Sketch, etc.).
 
@@ -298,12 +298,12 @@ Restore UI from design files (Figma, Sketch, etc.).
 
 **Usage**:
 ```bash
-/oh-my-engine-ui
+/ome-ui
 ome guidance ui-restore --input "<design-url>"
 # Follow prompts to provide design file URL
 ```
 
-### `/oh-my-engine-comp`
+### `/ome-comp`
 
 Generate a new component with best practices.
 
@@ -332,12 +332,12 @@ Generate a new component with best practices.
 
 **Usage**:
 ```bash
-/oh-my-engine-comp
+/ome-comp
 ome guidance component-gen --input "<component-name>"
 # Specify component name and type
 ```
 
-### `/oh-my-engine-api`
+### `/ome-api`
 
 Integrate an API endpoint.
 
@@ -366,12 +366,12 @@ Integrate an API endpoint.
 
 **Usage**:
 ```bash
-/oh-my-engine-api
+/ome-api
 ome guidance api-integration --input "<api-spec>"
 # Provide API endpoint details
 ```
 
-### `/oh-my-engine-spec`
+### `/ome-spec`
 
 Manage an OpenSpec-compatible change lifecycle inside Oh My Engine.
 
@@ -404,10 +404,10 @@ ome spec archive user-authentication
 **Current limits**:
 - `import` and `decompose` persist normalized context and scaffolding, but the agent still needs to replace `TBD:` markers with concrete decisions.
 - `apply` updates lifecycle state and prints the expected context files, but does not edit app code automatically.
-- `verify` checks the documented checklist, blocks unresolved `TBD:` template markers, enforces exactly one change type plus concrete requirement/scenario content in each spec delta, and runs `workflows.spec.options.verifyCommands` from `.oh-my-engine/config.json`.
+- `verify` checks the documented checklist, blocks unresolved `TBD:` template markers, enforces exactly one change type plus concrete requirement/scenario content in each spec delta, and runs `workflows.spec.options.verifyCommands` from `.ome/config.json`.
 - `archive` now rebuilds capability summary/requirements/compatibility from accepted deltas, but `Invariants`、`Interfaces`、`Observability` 这些长期说明仍需人工维护。
 
-### `/oh-my-engine-bug`
+### `/ome-bug`
 
 Analyze and fix bugs.
 
@@ -436,12 +436,12 @@ Analyze and fix bugs.
 
 **Usage**:
 ```bash
-/oh-my-engine-bug
+/ome-bug
 ome guidance bug-analysis --input "Describe the bug or provide error logs"
 # Describe the bug or provide error logs
 ```
 
-### `/oh-my-engine-memory`
+### `/ome-memory`
 
 View execution history and learnings.
 
@@ -453,13 +453,13 @@ View execution history and learnings.
 
 **Usage**:
 ```bash
-/oh-my-engine-memory
-/oh-my-engine-memory --type adopted-learnings
-/oh-my-engine-memory --type generated-skills
+/ome-memory
+/ome-memory --type adopted-learnings
+/ome-memory --type generated-skills
 # Optional: filter by workflow, scope, or output format
 ```
 
-### `/oh-my-engine-evolve`
+### `/ome-evolve`
 
 Analyze patterns and suggest improvements.
 
@@ -471,7 +471,7 @@ Analyze patterns and suggest improvements.
 
 **Usage**:
 ```bash
-/oh-my-engine-evolve
+/ome-evolve
 # Review suggestions and approve/reject
 ```
 
@@ -560,7 +560,7 @@ Each workflow can have custom options:
 
 ### Creating Rules
 
-Rules are markdown files in `.oh-my-engine/rules/`:
+Rules are markdown files in `.ome/rules/`:
 
 ```markdown
 ---
@@ -632,7 +632,7 @@ Or load all rules:
 ### Structure
 
 ```
-.oh-my-engine/memory/
+.ome/memory/
 ├── executions/           # Execution logs grouped by workflow/day
 ├── learnings/
 │   ├── candidates/       # Learning candidates
@@ -801,7 +801,7 @@ Always wrap network requests in try-catch blocks because network failures are co
 ### 3. Review Memory Regularly
 
 ```bash
-/oh-my-engine-memory
+/ome-memory
 ```
 
 Check what the system is learning and adjust if needed.
@@ -809,7 +809,7 @@ Check what the system is learning and adjust if needed.
 ### 4. Leverage Evolution
 
 ```bash
-/oh-my-engine-evolve
+/ome-evolve
 ```
 
 Let the system suggest improvements based on your patterns.
@@ -822,7 +822,7 @@ As your project evolves, update rules to reflect current practices.
 
 ```bash
 # .gitignore
-.oh-my-engine/memory/
+.ome/memory/
 ```
 
 Configuration should be shared, memory should not.
@@ -831,7 +831,7 @@ Configuration should be shared, memory should not.
 
 ### Workflow Not Found
 
-**Problem**: `oh-my-engine-ui` workflow not recognized
+**Problem**: `ome-ui` workflow not recognized
 
 **Solution**:
 ```bash
@@ -865,7 +865,7 @@ ome spec propose <change-id>
 **Solution**:
 1. Check config.json syntax (must be valid JSON)
 2. Verify workflow is enabled
-3. Check rule files exist in `.oh-my-engine/rules/`
+3. Check rule files exist in `.ome/rules/`
 4. Run `ome rules sync` for the target tool
 
 ### Memory Not Saving
@@ -874,12 +874,12 @@ ome spec propose <change-id>
 
 **Solution**:
 1. Check memory is enabled in config.json
-2. Verify `.oh-my-engine/memory/` directory exists
+2. Verify `.ome/memory/` directory exists
 3. Check file permissions
 
 ### Evolution Not Detecting Patterns
 
-**Problem**: No suggestions from `/oh-my-engine-evolve`
+**Problem**: No suggestions from `/ome-evolve`
 
 **Solution**:
 1. Need at least 3 executions for pattern detection

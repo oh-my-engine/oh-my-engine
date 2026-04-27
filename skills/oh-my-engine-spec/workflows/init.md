@@ -17,7 +17,7 @@ Create an OpenSpec-compatible workspace without introducing a new runtime depend
 
 ### Step 1: Inspect project state
 ```
-1. Check for .oh-my-engine/config.json
+1. Check for .ome/config.json
 2. Check whether openspec/ already exists
 3. Detect project conventions and relevant rules
 ```
@@ -28,12 +28,12 @@ Create an OpenSpec-compatible workspace without introducing a new runtime depend
 2. Create openspec/changes/
 3. Create openspec/specs/
 4. Create openspec/archive/
-5. Create .oh-my-engine/memory/specs/
+5. Create .ome/memory/specs/
 ```
 
 ### Step 3: Seed configuration
 ```
-1. Add spec workflow settings to .oh-my-engine/config.json
+1. Add spec workflow settings to .ome/config.json
 2. Keep existing workflows untouched
 3. Prefer documentation-first defaults
 ```
@@ -48,7 +48,7 @@ Create an OpenSpec-compatible workspace without introducing a new runtime depend
     "openspec/changes/",
     "openspec/specs/",
     "openspec/archive/",
-    ".oh-my-engine/memory/specs/"
+    ".ome/memory/specs/"
   ]
 }
 ```

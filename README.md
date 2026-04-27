@@ -12,7 +12,7 @@ Oh My Engine is a powerful framework that transforms Claude Code and Codex into 
 
 - **🧠 Memory System**: Remembers execution history, learnings, and user preferences
 - **🔄 Self-Evolution**: Automatically identifies patterns and generates new skills
-- **⚙️ Project Configuration**: Per-project workflow customization with `.oh-my-engine/`
+- **⚙️ Project Configuration**: Per-project workflow customization with `.ome/`
 - **📋 Rich Workflows**: Pre-built workflows for UI restoration, bug analysis, component generation, and API integration
 - **📝 Spec Mode**: OpenSpec-compatible proposal, planning, apply, verify, and archive workflow
 - **🎯 Smart Context**: Loads project-specific rules and configurations automatically
@@ -30,6 +30,7 @@ Install the TypeScript-driven `ome` CLI:
 ```bash
 npm install -g oh-my-engine
 ome --help
+ome agents list
 ```
 
 Then initialize any project:
@@ -38,7 +39,6 @@ Then initialize any project:
 cd your-project
 ome init
 ome doctor
-ome rules sync
 ```
 
 #### Method 2: GitHub Install
@@ -52,18 +52,17 @@ npm link
 ome --help
 ```
 
-#### Method 3: Install Claude Code / Codex Skills
+#### Method 3: Install Global Agent Commands
 
-The CLI works everywhere. Install skills only if you want native Claude Code slash commands or Codex skill-name entry points:
+The CLI works everywhere. Install global Agent commands when you want native `/ome-*` or `ome-*` entries:
 
 ```bash
-./install.sh
-./install.sh --agent claude   # Claude Code only
-./install.sh --agent codex    # Codex only
-./install.sh --agent both     # Both agents
+ome agents install          # interactive, default all supported agents
+ome agents install --all    # non-interactive all
+ome agents doctor
 ```
 
-One-line GitHub skill installer:
+Legacy GitHub skill installers still exist for deprecated `/oh-my-engine-*` compatibility:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quick-install.sh | bash -s -- --agent both
@@ -77,8 +76,8 @@ Copy the installation prompt from [INSTALL_WITH_AI.md](INSTALL_WITH_AI.md) and p
 
 Detailed install and multi-tool usage: [docs/installation-and-usage.md](docs/installation-and-usage.md).
 
-Claude Code users can invoke the installed workflows as slash commands.
-Codex users should invoke the installed skills by name; the exact trigger format depends on the Codex client, so do not assume `/oh-my-engine-*` slash commands are available there.
+Claude Code users can invoke installed workflows as `/ome-bug`, `/ome-spec`, etc.
+Codex users can invoke installed skills by name such as `ome-bug`; clients that support `$skill` can use `$ome-bug`.
 
 ### Initialize a Project
 
@@ -88,9 +87,9 @@ In your project directory:
 ome init
 ```
 
-Agent-specific skill commands such as `/oh-my-engine-init` or `oh-my-engine-init` remain available for compatibility, but `ome init` is the TypeScript-driven entry point.
+Agent-specific legacy commands such as `/oh-my-engine-init` remain available only for compatibility. New commands use `ome-*`.
 
-This creates a `.oh-my-engine/` directory with:
+This creates a `.ome/` directory with:
 - `config.json` - Workflow configurations
 - `rules/` - Project-specific rules (single source of truth, auto-syncs to all platforms)
 - `memory/` - Execution history and learnings (git-ignored)
@@ -118,6 +117,14 @@ Runtime JavaScript is emitted only under ignored `dist/`. Repository scripts, te
 ```bash
 # Check the current project
 ome doctor
+
+# Install global Agent commands
+ome agents install
+ome agents doctor
+
+# Render workflow guidance
+ome bug "Login button click does nothing"
+ome-bug "Login button click does nothing"
 
 # Validate and sync rules
 ome rules validate
@@ -165,9 +172,11 @@ Packaging is guarded by `npm run verify` and `prepack`, which run typecheck, cle
 
 ### Available Commands
 
-- Claude Code: `/oh-my-engine-init`, `/oh-my-engine-ui`, `/oh-my-engine-bug`, `/oh-my-engine-comp`, `/oh-my-engine-api`, `/oh-my-engine-spec`, `/oh-my-engine-memory`, `/oh-my-engine-evolve`
-- Codex skill names: `oh-my-engine-init`, `oh-my-engine-ui`, `oh-my-engine-bug`, `oh-my-engine-comp`, `oh-my-engine-api`, `oh-my-engine-spec`, `oh-my-engine-memory`, `oh-my-engine-evolve`
-- Trae/Cursor/Windsurf/OpenCode/Qoder/Antigravity: run `ome rules sync <platform>` in the project and use the generated rule files in each tool.
+- Terminal: `ome`, `ome-init`, `ome-bug`, `ome-ui`, `ome-comp`, `ome-api`, `ome-spec`, `ome-memory`, `ome-evolve`
+- Claude Code: `/ome-init`, `/ome-bug`, `/ome-ui`, `/ome-comp`, `/ome-api`, `/ome-spec`, `/ome-memory`, `/ome-evolve`
+- Codex skill names: `ome-init`, `ome-bug`, `ome-ui`, `ome-comp`, `ome-api`, `ome-spec`, `ome-memory`, `ome-evolve`
+- Cursor/Windsurf/Qoder/OpenCode/Antigravity: `ome agents install --project` can generate project command/workflow entries where supported.
+- Trae/Cursor/Windsurf/OpenCode/Qoder/Antigravity: `ome init` generates project rules for each tool.
 
 ### Spec Workflow
 
@@ -196,7 +205,7 @@ ome spec archive user-authentication
 ```
 
 `import` persists normalized source text, prompt input, provenance, and copied attachments under `openspec/changes/<change-id>/context/`. `decompose` turns that intake context into `analysis.md`, `proposal.md`, `design.md`, `tasks.md`, and spec deltas while keeping source references attached to the change. `apply` updates lifecycle state, can mark task and acceptance progress, and prints the files the agent should load. It does not generate production code automatically. `status` summarizes the current phase and remaining checklist items. `archive` now creates the long-lived capability spec on first acceptance, rebuilds canonical summary/requirements/compatibility sections from accepted deltas, and keeps both the current accepted snapshot and archived history.
-You can add real project checks under `workflows.spec.options.verifyCommands` in `.oh-my-engine/config.json`; `verify` runs them sequentially and fails on the first non-zero exit. `verify` also blocks unresolved `TBD:` template markers and requires each spec delta to select exactly one change type plus at least one concrete requirement and WHEN/THEN scenario.
+You can add real project checks under `workflows.spec.options.verifyCommands` in `.ome/config.json`; `verify` runs them sequentially and fails on the first non-zero exit. `verify` also blocks unresolved `TBD:` template markers and requires each spec delta to select exactly one change type plus at least one concrete requirement and WHEN/THEN scenario.
 
 ## 📖 Documentation
 
@@ -222,14 +231,14 @@ See [examples/react-native](examples/react-native) for a complete configuration 
 
 ```markdown
 ---
-name: oh-my-engine-deploy
+name: ome-deploy
 description: Deploy application with pre-flight checks
 ---
 
 # Deploy Workflow
 
 ## Context Loading
-1. Load `.oh-my-engine/config.json`
+1. Load `.ome/config.json`
 2. Check deployment configuration
 3. Verify environment variables
 
@@ -254,17 +263,17 @@ description: Deploy application with pre-flight checks
 ~/.claude/skills/           # Claude Code skills
 ~/.codex/skills/            # Codex skills
 ├── oh-my-engine/          # Core framework
-├── oh-my-engine-init/     # Project initialization
-├── oh-my-engine-ui/       # UI restoration workflow
-├── oh-my-engine-bug/      # Bug analysis workflow
-├── oh-my-engine-comp/     # Component generation workflow
-├── oh-my-engine-api/      # API integration workflow
-├── oh-my-engine-spec/     # OpenSpec-compatible spec workflow
-├── oh-my-engine-memory/   # Memory viewer
-└── oh-my-engine-evolve/   # Evolution analyzer
+├── ome-init/              # Project initialization
+├── ome-ui/                # UI restoration workflow
+├── ome-bug/               # Bug analysis workflow
+├── ome-comp/              # Component generation workflow
+├── ome-api/               # API integration workflow
+├── ome-spec/              # OpenSpec-compatible spec workflow
+├── ome-memory/            # Memory viewer
+└── ome-evolve/            # Evolution analyzer
 
 project/
-├── .oh-my-engine/         # Project-specific configuration and memory
+├── .ome/                  # Project-specific configuration and memory
 │   ├── config.json        # Workflow settings
 │   ├── rules/             # Project rules (committed to git)
 │   └── memory/            # Execution history (git-ignored)
