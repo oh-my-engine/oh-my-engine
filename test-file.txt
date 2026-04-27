@@ -3,3 +3,4 @@
 test change 3
 test content 3
 final test
+# Git hook test
