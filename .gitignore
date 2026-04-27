@@ -18,6 +18,7 @@ build/
 .ome/memory/
 
 # Oh My Engine generated platform rule outputs
+.agent/
 .agents/
 .cursor/
 .qoder/

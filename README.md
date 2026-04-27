@@ -175,6 +175,7 @@ Packaging is guarded by `npm run verify` and `prepack`, which run typecheck, cle
 - Terminal: `ome`, `ome-init`, `ome-bug`, `ome-ui`, `ome-comp`, `ome-api`, `ome-spec`, `ome-memory`, `ome-evolve`
 - Claude Code: `/ome-init`, `/ome-bug`, `/ome-ui`, `/ome-comp`, `/ome-api`, `/ome-spec`, `/ome-memory`, `/ome-evolve`
 - Codex skill names: `ome-init`, `ome-bug`, `ome-ui`, `ome-comp`, `ome-api`, `ome-spec`, `ome-memory`, `ome-evolve`
+- Antigravity workflows: `ome agents install antigravity` writes `~/.gemini/antigravity/global_workflows/*.md`; `--project` writes `.agent/workflows/*.md`.
 - Cursor/Windsurf/Qoder/OpenCode/Antigravity: `ome agents install --project` can generate project command/workflow entries where supported.
 - Trae/Cursor/Windsurf/OpenCode/Qoder/Antigravity: `ome init` generates project rules for each tool.
 

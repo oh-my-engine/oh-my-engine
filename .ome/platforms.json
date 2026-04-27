@@ -44,7 +44,7 @@
       "name": "Antigravity",
       "description": "Antigravity AI Agent",
       "type": "multi-file",
-      "directory": ".agents/rules",
+      "directory": ".agent/rules",
       "format": "markdown",
       "extension": ".md",
       "numberedPrefix": true,

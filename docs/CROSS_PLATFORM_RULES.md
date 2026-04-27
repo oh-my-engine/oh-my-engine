@@ -18,7 +18,7 @@
     ├── CLAUDE.md             (索引文件，引用规则源)
     ├── .cursor/rules/        (完整规则，.mdc 格式)
     ├── .trae/rules/          (完整规则，.md 格式)
-    ├── .agents/rules/        (完整规则，编号前缀)
+    ├── .agent/rules/        (完整规则，编号前缀)
     ├── AGENTS.md             (Codex / OpenCode 索引文件)
     ├── .windsurfrules        (Windsurf 索引文件)
     └── .qoder/rules/         (完整规则)
@@ -85,7 +85,7 @@ ome rules sync
 if git diff --cached --name-only | grep -q ".ome/rules/"; then
   echo "🔄 检测到 rules 修改，自动同步..."
   ome rules sync
-  git add CLAUDE.md AGENTS.md .cursor/rules/ .trae/rules/ .agents/rules/ .windsurfrules .qoder/rules/
+  git add CLAUDE.md AGENTS.md .cursor/rules/ .trae/rules/ .agent/rules/ .windsurfrules .qoder/rules/
 fi
 ```
 
@@ -140,7 +140,7 @@ description: "主题系统规则"
 
 **Agents（编号前缀）**：
 ```
-.agents/rules/
+.agent/rules/
 ├── 01-code-style.md
 ├── 02-architecture.md
 ├── 03-i18n.md
@@ -368,7 +368,7 @@ cat > .git/hooks/pre-commit << 'EOF'
 #!/bin/bash
 if git diff --cached --name-only | grep -q ".ome/rules/"; then
   ome rules sync
-  git add CLAUDE.md AGENTS.md .cursor/rules/ .trae/rules/ .agents/rules/ .windsurfrules .qoder/rules/
+  git add CLAUDE.md AGENTS.md .cursor/rules/ .trae/rules/ .agent/rules/ .windsurfrules .qoder/rules/
 fi
 EOF
 chmod +x .git/hooks/pre-commit
@@ -379,7 +379,7 @@ chmod +x .git/hooks/pre-commit
 ```bash
 # 推荐：提交所有文件
 git add .ome/rules/
-git add CLAUDE.md AGENTS.md .cursor/rules/ .trae/rules/ .agents/rules/ .windsurfrules .qoder/rules/
+git add CLAUDE.md AGENTS.md .cursor/rules/ .trae/rules/ .agent/rules/ .windsurfrules .qoder/rules/
 git commit -m "feat: 更新规则"
 
 # 优点：团队成员 clone 后直接可用

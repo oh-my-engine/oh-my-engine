@@ -57,7 +57,7 @@ const AGENTS: AgentDefinition[] = [
   { id: 'windsurf', name: 'Windsurf', globalCommandDirectory: '.codeium/windsurf/global_workflows', projectCommandDirectory: '.windsurf/workflows', projectRules: '.windsurf/rules/*.md / .windsurfrules', commandStyle: 'workflow' },
   { id: 'qoder', name: 'Qoder', globalCommandDirectory: '.qoder/commands', projectCommandDirectory: '.qoder/commands', projectRules: '.qoder/rules/*.md', commandStyle: 'slash' },
   { id: 'opencode', name: 'OpenCode', globalCommandDirectory: '.config/opencode/command', projectCommandDirectory: '.opencode/command', projectRules: 'AGENTS.md', commandStyle: 'slash' },
-  { id: 'antigravity', name: 'Antigravity', globalCommandDirectory: '.antigravity/commands', projectCommandDirectory: '.agent/workflows', projectRules: 'AGENTS.md / GEMINI.md / .agent/rules/*.md', commandStyle: 'workflow' }
+  { id: 'antigravity', name: 'Antigravity', globalCommandDirectory: '.gemini/antigravity/global_workflows', projectCommandDirectory: '.agent/workflows', projectRules: 'AGENTS.md / GEMINI.md / .agent/rules/*.md', commandStyle: 'workflow' }
 ];
 
 function ensureDirectory(directoryPath: string): void {
@@ -118,6 +118,20 @@ function renderCommandPrompt(agent: AgentDefinition, workflow: WorkflowDefinitio
       '---',
       '',
       ...body
+    ].join('\n');
+  }
+
+  if (agent.id === 'antigravity') {
+    return [
+      '---',
+      `description: ${workflow.description}`,
+      '---',
+      '',
+      ...body,
+      '',
+      'Antigravity workflow notes:',
+      `- Use this workflow from Antigravity as \`/${workflow.command}\` when workflow commands are available.`,
+      '- If it does not appear immediately, reload the Antigravity window after installing workflows.'
     ].join('\n');
   }
 

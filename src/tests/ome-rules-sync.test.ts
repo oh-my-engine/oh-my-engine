@@ -24,19 +24,27 @@ function runOme(args: string[], cwd: string): string {
 test('ome rules sync writes single-file and multi-file platform targets through TypeScript core', () => {
   const workspace = createWorkspace();
 
-  const output = runOme(['rules', 'sync', 'codex', 'cursor'], workspace);
+  const output = runOme(['rules', 'sync', 'codex', 'cursor', 'antigravity'], workspace);
   assert.match(output, /codex/);
   assert.match(output, /cursor/);
+  assert.match(output, /antigravity/);
 
   const agentsPath = path.join(workspace, 'AGENTS.md');
   assert.equal(fs.existsSync(agentsPath), true);
   assert.match(fs.readFileSync(agentsPath, 'utf8'), /规则索引/);
   assert.match(fs.readFileSync(agentsPath, 'utf8'), /ome rules sync/);
 
-  const cursorRule = path.join(workspace, '.cursor', 'rules', 'typescript-react-native.mdc');
-  assert.equal(fs.existsSync(cursorRule), true);
+  const cursorRulesDirectory = path.join(workspace, '.cursor', 'rules');
+  const cursorRules = fs.readdirSync(cursorRulesDirectory).filter((fileName: string) => fileName.endsWith('.mdc'));
+  assert.equal(cursorRules.length > 0, true);
+  const cursorRule = path.join(cursorRulesDirectory, cursorRules[0]);
   assert.match(fs.readFileSync(cursorRule, 'utf8'), /^---/);
   assert.match(fs.readFileSync(cursorRule, 'utf8'), /description:/);
+
+  const antigravityRulesDirectory = path.join(workspace, '.agent', 'rules');
+  const antigravityRules = fs.readdirSync(antigravityRulesDirectory).filter((fileName: string) => fileName.endsWith('.md'));
+  assert.equal(antigravityRules.length > 0, true);
+  assert.match(antigravityRules[0], /^01-/);
 });
 
 test('ome rules sync replaces legacy .ome/rules-sync.js entrypoint', () => {

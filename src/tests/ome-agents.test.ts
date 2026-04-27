@@ -37,13 +37,17 @@ test('ome agents install writes global short command entries', () => {
   assert.equal(fs.existsSync(path.join(home, '.codex', 'skills', 'ome-bug', 'SKILL.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.qoder', 'commands', 'ome-bug.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.codeium', 'windsurf', 'global_workflows', 'ome-bug.md')), true);
+  assert.equal(fs.existsSync(path.join(home, '.gemini', 'antigravity', 'global_workflows', 'ome-bug.md')), true);
 
   const claudeCommand = fs.readFileSync(path.join(home, '.claude', 'commands', 'ome-bug.md'), 'utf8');
   const codexSkill = fs.readFileSync(path.join(home, '.codex', 'skills', 'ome-bug', 'SKILL.md'), 'utf8');
+  const antigravityWorkflow = fs.readFileSync(path.join(home, '.gemini', 'antigravity', 'global_workflows', 'ome-bug.md'), 'utf8');
   assert.match(claudeCommand, /Read `.ome\/config.json`/);
   assert.match(claudeCommand, /ome-bug/);
   assert.match(codexSkill, /^---\nname: ome-bug\n/);
   assert.match(codexSkill, /\ntags: \[ome, bug, workflow\]\n---\n/);
+  assert.match(antigravityWorkflow, /^---\ndescription: Analyze, diagnose, and plan a bug fix using project rules\.\n---\n/);
+  assert.match(antigravityWorkflow, /Antigravity workflow notes:/);
 });
 
 test('ome agents install --project writes project command entries', () => {
@@ -57,6 +61,7 @@ test('ome agents install --project writes project command entries', () => {
   assert.equal(fs.existsSync(path.join(workspace, '.qoder', 'commands', 'ome-bug.md')), true);
   assert.equal(fs.existsSync(path.join(workspace, '.opencode', 'command', 'ome-bug.md')), true);
   assert.equal(fs.existsSync(path.join(workspace, '.agent', 'workflows', 'ome-bug.md')), true);
+  assert.match(fs.readFileSync(path.join(workspace, '.agent', 'workflows', 'ome-bug.md'), 'utf8'), /^---\ndescription:/);
 });
 
 test('ome agents install falls back to all when interactive read is unavailable', () => {

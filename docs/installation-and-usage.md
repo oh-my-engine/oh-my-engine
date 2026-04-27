@@ -212,6 +212,30 @@ Generated rules target:
 
 ### Antigravity
 
+Install global workflows:
+
+```bash
+ome agents install antigravity
+```
+
+Generated global workflow target:
+
+```text
+~/.gemini/antigravity/global_workflows/*.md
+```
+
+Install project workflows:
+
+```bash
+ome agents install antigravity --project
+```
+
+Generated project workflow target:
+
+```text
+.agent/workflows/*.md
+```
+
 ```bash
 ome init
 ome rules sync antigravity
@@ -220,7 +244,7 @@ ome rules sync antigravity
 Generated rules target:
 
 ```text
-.agents/rules/*.md
+.agent/rules/*.md
 ```
 
 Project command/workflow files such as `.cursor/commands/*.md`, `.windsurf/workflows/*.md`, `.qoder/commands/*.md`, `.opencode/command/*.md`, and `.agent/workflows/*.md` are generated only when you run:
@@ -249,7 +273,7 @@ AGENTS.md
 .trae/rules/
 .windsurfrules
 .qoder/rules/
-.agents/rules/
+.agent/rules/
 ```
 
 Do not commit local memory by default:
