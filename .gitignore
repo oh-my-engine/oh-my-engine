@@ -11,11 +11,13 @@ node_modules/
 # Testing
 coverage/
 .nyc_output/
+test-file.js
 
 # Build
 dist/
 build/
 .ome/memory/
+.ome/.session
 
 # Oh My Engine generated platform rule outputs
 .agent/
@@ -26,3 +28,12 @@ build/
 .windsurfrules
 CLAUDE.md
 AGENTS.md
+
+# Test workspaces
+openspec/
+
+# Temporary documentation files
+AUTONOMOUS_EVOLUTION.md
+DOCUMENTATION_UPDATE_SUMMARY.md
+MEMORY_FORMAT_COMPARISON.md
+PRE_COMMIT_CHECKLIST.md

@@ -12,7 +12,7 @@ const { loadProjectConfig } = require('../core/config-loader');
 const { getCurrentSession, collectExecutionInfo, inferExecutionStatus, calculateComplexity, calculateReusePotential, cleanupSession, cleanupStaleSessions, formatDuration } = require('../core/session');
 
 function printHelp(): void {
-  process.stdout.write(`Oh My Engine\n\nUsage:\n  ome <command> [args]\n\nCommands:\n  doctor                  Check project and platform status\n  init [args]             Initialize .ome, openspec, and project Agent rules\n  agents <command>        Install/list/doctor global Agent command entries\n  bug <description>       Render bug-analysis workflow guidance\n  ui <source>             Render UI restoration workflow guidance\n  comp <name>             Render component-generation workflow guidance\n  api <source>            Render API integration workflow guidance\n  finish                  Finish workflow session and record execution\n  rules list              List all available rules\n  rules validate          Validate rule references\n  rules preview [platform] Show rule sync targets\n  rules sync              Sync rules to platform files\n  config migrate          Migrate config.json to OME.md\n  config validate         Validate OME.md configuration\n  spec <command> [args]   Run spec workflow commands\n  guidance <workflow>     Render workflow memory guidance\n  memory view [args]      View engine memory\n  evolve analyze [args]   Analyze memory evolution candidates\n  evolve verify-learning  Verify a learning candidate\n  evolve verify-skill     Verify a skill candidate\n  evolve adopt-learning   Adopt a verified learning\n  evolve adopt-skill      Adopt a verified generated skill\n  adapters list           List configured platform adapters\n  help                    Show this help\n\nSpec commands:\n  ${listSpecCommands().join(', ')}\n`);
+  process.stdout.write(`Oh My Engine\n\nUsage:\n  ome <command> [args]\n\nCommands:\n  doctor                  Check project and platform status\n  init [args]             Initialize .ome, openspec, and project Agent rules\n  agents <command>        Install/list/doctor global Agent command entries\n  bug <description>       Render bug-analysis workflow guidance\n  ui <source>             Render UI restoration workflow guidance\n  comp <name>             Render component-generation workflow guidance\n  api <source>            Render API integration workflow guidance\n  perf <target>           Render performance optimization workflow guidance\n  security <concern>      Render security audit workflow guidance\n  test <target>           Render test generation workflow guidance\n  review <target>         Render code review workflow guidance\n  finish                  Finish workflow session and record execution\n  rules list              List all available rules\n  rules validate          Validate rule references\n  rules preview [platform] Show rule sync targets\n  rules sync              Sync rules to platform files\n  config migrate          Migrate config.json to OME.md\n  config validate         Validate OME.md configuration\n  spec <command> [args]   Run spec workflow commands\n  guidance <workflow>     Render workflow memory guidance\n  memory view [args]      View engine memory\n  evolve analyze [args]   Analyze memory evolution candidates\n  evolve review           Review pending candidates for approval\n  evolve verify-learning  Verify a learning candidate\n  evolve verify-skill     Verify a skill candidate\n  evolve adopt-learning   Adopt a verified learning\n  evolve adopt-skill      Adopt a verified generated skill\n  adapters list           List configured platform adapters\n  help                    Show this help\n\nSpec commands:\n  ${listSpecCommands().join(', ')}\n`);
 }
 
 function runDoctor(): void {
@@ -170,6 +170,15 @@ function runFinish(args: string[]): void {
   process.stdout.write(`   Duration: ${formatDuration(executionInfo.durationMs)}\n`);
   process.stdout.write(`   Saved to: ${result.filePath}\n`);
 
+  // 自动触发增量分析
+  try {
+    const { autoAnalyzeEvolution } = require('../skills/oh-my-engine/lib/auto-evolution');
+    autoAnalyzeEvolution(process.cwd());
+  } catch (error) {
+    // 分析失败不影响记录流程
+    process.stderr.write(`\nWarning: Auto-analysis failed: ${error instanceof Error ? error.message : String(error)}\n`);
+  }
+
   cleanupSession();
 }
 
@@ -261,6 +270,22 @@ function main(argv: string[]): void {
     process.stdout.write(renderWorkflowCommand('api', args));
     return;
   }
+  if (command === 'perf') {
+    process.stdout.write(renderWorkflowCommand('perf', args));
+    return;
+  }
+  if (command === 'security') {
+    process.stdout.write(renderWorkflowCommand('security', args));
+    return;
+  }
+  if (command === 'test') {
+    process.stdout.write(renderWorkflowCommand('test', args));
+    return;
+  }
+  if (command === 'review') {
+    process.stdout.write(renderWorkflowCommand('review', args));
+    return;
+  }
   if (command === 'rules') return runRules(args);
   if (command === 'config') return runConfig(args);
   if (command === 'spec') return runSpecCommand(args[0], args.slice(1));
@@ -287,6 +312,10 @@ export function runShortcut(shortcut: string, args: string[]): void {
   if (shortcut === 'ui') return run(['ui', ...args]);
   if (shortcut === 'comp') return run(['comp', ...args]);
   if (shortcut === 'api') return run(['api', ...args]);
+  if (shortcut === 'perf') return run(['perf', ...args]);
+  if (shortcut === 'security') return run(['security', ...args]);
+  if (shortcut === 'test') return run(['test', ...args]);
+  if (shortcut === 'review') return run(['review', ...args]);
   if (shortcut === 'spec') return run(['spec', ...args]);
   if (shortcut === 'memory') return run(['memory', 'view', ...args]);
   if (shortcut === 'evolve') return run(['evolve', 'analyze', ...args]);

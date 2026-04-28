@@ -3,6 +3,7 @@ const { runAdoptSkillCandidate } = require('../skills/oh-my-engine/scripts/adopt
 const { runEvolveAnalyzeCommand } = require('../skills/oh-my-engine-evolve/scripts/run-evolve');
 const { runVerifyLearningCandidate } = require('../skills/oh-my-engine-evolve/scripts/verify-learning-candidate');
 const { runVerifySkillCandidate } = require('../skills/oh-my-engine-evolve/scripts/verify-skill-candidate');
+const { runReviewCandidates } = require('../skills/oh-my-engine-evolve/scripts/review-candidates');
 const { runViewMemoryCommand } = require('../skills/oh-my-engine-memory/scripts/view-memory');
 
 export function runMemoryCommand(command: string, args: string[]): void {
@@ -19,7 +20,8 @@ export function runEvolveCommand(command: string, args: string[]): void {
     'verify-learning': runVerifyLearningCandidate,
     'verify-skill': runVerifySkillCandidate,
     'adopt-learning': runAdoptLearningCandidate,
-    'adopt-skill': runAdoptSkillCandidate
+    'adopt-skill': runAdoptSkillCandidate,
+    review: runReviewCandidates
   };
 
   const handler = commandHandlers[command];

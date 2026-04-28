@@ -59,15 +59,32 @@ function loadRules(root: string = process.cwd()): Record<string, string> {
   const rulesDirectory = enginePath(root, 'rules');
   if (!fs.existsSync(rulesDirectory)) return {};
 
-  return fs
+  const rules: Record<string, string> = {};
+
+  // 加载主规则目录
+  const mainFiles = fs
     .readdirSync(rulesDirectory)
-    .filter((fileName: string) => fileName.endsWith('.md'))
-    .sort()
-    .reduce((rules: Record<string, string>, fileName: string) => {
+    .filter((fileName: string) => fileName.endsWith('.md') && fs.statSync(path.join(rulesDirectory, fileName)).isFile());
+
+  for (const fileName of mainFiles) {
+    const ruleName = path.basename(fileName, '.md');
+    rules[ruleName] = fs.readFileSync(path.join(rulesDirectory, fileName), 'utf8');
+  }
+
+  // 加载 learned 子目录
+  const learnedDirectory = path.join(rulesDirectory, 'learned');
+  if (fs.existsSync(learnedDirectory)) {
+    const learnedFiles = fs
+      .readdirSync(learnedDirectory)
+      .filter((fileName: string) => fileName.endsWith('.md'));
+
+    for (const fileName of learnedFiles) {
       const ruleName = path.basename(fileName, '.md');
-      rules[ruleName] = fs.readFileSync(path.join(rulesDirectory, fileName), 'utf8');
-      return rules;
-    }, {});
+      rules[ruleName] = fs.readFileSync(path.join(learnedDirectory, fileName), 'utf8');
+    }
+  }
+
+  return rules;
 }
 
 function writeFile(filePath: string, content: string): void {

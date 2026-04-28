@@ -10,8 +10,8 @@ Oh My Engine is a powerful framework that transforms Claude Code and Codex into 
 
 ## ✨ Features
 
-- **🧠 Memory System**: Remembers execution history, learnings, and user preferences
-- **🔄 Self-Evolution**: Automatically identifies patterns and generates new skills
+- **🧠 Memory System**: Remembers execution history, learnings, and user preferences in human-readable Markdown format
+- **🔄 Self-Evolution**: Automatically learns from patterns, generates rules and skills, and intelligently decides when to apply improvements
 - **⚙️ Project Configuration**: Per-project workflow customization with `.ome/`
 - **📋 Rich Workflows**: Pre-built workflows for UI restoration, bug analysis, component generation, and API integration
 - **📝 Spec Mode**: OpenSpec-compatible proposal, planning, apply, verify, and archive workflow
@@ -92,7 +92,7 @@ Agent-specific legacy commands such as `/oh-my-engine-init` remain available onl
 This creates a `.ome/` directory with:
 - `config.json` - Workflow configurations
 - `rules/` - Project-specific rules (single source of truth, auto-syncs to all platforms)
-- `memory/` - Execution history and learnings (git-ignored)
+- `memory/` - Execution history and learnings in Markdown format (git-ignored, human-readable)
 
 It also creates an `openspec/` workspace for long-lived specs and active changes:
 - `project.md` - Project-level context
@@ -146,13 +146,11 @@ ome spec status user-authentication
 ome spec verify user-authentication
 ome spec archive user-authentication
 
-# Inspect memory and evolution candidates
+# Inspect memory and evolution system
 ome memory view --format json
 ome evolve analyze --format json
-ome evolve verify-learning --slug spec-verify-verified-the-spec-change-and-acceptance-state
-ome evolve adopt-learning --slug spec-verify-verified-the-spec-change-and-acceptance-state
-ome evolve verify-skill --slug react-event-handler-invocation
-ome evolve adopt-skill --slug react-event-handler-invocation
+ome evolve review  # View candidates pending approval
+ome evolve stats   # View effectiveness statistics
 
 # Render workflow guidance with adopted learnings and generated skill directives
 ome guidance bug-analysis --input "Login button click does nothing"

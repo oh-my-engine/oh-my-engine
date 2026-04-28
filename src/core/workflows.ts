@@ -4,7 +4,7 @@ const path = require('node:path');
 const { ENGINE_DIR, engineDirectory } = require('./paths');
 const { createSession } = require('./session');
 
-export type WorkflowName = 'bug' | 'ui' | 'comp' | 'api';
+export type WorkflowName = 'bug' | 'ui' | 'comp' | 'api' | 'perf' | 'security' | 'test' | 'review';
 
 interface WorkflowMeta {
   title: string;
@@ -37,6 +37,30 @@ const WORKFLOWS: Record<WorkflowName, WorkflowMeta> = {
     usage: 'ome api <api-spec-or-description>',
     rules: ['universal-code-style', 'api-rest-design', 'universal-error-handling', 'universal-security'],
     objective: 'Integrate an API contract or endpoint with typed, maintainable project code.'
+  },
+  perf: {
+    title: 'Performance Optimization Workflow',
+    usage: 'ome perf "<performance issue or target>"',
+    rules: ['universal-performance', 'perf-web-vitals', 'perf-bundle-optimization'],
+    objective: 'Analyze performance bottlenecks, optimize code, and verify improvements with metrics.'
+  },
+  security: {
+    title: 'Security Audit Workflow',
+    usage: 'ome security "<security concern or scope>"',
+    rules: ['universal-security', 'universal-error-handling'],
+    objective: 'Identify security vulnerabilities, apply fixes, and verify security best practices.'
+  },
+  test: {
+    title: 'Test Generation Workflow',
+    usage: 'ome test "<component or feature to test>"',
+    rules: ['universal-testing', 'test-unit-jest', 'test-e2e-playwright'],
+    objective: 'Generate comprehensive test cases covering unit, integration, and e2e scenarios.'
+  },
+  review: {
+    title: 'Code Review Workflow',
+    usage: 'ome review "<code path or PR description>"',
+    rules: ['universal-code-style', 'universal-documentation', 'universal-error-handling'],
+    objective: 'Review code quality, identify issues, suggest improvements, and verify documentation.'
   }
 };
 
@@ -74,11 +98,6 @@ export function renderWorkflowCommand(workflow: WorkflowName, args: string[] = [
     `3. Execute this objective: ${meta.objective}`,
     '4. Keep changes focused and verify before claiming completion.',
     '5. If project files are missing, ask the user to run `ome init` in the project root.',
-    '',
-    '**IMPORTANT: After completing the task, run the following command to record this execution:**',
-    '```bash',
-    '! ome finish',
-    '```',
     '',
     'Terminal equivalent:',
     `- ${meta.usage}`

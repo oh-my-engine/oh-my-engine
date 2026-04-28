@@ -41,6 +41,45 @@ workflows:
     rules:
       - universal-code-style
     options: {}
+  perf-optimization:
+    enabled: true
+    description: 性能分析和优化
+    skills:
+      - ome-perf
+    rules:
+      - universal-performance
+      - perf-web-vitals
+      - perf-bundle-optimization
+    options: {}
+  security-audit:
+    enabled: true
+    description: 安全漏洞扫描和修复
+    skills:
+      - ome-security
+    rules:
+      - universal-security
+      - universal-error-handling
+    options: {}
+  test-generation:
+    enabled: true
+    description: 自动生成测试用例
+    skills:
+      - ome-test
+    rules:
+      - universal-testing
+      - test-unit-jest
+      - test-e2e-playwright
+    options: {}
+  code-review:
+    enabled: true
+    description: 代码审查和质量检查
+    skills:
+      - ome-review
+    rules:
+      - universal-code-style
+      - universal-documentation
+      - universal-error-handling
+    options: {}
 rules:
   theme:
     description: 主题系统规则

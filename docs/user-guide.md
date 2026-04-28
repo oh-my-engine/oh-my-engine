@@ -629,144 +629,307 @@ Or load all rules:
 
 ## Memory System
 
+### Overview
+
+Oh My Engine 使用 **Markdown 格式**存储所有记忆数据，提供人类可读、Agent 友好的记忆体验。
+
+**为什么使用 Markdown？**
+- ✅ **人类可读** - 直接查看和编辑记忆文件
+- ✅ **Agent 友好** - AI 可以直接理解，无需解析 JSON
+- ✅ **格式统一** - 记忆、规则、技能都使用 Markdown
+- ✅ **Git 友好** - diff 清晰，易于版本控制
+- ✅ **与主流一致** - Claude Code、Cursor、Windsurf 都使用 Markdown
+
 ### Structure
 
 ```
 .ome/memory/
-├── executions/           # Execution logs grouped by workflow/day
+├── executions/           # Execution logs (one file per execution)
+│   └── {workflow}/
+│       └── {date}-{slug}.md
 ├── learnings/
 │   ├── candidates/       # Learning candidates
+│   │   └── {slug}.md
 │   └── adopted/          # Adopted learning artifacts
+│       └── {slug}.md
 ├── preferences/          # Explicit remembered preferences
+│   └── {scope}-{slug}.md
 ├── skill-candidates/     # Candidate automation patterns
+│   └── {slug}.md
 └── generated-skills/     # Adopted generated skill artifacts
+    └── {slug}.md
 ```
 
 ### Execution Logs
 
-Each execution creates a log:
+每次执行创建一个 Markdown 文件：
 
-```json
-{
-  "timestamp": "2025-01-15T10:30:00Z",
-  "workflow": "ui-restore",
-  "input": {
-    "designFile": "https://figma.com/...",
-    "component": "LoginScreen"
-  },
-  "output": {
-    "files": ["src/screens/LoginScreen.tsx"],
-    "linesOfCode": 150
-  },
-  "status": "success",
-  "duration": 45000,
-  "rulesApplied": ["i18n", "theme"],
-  "errors": []
-}
+```markdown
+---
+id: exec-1234567890-abc123
+type: execution
+workflow: ui-restore
+phase: apply
+timestamp: 2025-01-15T10:30:00Z
+status: success
+duration: 45000
+captureLevel: high
+---
+
+# Restore LoginScreen from Figma
+
+## Details
+
+- **Workflow**: ui-restore
+- **Phase**: apply
+- **Status**: success
+- **Duration**: 45000ms
+- **Timestamp**: 2025-01-15T10:30:00Z
+
+## Why Stored
+
+High-value execution with complete UI restoration workflow
+
+## Files Touched
+
+- src/screens/LoginScreen.tsx
+- src/styles/LoginScreen.styles.ts
+- src/i18n/en.json
+
+## Rules Applied
+
+- i18n
+- theme
+- design-tokens
+
+## Input
+
+- Design File: https://figma.com/...
+- Component: LoginScreen
+
+## Output
+
+- Files Created: 3
+- Lines of Code: 150
 ```
 
 ### Learnings
 
-The system promotes repeated successful behavior into learning candidates, then requires verification before adoption.
+系统将重复的成功行为提升为学习候选，经过验证后采纳。
 
 **Learning Candidate**:
-```json
-{
-  "slug": "ui-restore-apply-reuse-themedstyle-and-design-tokens-for-generated-ui",
-  "workflow": "ui-restore",
-  "phase": "apply",
-  "status": "candidate",
-  "verification": {
-    "state": "pending"
-  },
-  "evidenceCount": 3
-}
+```markdown
+---
+id: learn-1234567890-abc123
+type: learning
+slug: ui-restore-apply-reuse-themedstyle-and-design-tokens
+category: best_practice
+workflow: ui-restore
+phase: apply
+status: candidate
+evidenceCount: 3
+reusability: 0.8
+verification:
+  state: pending
+  required: true
+---
+
+# Reuse ThemedStyle and Design Tokens for Generated UI
+
+## Summary
+
+When generating UI components, always reuse existing ThemedStyle system and design tokens instead of hardcoding colors and spacing.
+
+## Applies To
+
+- ui-restore workflow
+- component-gen workflow
+
+## Evidence
+
+### 2025-01-15T10:30:00Z
+- **Change ID**: change-123
+- **Workflow**: ui-restore
+- **Status**: success
+
+### 2025-01-16T14:20:00Z
+- **Change ID**: change-456
+- **Workflow**: ui-restore
+- **Status**: success
+
+### 2025-01-17T09:15:00Z
+- **Change ID**: change-789
+- **Workflow**: component-gen
+- **Status**: success
 ```
 
 **Adopted Learning**:
-```json
-{
-  "slug": "ui-restore-apply-reuse-themedstyle-and-design-tokens-for-generated-ui",
-  "status": "adopted",
-  "appliesTo": ["ui-restore"],
-  "summary": "Reuse ThemedStyle and design tokens for generated UI."
-}
+```markdown
+---
+id: learn-1234567890-abc123
+type: learning
+slug: ui-restore-apply-reuse-themedstyle-and-design-tokens
+status: adopted
+appliesTo: ["ui-restore", "component-gen"]
+adoptedAt: 2025-01-18T10:00:00Z
+---
+
+# Reuse ThemedStyle and Design Tokens
+
+## Summary
+
+Always reuse existing ThemedStyle system and design tokens for UI generation.
+
+## Guidelines
+
+1. Import ThemedStyle from `src/styles/ThemedStyle`
+2. Use design tokens for colors, spacing, typography
+3. Never hardcode style values
 ```
 
 ### User Preferences
 
-Records your feedback:
+记录用户反馈和偏好：
 
-```json
-{
-  "preference": "component-structure",
-  "value": "prefer-hooks-over-class",
-  "confidence": 0.9,
-  "examples": [...]
-}
+```markdown
+---
+id: pref-1234567890-abc123
+type: preference
+scope: user
+source: explicit_remember
+explicit: true
+evidenceCount: 3
+lastConfirmedAt: 2025-01-15T10:30:00Z
+stability: 1
+status: adopted
+---
+
+# Prefer Functional Components with Hooks
+
+## Details
+
+- **Scope**: user
+- **Source**: explicit_remember
+- **Evidence Count**: 3
+- **Stability**: 1
+
+## Preference
+
+User prefers functional components with hooks over class components.
+
+## Why Stored
+
+Explicitly stated preference during component generation workflow.
 ```
+
+### 查看和编辑记忆
+
+**直接查看**:
+```bash
+# 查看最近的执行记录
+ls -lt .ome/memory/executions/ui-restore/*.md | head -5
+
+# 查看特定记忆
+cat .ome/memory/executions/ui-restore/2025-01-15-restore-loginscreen.md
+```
+
+**手动编辑**:
+```bash
+# 使用任何文本编辑器
+code .ome/memory/executions/ui-restore/2025-01-15-restore-loginscreen.md
+vim .ome/memory/learnings/candidates/react-event-handler.md
+```
+
+**搜索记忆**:
+```bash
+# 搜索包含特定关键词的记忆
+grep -r "login" .ome/memory/executions/
+
+# 使用 ripgrep
+rg "authentication" .ome/memory/
+```
+
+### 迁移指南
+
+如果你有旧的 JSON/JSONL 格式记忆数据，请参考 [Memory Markdown Migration Guide](memory-markdown-migration.md) 进行迁移。
 
 ## Evolution System
 
-### How It Works
+Oh My Engine 的自主进化系统能够自动学习项目模式、生成规则和技能，并智能决策是否应用这些改进。详细文档请参考 [Evolution System](evolution.md)。
 
-1. **Pattern Detection**: Analyzes memory for repeated patterns
-2. **Threshold Check**: Patterns must occur ≥3 times (configurable)
-3. **Candidate Generation**: Creates learning and skill candidates from repeated patterns
-4. **Verification**: Candidates must be verified before adoption
-5. **Adoption**: Promotes approved skill artifacts to `generated-skills/`, stores adopted learnings under `memory/learnings/adopted/`, and surfaces their execution directives in downstream workflows
+### 自动工作流程
 
-### Pattern Types
+系统完全自动化运行：
 
-**Error Patterns**:
-- Same error occurs multiple times
-- Generates a fix skill
+1. **自动记忆记录**：每次完成工作流任务后，Agent 自动执行 `ome finish` 记录执行信息
+2. **自动后台分析**：系统自动识别重复模式和错误模式
+3. **自动生成规则**：从错误记录生成预防性规则到 `.ome/rules/learned/`
+4. **自动生成技能**：从成功模式生成可复用技能到 `.agent/workflows/learned/`
+5. **智能自主决策**：基于信心评分和风险评估自动应用或请求审核
+6. **效果跟踪**：持续监控已应用规则和技能的效果
+7. **自动清理**：定期清理无效或过时的内容
 
-**Code Patterns**:
-- Same code structure repeated
-- Generates a utility skill
+### 决策矩阵
 
-**Success Patterns**:
-- High success rate approach
-- Solidifies as best practice
+| 信心分数 | 风险等级 | 决策 |
+|---------|---------|------|
+| ≥80% | 低 (<30%) | 🟢 自动应用 |
+| ≥80% | 中 (30-60%) | 🟡 请求审核 |
+| 60-80% | 低 | 🟡 请求审核 |
+| <60% | 任何 | 🔴 自动拒绝 |
 
-### Generated Skills
+### 命令
 
-Example generated skill artifact:
+```bash
+# 查看所有需要人工审核的候选
+ome evolve review
 
-```json
-{
-  "slug": "react-event-handler-invocation",
-  "status": "adopted",
-  "patternId": "react-event-handler-invocation",
-  "executionDirectives": [
-    "Avoid immediate invocation in React JSX event handlers; pass function references instead of calling handlers during render.",
-    "If a handler needs arguments, wrap it in an explicit closure at the event boundary rather than invoking it while rendering."
-  ]
-}
+# 手动触发分析
+ome evolve analyze
+
+# 查看效果统计
+ome evolve stats
 ```
 
-These directives are consumed directly by:
-- `spec` via `plan/apply` and `context/engine-memory.md`
-- `bug/ui/comp/api` via `ome guidance <workflow> --input <text>`
+### 生成的内容
 
-### Configuration
+**规则文件** (`.ome/rules/learned/*.md`)：
+- 从错误模式自动生成
+- 包含问题描述、解决方案、示例
+- 自动应用到未来的工作流
+
+**技能文件** (`.agent/workflows/learned/*.md`)：
+- 从成功模式自动生成
+- 包含执行指令、最佳实践
+- 可在未来工作流中复用
+
+### 配置
 
 ```json
 {
-  "memory": {
-    "captureMode": "selective"
-  },
   "evolution": {
     "enabled": true,
-    "requireVerification": true,
+    "autoAnalyze": true,
+    "autoApply": {
+      "enabled": true,
+      "minConfidence": 80,
+      "maxRisk": 30
+    },
     "thresholds": {
       "learningCandidateMinEvidence": 3,
       "skillCandidateMinEvidence": 3
+    },
+    "cleanup": {
+      "enabled": true,
+      "minApplications": 10,
+      "minSuccessRate": 40,
+      "unusedDays": 90
     }
   }
 }
 ```
+
+更多详细信息，请参考 [Evolution System 文档](evolution.md)。
 
 ## Best Practices
 

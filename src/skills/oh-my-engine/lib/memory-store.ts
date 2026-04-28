@@ -1,5 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const matter = require('gray-matter');
 
 const { mergeMemoryConfig, decideCapture } = require('./memory-policy');
 const { getErrorMessage } = require('../../../core/errors');
@@ -36,38 +37,14 @@ function generateId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
 }
 
-function executionFilePath(projectRoot: string, workflow: string, timestamp: string): string {
-  const day = timestamp.slice(0, 10);
-  return enginePath(projectRoot, 'memory', 'executions', workflow, `${day}.jsonl`);
-}
-
-function preferenceFilePath(projectRoot: string, scope: string): string {
-  return enginePath(projectRoot, 'memory', 'preferences', `${scope}.json`);
-}
-
-function learningCandidateFilePath(projectRoot: string, slug: string): string {
-  return enginePath(projectRoot, 'memory', 'learnings', 'candidates', `${slug}.json`);
-}
-
-function adoptedLearningFilePath(projectRoot: string, slug: string): string {
-  return enginePath(projectRoot, 'memory', 'learnings', 'adopted', `${slug}.json`);
-}
-
-function skillCandidateFilePath(projectRoot: string, slug: string): string {
-  return enginePath(projectRoot, 'memory', 'skill-candidates', `${slug}.json`);
-}
-
-function generatedSkillFilePath(projectRoot: string, slug: string): string {
-  return enginePath(projectRoot, 'generated-skills', `${slug}.json`);
-}
-
 function slugifyForFile(value: unknown): string {
   return String(value || '')
     .toLowerCase()
     .replace(/[^a-z0-9_-]+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-/, '')
-    .replace(/-$/, '');
+    .replace(/-$/, '')
+    .slice(0, 50); // Limit length for filename
 }
 
 function normalizeStringArray(value: unknown): string[] {
@@ -78,6 +55,328 @@ function normalizeStringArray(value: unknown): string[] {
   return value.filter(item => typeof item === 'string');
 }
 
+// File path functions for Markdown format
+function executionFilePath(projectRoot: string, workflow: string, timestamp: string, summary: string, id?: string): string {
+  const day = timestamp.slice(0, 10);
+  const slug = slugifyForFile(summary);
+  // Include timestamp milliseconds or ID to ensure uniqueness
+  const uniqueSuffix = id ? id.slice(-8) : timestamp.replace(/[-:T.Z]/g, '').slice(8, 17);
+  return enginePath(projectRoot, 'memory', 'executions', workflow, `${day}-${slug}-${uniqueSuffix}.md`);
+}
+
+function preferenceFilePath(projectRoot: string, scope: string, statement: string): string {
+  const slug = slugifyForFile(statement);
+  return enginePath(projectRoot, 'memory', 'preferences', `${scope}-${slug}.md`);
+}
+
+function learningCandidateFilePath(projectRoot: string, slug: string): string {
+  return enginePath(projectRoot, 'memory', 'learnings', 'candidates', `${slug}.md`);
+}
+
+function adoptedLearningFilePath(projectRoot: string, slug: string): string {
+  return enginePath(projectRoot, 'memory', 'learnings', 'adopted', `${slug}.md`);
+}
+
+function skillCandidateFilePath(projectRoot: string, slug: string): string {
+  return enginePath(projectRoot, 'memory', 'skill-candidates', `${slug}.md`);
+}
+
+function generatedSkillFilePath(projectRoot: string, slug: string): string {
+  return enginePath(projectRoot, 'generated-skills', `${slug}.md`);
+}
+
+// Markdown generation functions
+function buildExecutionMarkdown(record: MemoryRecord): string {
+  const frontmatter: MemoryRecord = {
+    id: record.id,
+    type: 'execution',
+    workflow: record.workflow,
+    phase: record.phase,
+    timestamp: record.timestamp,
+    status: record.status,
+    duration: record.durationMs,
+    captureLevel: record.captureLevel,
+    source: record.source || undefined,
+    whyStored: record.whyStored || undefined,
+    errors: record.errors || [],
+    filesTouched: record.filesTouched || [],
+    testsRun: record.testsRun || [],
+    metadata: record.metadata || undefined,
+    changeId: record.changeId || undefined,
+    changeSlug: record.changeSlug || undefined,
+    capability: record.capability || undefined
+  };
+
+  // Remove undefined values
+  Object.keys(frontmatter).forEach(key => {
+    if (frontmatter[key] === undefined) {
+      delete frontmatter[key];
+    }
+  });
+
+  let content = `# ${record.summary || 'Execution Record'}\n\n`;
+
+  content += `## Details\n\n`;
+  content += `- **Workflow**: ${record.workflow}\n`;
+  if (record.phase) content += `- **Phase**: ${record.phase}\n`;
+  content += `- **Status**: ${record.status}\n`;
+  content += `- **Duration**: ${record.durationMs}ms\n`;
+  content += `- **Timestamp**: ${record.timestamp}\n\n`;
+
+  if (record.whyStored) {
+    content += `## Why Stored\n\n${record.whyStored}\n\n`;
+  }
+
+  if (record.errors && record.errors.length > 0) {
+    content += `## Errors\n\n`;
+    record.errors.forEach((error: string) => {
+      content += `- ${error}\n`;
+    });
+    content += `\n`;
+  }
+
+  if (record.filesTouched && record.filesTouched.length > 0) {
+    content += `## Files Touched\n\n`;
+    record.filesTouched.forEach((file: string) => {
+      content += `- ${file}\n`;
+    });
+    content += `\n`;
+  }
+
+  if (record.testsRun && record.testsRun.length > 0) {
+    content += `## Tests Run\n\n`;
+    record.testsRun.forEach((test: string) => {
+      content += `- ${test}\n`;
+    });
+    content += `\n`;
+  }
+
+  if (record.metadata && Object.keys(record.metadata).length > 0) {
+    content += `## Metadata\n\n`;
+    content += '```json\n';
+    content += JSON.stringify(record.metadata, null, 2);
+    content += '\n```\n';
+  }
+
+  // Remove undefined values to avoid YAML serialization errors
+  Object.keys(frontmatter).forEach(key => {
+    if (frontmatter[key] === undefined) {
+      delete frontmatter[key];
+    }
+  });
+
+  return matter.stringify(content, frontmatter);
+}
+
+function buildPreferenceMarkdown(record: MemoryRecord): string {
+  const frontmatter: MemoryRecord = {
+    id: record.id,
+    type: 'preference',
+    scope: record.scope,
+    statement: record.statement,
+    source: record.source,
+    explicit: record.explicit,
+    evidenceCount: record.evidenceCount,
+    lastConfirmedAt: record.lastConfirmedAt,
+    stability: record.stability,
+    status: record.status,
+    whyStored: record.whyStored || undefined
+  };
+
+  // Remove undefined values to avoid YAML serialization errors
+  Object.keys(frontmatter).forEach(key => {
+    if (frontmatter[key] === undefined) {
+      delete frontmatter[key];
+    }
+  });
+
+  let content = `# ${record.statement}\n\n`;
+
+  content += `## Details\n\n`;
+  content += `- **Scope**: ${record.scope}\n`;
+  content += `- **Source**: ${record.source}\n`;
+  content += `- **Evidence Count**: ${record.evidenceCount}\n`;
+  content += `- **Stability**: ${record.stability}\n`;
+  content += `- **Status**: ${record.status}\n\n`;
+
+  if (record.whyStored) {
+    content += `## Why Stored\n\n${record.whyStored}\n\n`;
+  }
+
+  return matter.stringify(content, frontmatter);
+}
+
+function buildLearningCandidateMarkdown(record: MemoryRecord): string {
+  const frontmatter: MemoryRecord = {
+    id: record.id,
+    type: 'learning',
+    slug: record.slug,
+    title: record.title,
+    category: record.category,
+    workflow: record.workflow,
+    phase: record.phase,
+    status: record.status,
+    evidenceCount: record.evidenceCount,
+    evidence: record.evidence || [],
+    appliesTo: record.appliesTo || [],
+    reusability: record.reusability,
+    verification: record.verification
+  };
+
+  // Remove undefined values to avoid YAML serialization errors
+  Object.keys(frontmatter).forEach(key => {
+    if (frontmatter[key] === undefined) {
+      delete frontmatter[key];
+    }
+  });
+
+  let content = `# ${record.title}\n\n`;
+
+  if (record.summary) {
+    content += `## Summary\n\n${record.summary}\n\n`;
+  }
+
+  if (record.appliesTo && record.appliesTo.length > 0) {
+    content += `## Applies To\n\n`;
+    record.appliesTo.forEach((item: string) => {
+      content += `- ${item}\n`;
+    });
+    content += `\n`;
+  }
+
+  if (record.evidence && record.evidence.length > 0) {
+    content += `## Evidence\n\n`;
+    record.evidence.forEach((ev: any) => {
+      content += `### ${ev.timestamp || 'Evidence'}\n\n`;
+      content += `- **Change ID**: ${ev.changeId || 'N/A'}\n`;
+      content += `- **Workflow**: ${ev.workflow || 'N/A'}\n`;
+      content += `- **Phase**: ${ev.phase || 'N/A'}\n`;
+      content += `- **Status**: ${ev.status || 'N/A'}\n\n`;
+    });
+  }
+
+  if (record.whyStored) {
+    content += `## Why Stored\n\n${record.whyStored}\n\n`;
+  }
+
+  // Remove undefined values to avoid YAML serialization errors
+  Object.keys(frontmatter).forEach(key => {
+    if (frontmatter[key] === undefined) {
+      delete frontmatter[key];
+    }
+  });
+
+  return matter.stringify(content, frontmatter);
+}
+
+function buildSkillCandidateMarkdown(record: MemoryRecord): string {
+  const frontmatter: MemoryRecord = {
+    id: record.id,
+    type: 'skill',
+    slug: record.slug,
+    title: record.title,
+    patternCategory: record.patternCategory,
+    patternId: record.patternId,
+    status: record.status,
+    evidenceCount: record.evidenceCount,
+    evidence: record.evidence || [],
+    verification: record.verification
+  };
+
+  // Remove undefined values to avoid YAML serialization errors
+  Object.keys(frontmatter).forEach(key => {
+    if (frontmatter[key] === undefined) {
+      delete frontmatter[key];
+    }
+  });
+
+  let content = `# ${record.title}\n\n`;
+
+  if (record.summary) {
+    content += `## Summary\n\n${record.summary}\n\n`;
+  }
+
+  if (record.evidence && record.evidence.length > 0) {
+    content += `## Evidence\n\n`;
+    record.evidence.forEach((ev: any) => {
+      content += `### ${ev.timestamp || 'Evidence'}\n\n`;
+      content += `- **Change ID**: ${ev.changeId || 'N/A'}\n`;
+      content += `- **Workflow**: ${ev.workflow || 'N/A'}\n`;
+      content += `- **Status**: ${ev.status || 'N/A'}\n\n`;
+    });
+  }
+
+  if (record.whyStored) {
+    content += `## Why Stored\n\n${record.whyStored}\n\n`;
+  }
+
+  return matter.stringify(content, frontmatter);
+}
+
+function buildGeneratedSkillMarkdown(record: MemoryRecord): string {
+  const frontmatter: MemoryRecord = {
+    slug: record.slug,
+    title: record.title,
+    patternId: record.patternId,
+    summary: record.summary,
+    evidenceCount: record.evidenceCount,
+    adoptedAt: record.adoptedAt,
+    adoptedFrom: record.adoptedFrom,
+    source: record.source,
+    status: record.status,
+    executionDirectives: record.executionDirectives || []
+  };
+
+  // Remove undefined values to avoid YAML serialization errors
+  Object.keys(frontmatter).forEach(key => {
+    if (frontmatter[key] === undefined) {
+      delete frontmatter[key];
+    }
+  });
+
+  let content = `# ${record.title || record.slug}\n\n`;
+
+  if (record.summary) {
+    content += `## Summary\n\n${record.summary}\n\n`;
+  }
+
+  content += `## Execution Directives\n\n`;
+  if (record.executionDirectives && record.executionDirectives.length > 0) {
+    record.executionDirectives.forEach((directive: string) => {
+      content += `- ${directive}\n`;
+    });
+  } else {
+    content += `- None\n`;
+  }
+  content += `\n`;
+
+  content += `## Metadata\n\n`;
+  content += `- **Pattern ID**: ${record.patternId || 'N/A'}\n`;
+  content += `- **Evidence Count**: ${record.evidenceCount || 0}\n`;
+  content += `- **Adopted At**: ${record.adoptedAt || 'N/A'}\n`;
+  content += `- **Source**: ${record.source || 'N/A'}\n\n`;
+
+  return matter.stringify(content, frontmatter);
+}
+
+// Parse Markdown file
+function parseMarkdownFile(filePath: string): MemoryRecord {
+  const content = fs.readFileSync(filePath, 'utf8');
+  const parsed = matter(content);
+
+  // Extract summary from first heading
+  const summaryMatch = parsed.content.match(/^#\s+(.+)$/m);
+  const summary = summaryMatch ? summaryMatch[1] : undefined;
+
+  return {
+    ...parsed.data,
+    summary,
+    _content: parsed.content,
+    _filePath: filePath
+  };
+}
+
+// Record functions
 function recordExecutionMemory(projectRoot: string, event: MemoryRecord): MemoryRecord {
   const memoryConfig = loadMemoryConfig(projectRoot);
   const decision = decideCapture(
@@ -97,12 +396,14 @@ function recordExecutionMemory(projectRoot: string, event: MemoryRecord): Memory
 
   const timestamp = event.timestamp || new Date().toISOString();
   const workflow = event.workflow || 'unknown';
-  const filePath = executionFilePath(projectRoot, workflow, timestamp);
+  const summary = event.summary || 'execution';
+  const id = event.id || generateId('exec');
+  const filePath = executionFilePath(projectRoot, workflow, timestamp, summary, id);
 
   ensureDirectory(path.dirname(filePath));
 
   const record = {
-    id: event.id || generateId('exec'),
+    id,
     timestamp,
     source: event.source || 'workflow_command',
     workflow,
@@ -121,7 +422,8 @@ function recordExecutionMemory(projectRoot: string, event: MemoryRecord): Memory
     metadata: event.metadata && typeof event.metadata === 'object' ? event.metadata : {}
   };
 
-  fs.appendFileSync(filePath, `${JSON.stringify(record)}\n`, 'utf8');
+  const markdown = buildExecutionMarkdown(record);
+  fs.writeFileSync(filePath, markdown, 'utf8');
 
   return {
     persisted: true,
@@ -129,46 +431,6 @@ function recordExecutionMemory(projectRoot: string, event: MemoryRecord): Memory
     record,
     filePath
   };
-}
-
-function readPreferenceScopeFile(filePath: string, scope: string): { scope: string; records: MemoryRecord[] } {
-  if (!fs.existsSync(filePath)) {
-    return {
-      scope,
-      records: []
-    };
-  }
-
-  try {
-    const payload = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-    return {
-      scope: payload.scope || scope,
-      records: Array.isArray(payload.records) ? payload.records : []
-    };
-  } catch (error) {
-    throw new Error(`Failed to parse preference memory file at ${filePath}: ${getErrorMessage(error)}`);
-  }
-}
-
-function writeJsonFile(filePath: string, payload: MemoryRecord): void {
-  ensureDirectory(path.dirname(filePath));
-  fs.writeFileSync(filePath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
-}
-
-function readJsonFile(filePath: string): MemoryRecord {
-  try {
-    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  } catch (error) {
-    throw new Error(`Failed to parse JSON record at ${filePath}: ${getErrorMessage(error)}`);
-  }
-}
-
-function readJsonFileIfExists(filePath: string): MemoryRecord | null {
-  if (!fs.existsSync(filePath)) {
-    return null;
-  }
-
-  return readJsonFile(filePath);
 }
 
 function recordPreferenceMemory(projectRoot: string, event: MemoryRecord): MemoryRecord {
@@ -194,28 +456,29 @@ function recordPreferenceMemory(projectRoot: string, event: MemoryRecord): Memor
 
   const timestamp = event.timestamp || new Date().toISOString();
   const scope = event.scope || 'user';
-  const filePath = preferenceFilePath(projectRoot, scope);
+  const filePath = preferenceFilePath(projectRoot, scope, event.statement);
 
   ensureDirectory(path.dirname(filePath));
 
-  const payload = readPreferenceScopeFile(filePath, scope);
-  const existingRecord = payload.records.find(
-    record => record.statement === event.statement
-  );
-
-  if (existingRecord) {
-    existingRecord.source = event.source || existingRecord.source || 'explicit_remember';
-    existingRecord.explicit = Boolean(existingRecord.explicit || event.source === 'explicit_remember');
-    existingRecord.evidenceCount = Number(existingRecord.evidenceCount || 0) + 1;
-    existingRecord.lastConfirmedAt = timestamp;
-    existingRecord.stability = Math.max(
-      Number(existingRecord.stability || 0),
-      Number(event.stability || (event.source === 'explicit_remember' ? 1 : 0))
-    );
-    existingRecord.whyStored = decision.reason;
-    existingRecord.status = event.status || existingRecord.status || 'adopted';
+  // Check if file exists and update it
+  let record: MemoryRecord;
+  if (fs.existsSync(filePath)) {
+    const existing = parseMarkdownFile(filePath);
+    record = {
+      ...existing,
+      source: event.source || existing.source || 'explicit_remember',
+      explicit: Boolean(existing.explicit || event.source === 'explicit_remember'),
+      evidenceCount: Number(existing.evidenceCount || 0) + 1,
+      lastConfirmedAt: timestamp,
+      stability: Math.max(
+        Number(existing.stability || 0),
+        Number(event.stability || (event.source === 'explicit_remember' ? 1 : 0))
+      ),
+      whyStored: decision.reason,
+      status: event.status || existing.status || 'adopted'
+    };
   } else {
-    payload.records.push({
+    record = {
       id: event.id || generateId('pref'),
       statement: event.statement,
       scope,
@@ -226,21 +489,21 @@ function recordPreferenceMemory(projectRoot: string, event: MemoryRecord): Memor
       stability: Number(event.stability || (event.source === 'explicit_remember' ? 1 : 0)),
       whyStored: decision.reason,
       status: event.status || 'adopted'
-    });
+    };
   }
 
-  fs.writeFileSync(filePath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+  const markdown = buildPreferenceMarkdown(record);
+  fs.writeFileSync(filePath, markdown, 'utf8');
 
   return {
     persisted: true,
     decision,
     filePath,
-    record:
-      existingRecord ||
-      payload.records.find(record => record.statement === event.statement)
+    record
   };
 }
 
+// List functions
 function listExecutionRecords(projectRoot: string, filters: MemoryRecord = {}): MemoryRecord[] {
   const baseDirectory = enginePath(projectRoot, 'memory', 'executions');
 
@@ -261,25 +524,23 @@ function listExecutionRecords(projectRoot: string, filters: MemoryRecord = {}): 
     const workflowPath = path.join(baseDirectory, workflowDirectory.name);
     const files = fs
       .readdirSync(workflowPath, { withFileTypes: true })
-      .filter((entry: Dirent) => entry.isFile() && entry.name.endsWith('.jsonl'))
+      .filter((entry: Dirent) => entry.isFile() && entry.name.endsWith('.md'))
       .map((entry: Dirent) => path.join(workflowPath, entry.name))
       .sort();
 
     for (const filePath of files) {
-      const lines = fs.readFileSync(filePath, 'utf8').split('\n').filter(Boolean);
-
-      for (const line of lines) {
-        try {
-          const record = JSON.parse(line);
-          records.push(record);
-        } catch (error) {
-          throw new Error(`Failed to parse execution memory record in ${filePath}: ${getErrorMessage(error)}`);
-        }
+      try {
+        const record = parseMarkdownFile(filePath);
+        records.push(record);
+      } catch (error) {
+        console.warn(`Failed to parse execution memory at ${filePath}: ${getErrorMessage(error)}`);
       }
     }
   }
 
-  return records.sort((left, right) => right.timestamp.localeCompare(left.timestamp));
+  return records.sort((left, right) =>
+    (right.timestamp || '').localeCompare(left.timestamp || '')
+  );
 }
 
 function listPreferenceRecords(projectRoot: string, filters: MemoryRecord = {}): MemoryRecord[] {
@@ -292,22 +553,21 @@ function listPreferenceRecords(projectRoot: string, filters: MemoryRecord = {}):
   const records: MemoryRecord[] = [];
   const files = fs
     .readdirSync(baseDirectory, { withFileTypes: true })
-    .filter((entry: Dirent) => entry.isFile() && entry.name.endsWith('.json'))
+    .filter((entry: Dirent) => entry.isFile() && entry.name.endsWith('.md'))
     .map((entry: Dirent) => path.join(baseDirectory, entry.name))
     .sort();
 
   for (const filePath of files) {
-    const payload = readPreferenceScopeFile(
-      filePath,
-      path.basename(filePath, '.json')
-    );
+    try {
+      const record = parseMarkdownFile(filePath);
 
-    for (const record of payload.records) {
       if (filters.scope && record.scope !== filters.scope) {
         continue;
       }
 
       records.push(record);
+    } catch (error) {
+      console.warn(`Failed to parse preference memory at ${filePath}: ${getErrorMessage(error)}`);
     }
   }
 
@@ -316,10 +576,16 @@ function listPreferenceRecords(projectRoot: string, filters: MemoryRecord = {}):
   );
 }
 
+// Candidate functions
 function upsertLearningCandidate(projectRoot: string, candidate: MemoryRecord): MemoryRecord {
   const slug = candidate.slug || slugifyForFile(candidate.title);
   const filePath = learningCandidateFilePath(projectRoot, slug);
-  const existingRecord = readJsonFileIfExists(filePath);
+
+  let existingRecord: MemoryRecord | null = null;
+  if (fs.existsSync(filePath)) {
+    existingRecord = parseMarkdownFile(filePath);
+  }
+
   const payload = preserveCandidateLifecycle(existingRecord, {
     id: candidate.id || generateId('learn'),
     slug,
@@ -344,7 +610,9 @@ function upsertLearningCandidate(projectRoot: string, candidate: MemoryRecord): 
           }
   });
 
-  writeJsonFile(filePath, payload);
+  const markdown = buildLearningCandidateMarkdown(payload);
+  ensureDirectory(path.dirname(filePath));
+  fs.writeFileSync(filePath, markdown, 'utf8');
 
   return {
     filePath,
@@ -357,7 +625,12 @@ function upsertSkillCandidate(projectRoot: string, candidate: MemoryRecord): Mem
     candidate.slug ||
     slugifyForFile(candidate.patternId || candidate.title || 'skill-candidate');
   const filePath = skillCandidateFilePath(projectRoot, slug);
-  const existingRecord = readJsonFileIfExists(filePath);
+
+  let existingRecord: MemoryRecord | null = null;
+  if (fs.existsSync(filePath)) {
+    existingRecord = parseMarkdownFile(filePath);
+  }
+
   const payload = preserveCandidateLifecycle(existingRecord, {
     id: candidate.id || generateId('skill'),
     slug,
@@ -379,7 +652,9 @@ function upsertSkillCandidate(projectRoot: string, candidate: MemoryRecord): Mem
           }
   });
 
-  writeJsonFile(filePath, payload);
+  const markdown = buildSkillCandidateMarkdown(payload);
+  ensureDirectory(path.dirname(filePath));
+  fs.writeFileSync(filePath, markdown, 'utf8');
 
   return {
     filePath,
@@ -430,7 +705,7 @@ function readLearningCandidateRecord(projectRoot: string, slug: string): MemoryR
 
   return {
     filePath,
-    record: readJsonFile(filePath)
+    record: parseMarkdownFile(filePath)
   };
 }
 
@@ -439,7 +714,8 @@ function updateLearningCandidateRecord(projectRoot: string, slug: string, mutate
   const nextRecord =
     typeof mutate === 'function' ? mutate({ ...record }) : { ...record, ...mutate };
 
-  writeJsonFile(filePath, nextRecord);
+  const markdown = buildLearningCandidateMarkdown(nextRecord);
+  fs.writeFileSync(filePath, markdown, 'utf8');
 
   return {
     filePath,
@@ -456,7 +732,7 @@ function readSkillCandidateRecord(projectRoot: string, slug: string): MemoryReco
 
   return {
     filePath,
-    record: readJsonFile(filePath)
+    record: parseMarkdownFile(filePath)
   };
 }
 
@@ -465,7 +741,8 @@ function updateSkillCandidateRecord(projectRoot: string, slug: string, mutate: M
   const nextRecord =
     typeof mutate === 'function' ? mutate({ ...record }) : { ...record, ...mutate };
 
-  writeJsonFile(filePath, nextRecord);
+  const markdown = buildSkillCandidateMarkdown(nextRecord);
+  fs.writeFileSync(filePath, markdown, 'utf8');
 
   return {
     filePath,
@@ -475,7 +752,9 @@ function updateSkillCandidateRecord(projectRoot: string, slug: string, mutate: M
 
 function writeGeneratedSkillArtifact(projectRoot: string, slug: string, payload: MemoryRecord): MemoryRecord {
   const filePath = generatedSkillFilePath(projectRoot, slug);
-  writeJsonFile(filePath, payload);
+  const markdown = buildGeneratedSkillMarkdown(payload);
+  ensureDirectory(path.dirname(filePath));
+  fs.writeFileSync(filePath, markdown, 'utf8');
 
   return {
     filePath,
@@ -485,7 +764,9 @@ function writeGeneratedSkillArtifact(projectRoot: string, slug: string, payload:
 
 function writeAdoptedLearningArtifact(projectRoot: string, slug: string, payload: MemoryRecord): MemoryRecord {
   const filePath = adoptedLearningFilePath(projectRoot, slug);
-  writeJsonFile(filePath, payload);
+  const markdown = buildLearningCandidateMarkdown(payload);
+  ensureDirectory(path.dirname(filePath));
+  fs.writeFileSync(filePath, markdown, 'utf8');
 
   return {
     filePath,
@@ -493,45 +774,47 @@ function writeAdoptedLearningArtifact(projectRoot: string, slug: string, payload
   };
 }
 
-function listJsonRecordsFromDirectory(directoryPath: string): MemoryRecord[] {
+function listMarkdownRecordsFromDirectory(directoryPath: string): MemoryRecord[] {
   if (!fs.existsSync(directoryPath)) {
     return [];
   }
 
   return fs
     .readdirSync(directoryPath, { withFileTypes: true })
-    .filter((entry: Dirent) => entry.isFile() && entry.name.endsWith('.json'))
+    .filter((entry: Dirent) => entry.isFile() && entry.name.endsWith('.md'))
     .map((entry: Dirent) => path.join(directoryPath, entry.name))
     .sort()
     .map((filePath: string) => {
       try {
-        return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+        return parseMarkdownFile(filePath);
       } catch (error) {
-        throw new Error(`Failed to parse JSON record at ${filePath}: ${getErrorMessage(error)}`);
+        console.warn(`Failed to parse markdown record at ${filePath}: ${getErrorMessage(error)}`);
+        return null;
       }
-    });
+    })
+    .filter(Boolean);
 }
 
 function listLearningCandidateRecords(projectRoot: string): MemoryRecord[] {
-  return listJsonRecordsFromDirectory(
+  return listMarkdownRecordsFromDirectory(
     enginePath(projectRoot, 'memory', 'learnings', 'candidates')
   );
 }
 
 function listAdoptedLearningRecords(projectRoot: string): MemoryRecord[] {
-  return listJsonRecordsFromDirectory(
+  return listMarkdownRecordsFromDirectory(
     enginePath(projectRoot, 'memory', 'learnings', 'adopted')
   );
 }
 
 function listSkillCandidateRecords(projectRoot: string): MemoryRecord[] {
-  return listJsonRecordsFromDirectory(
+  return listMarkdownRecordsFromDirectory(
     enginePath(projectRoot, 'memory', 'skill-candidates')
   );
 }
 
 function listGeneratedSkillArtifacts(projectRoot: string): MemoryRecord[] {
-  return listJsonRecordsFromDirectory(
+  return listMarkdownRecordsFromDirectory(
     enginePath(projectRoot, 'generated-skills')
   );
 }

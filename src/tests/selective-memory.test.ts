@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
+const matter = require('gray-matter');
 
 const { OME_BIN, RUNTIME_ROOT, repoPath } = require('./helpers');
 const {
@@ -69,20 +70,17 @@ function findExecutionFiles(workspace: string, workflow: string): string[] {
 
   return fs
     .readdirSync(directory)
-    .filter((name: string) => name.endsWith('.jsonl'))
+    .filter((name: string) => name.endsWith('.md'))
     .map((name: string) => path.join(directory, name))
     .sort();
 }
 
 function readExecutionRecords(workspace: string, workflow: string): any[] {
-  return findExecutionFiles(workspace, workflow).flatMap(filePath =>
-    fs
-      .readFileSync(filePath, 'utf8')
-      .trim()
-      .split('\n')
-      .filter(Boolean)
-      .map((line: string) => JSON.parse(line))
-  );
+  return findExecutionFiles(workspace, workflow).map(filePath => {
+    const content = fs.readFileSync(filePath, 'utf8');
+    const { data } = matter(content);
+    return data;
+  });
 }
 
 function writeValidFeatureDocs(workspace: string, change: string): void {
@@ -342,13 +340,10 @@ test('spec propose writes execution memory that the memory viewer can read', () 
     'expected spec execution memory to be written'
   );
 
-  const firstRecord = fs
-    .readFileSync(executionFiles[0], 'utf8')
-    .trim()
-    .split('\n')
-    .filter(Boolean)
-    .map((line: string) => JSON.parse(line))
-    .find((record: Record<string, any>) => record.changeId === 'demo-memory');
+  const records = readExecutionRecords(workspace, 'spec');
+  const firstRecord = records.find(
+    (record: Record<string, any>) => record.changeId === 'demo-memory'
+  );
 
   assert.ok(firstRecord, 'expected a record for the proposed change');
   assert.equal(firstRecord.workflow, 'spec');
@@ -448,15 +443,17 @@ test('explicit remembered preferences are stored and visible in the memory viewe
   recordPreference(workspace, 'Prefer concise reports');
   recordPreference(workspace, 'Prefer concise reports');
 
-  const preferenceFile = path.join(
+  const preferenceDir = path.join(
     workspace,
     '.ome',
     'memory',
-    'preferences',
-    'user.json'
+    'preferences'
   );
 
-  assert.ok(fs.existsSync(preferenceFile), 'expected preference file to exist');
+  assert.ok(fs.existsSync(preferenceDir), 'expected preference directory to exist');
+
+  const preferenceFiles = fs.readdirSync(preferenceDir).filter((name: string) => name.endsWith('.md'));
+  assert.ok(preferenceFiles.length > 0, 'expected at least one preference file to exist');
 
   const output = runOme(workspace, [
     'memory',
@@ -494,14 +491,14 @@ test('evolve analyzer persists learning and skill candidates from repeated patte
     'memory',
     'learnings',
     'candidates',
-    'spec-verify-verified-the-spec-change-and-acceptance-state.json'
+    'spec-verify-verified-the-spec-change-and-acceptanc.md'
   );
   const skillCandidateFile = path.join(
     workspace,
     '.ome',
     'memory',
     'skill-candidates',
-    'react-event-handler-invocation.json'
+    'react-event-handler-invocation.md'
   );
 
   assert.ok(
@@ -538,7 +535,7 @@ test('evolve analyzer persists learning and skill candidates from repeated patte
   assert.equal(learningView.summary.byStatus.candidate, 1);
   assert.equal(
     learningView.records[0].slug,
-    'spec-verify-verified-the-spec-change-and-acceptance-state'
+    'spec-verify-verified-the-spec-change-and-acceptanc'
   );
   assert.equal(skillView.summary.totalRecords, 1);
   assert.equal(skillView.records[0].patternId, 'react-event-handler-invocation');
@@ -547,7 +544,7 @@ test('evolve analyzer persists learning and skill candidates from repeated patte
 test('learning candidates must be verified before adoption and preserve adopted state across evolve reruns', () => {
   const workspace = createWorkspace();
   const learningSlug =
-    'spec-verify-verified-the-spec-change-and-acceptance-state';
+    'spec-verify-verified-the-spec-change-and-acceptanc';
 
   runOme(workspace, ['init']);
   seedEvolutionWorkspace(workspace);
@@ -593,7 +590,7 @@ test('learning candidates must be verified before adoption and preserve adopted 
     'memory',
     'learnings',
     'adopted',
-    `${learningSlug}.json`
+    `${learningSlug}.md`
   );
   assert.ok(
     fs.existsSync(adoptedLearningPath),
@@ -672,7 +669,7 @@ test('skill candidates must be verified before adoption and preserve adopted sta
     workspace,
     '.ome',
     'generated-skills',
-    'react-event-handler-invocation.json'
+    'react-event-handler-invocation.md'
   );
   assert.ok(
     fs.existsSync(generatedSkillPath),
@@ -706,7 +703,7 @@ test('skill candidates must be verified before adoption and preserve adopted sta
 test('spec plan and apply load adopted engine memory context', () => {
   const workspace = createWorkspace();
   const learningSlug =
-    'spec-verify-verified-the-spec-change-and-acceptance-state';
+    'spec-verify-verified-the-spec-change-and-acceptanc';
 
   runOme(workspace, ['init']);
   seedEvolutionWorkspace(workspace);
@@ -793,17 +790,17 @@ test('spec plan and apply load adopted engine memory context', () => {
     /Avoid immediate invocation in React JSX event handlers/
   );
 
-  const generatedSkillArtifact = JSON.parse(
+  const generatedSkillArtifact = matter(
     fs.readFileSync(
       path.join(
         workspace,
         '.ome',
         'generated-skills',
-        'react-event-handler-invocation.json'
+        'react-event-handler-invocation.md'
       ),
       'utf8'
     )
-  );
+  ).data;
 
   assert.ok(
     Array.isArray(generatedSkillArtifact.executionDirectives),
@@ -857,9 +854,9 @@ test('spec plan and apply load adopted engine memory context', () => {
 test('non-spec workflows surface adopted learnings and generated skill directives', () => {
   const workspace = createWorkspace();
   const specLearningSlug =
-    'spec-verify-verified-the-spec-change-and-acceptance-state';
+    'spec-verify-verified-the-spec-change-and-acceptanc';
   const uiLearningSlug =
-    'ui-restore-apply-reuse-themedstyle-and-design-tokens-for-generated-ui';
+    'ui-restore-apply-reuse-themedstyle-and-design-toke';
 
   runOme(workspace, ['init']);
   seedEvolutionWorkspace(workspace);

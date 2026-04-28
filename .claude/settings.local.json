@@ -25,7 +25,14 @@
       "Bash(./dist/bin/ome.js bug *)",
       "Bash(./dist/bin/ome.js finish *)",
       "Bash(./dist/bin/ome.js memory *)",
-      "Bash(cat .ome/memory/executions/bug/*.jsonl)"
+      "Bash(cat .ome/memory/executions/bug/*.jsonl)",
+      "Bash(ome help *)",
+      "Bash(ome finish *)",
+      "Bash(ome bug *)",
+      "Bash(npm test *)",
+      "Bash(/Users/yunxi/Desktop/myProject/oh-my-engine/bin/ome evolve *)",
+      "Read(//private/tmp/test-ome-md3/**)",
+      "Bash(cat .ome/memory/executions/spec/*.md)"
     ]
   }
 }

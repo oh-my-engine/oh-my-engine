@@ -94,37 +94,44 @@ Example:
 
 ### 2. Memory System
 
-The v1 memory system is selective. It records only events that pass the memory policy gate:
+The v1 memory system is selective and uses **Markdown format** for all storage. It records only events that pass the memory policy gate:
 
 - explicit engine workflow execution
 - explicit user remember requests
 - post-run promotions that meet reusable-value thresholds
 
-**Executions** (`memory/executions/`)
-- Timestamped execution logs
-- Workflow/phase/source metadata
-- `captureLevel` and `whyStored`
+All memory records are stored as Markdown files with YAML frontmatter, providing human-readable, Agent-friendly, and Git-friendly storage.
+
+**Executions** (`memory/executions/{workflow}/{date}-{slug}.md`)
+- One Markdown file per execution
+- YAML frontmatter with metadata (workflow, phase, timestamp, status, duration)
+- Human-readable content with execution details, errors, files touched
+- `captureLevel` and `whyStored` explanation
 - Success/failure status
 - File/test/error evidence when available
 
 **Learnings** (`memory/learnings/`)
 - Candidate best practices promoted from repeated successful patterns
-- Candidates are stored under `memory/learnings/candidates/`
-- Adopted learning artifacts are stored under `memory/learnings/adopted/`
+- Candidates are stored under `memory/learnings/candidates/{slug}.md`
+- Adopted learning artifacts are stored under `memory/learnings/adopted/{slug}.md`
+- Each stored as Markdown with frontmatter (category, evidence, reusability)
 - Verified before broader adoption
 
-**Preferences** (`memory/preferences/`)
+**Preferences** (`memory/preferences/{scope}-{slug}.md`)
 - User feedback on generated code
 - Preferred approaches
 - Custom conventions
+- Each preference as a separate Markdown file with evidence tracking
 
-**Skill Candidates** (`memory/skill-candidates/`)
+**Skill Candidates** (`memory/skill-candidates/{slug}.md`)
 - Candidate automation distilled from repeated bug-fix patterns
+- Stored as Markdown with pattern metadata and evidence
 - Stored as candidates first, not auto-installed
 - Verified before adoption
 
-**Generated Skills** (`generated-skills/`)
+**Generated Skills** (`generated-skills/{slug}.md`)
 - Adopted candidate artifacts promoted after verification
+- Markdown format with execution directives
 - Can contribute execution directives that are surfaced during downstream `spec apply`
 - Are visible through the memory viewer and change status surfaces
 - Remain project-local in v1
