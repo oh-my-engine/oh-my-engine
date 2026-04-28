@@ -21,18 +21,19 @@ test('ome doctor validates schemas for initialized projects', () => {
 
   const result = spawnSync(OME_BIN, ['doctor'], { cwd: workspace, encoding: 'utf8' });
   assert.equal(result.status, 0);
-  assert.match(result.stdout, /Config schema: valid/);
+  assert.match(result.stdout, /OME\.md validation: valid/);
 });
 
 test('ome doctor reports schema failures', () => {
   const workspace = createWorkspace();
   runOme(['init'], workspace);
-  fs.writeFileSync(path.join(workspace, '.ome', 'config.json'), '{"version":"1.0.0"}\n', 'utf8');
+
+  // Write invalid OME.md (missing required fields)
+  fs.writeFileSync(path.join(workspace, 'OME.md'), '---\nversion: "1.0.0"\n---\n\n# Invalid Config\n', 'utf8');
 
   const result = spawnSync(OME_BIN, ['doctor'], { cwd: workspace, encoding: 'utf8' });
   assert.notEqual(result.status, 0);
-  assert.match(result.stdout, /Config schema: invalid/);
-  assert.match(result.stdout, /required property missing/);
+  assert.match(result.stdout, /OME\.md validation: invalid/);
 });
 
 export {};

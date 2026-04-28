@@ -10,7 +10,7 @@ const { OME_BIN, repoPath } = require('./helpers');
 function createWorkspace(): string {
   const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'oh-my-engine-rules-'));
   fs.mkdirSync(path.join(workspace, '.ome'), { recursive: true });
-  fs.cpSync(repoPath('.ome', 'config.json'), path.join(workspace, '.ome', 'config.json'));
+  fs.cpSync(repoPath('OME.md'), path.join(workspace, 'OME.md'));
   fs.cpSync(repoPath('.ome', 'platforms.json'), path.join(workspace, '.ome', 'platforms.json'));
   fs.cpSync(repoPath('.ome', 'rules'), path.join(workspace, '.ome', 'rules'), { recursive: true });
   fs.mkdirSync(path.join(workspace, 'node_modules'), { recursive: true });
@@ -41,7 +41,7 @@ test('ome rules sync writes single-file and multi-file platform targets through 
   assert.match(fs.readFileSync(cursorRule, 'utf8'), /^---/);
   assert.match(fs.readFileSync(cursorRule, 'utf8'), /description:/);
 
-  const antigravityRulesDirectory = path.join(workspace, '.agent', 'rules');
+  const antigravityRulesDirectory = path.join(workspace, '.agents', 'rules');
   const antigravityRules = fs.readdirSync(antigravityRulesDirectory).filter((fileName: string) => fileName.endsWith('.md'));
   assert.equal(antigravityRules.length > 0, true);
   assert.match(antigravityRules[0], /^01-/);

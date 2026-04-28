@@ -1,5 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const yaml = require('js-yaml');
 
 const { ENGINE_DIR, currentEnginePath, migrateLegacyEngineDirectory, repoEnginePath } = require('./paths');
 const { syncRules } = require('./rules');
@@ -87,11 +88,13 @@ function appendGitignoreOnce(projectRoot: string, pattern: string): void {
   }
 }
 
-function buildConfig(projectName: string, template: string): string {
-  return `${JSON.stringify({
+function buildDefaultConfig(projectName: string, template: string): any {
+  return {
     project: {
       name: projectName,
-      template
+      template,
+      type: 'application',
+      framework: 'node'
     },
     version: '1.0.0',
     workflows: {
@@ -157,7 +160,58 @@ function buildConfig(projectName: string, template: string): string {
       evaluationInterval: 'daily',
       optimizationThreshold: 85
     }
-  }, null, 2)}\n`;
+  };
+}
+
+function buildOMEMarkdown(projectName: string, template: string): string {
+  const config = buildDefaultConfig(projectName, template);
+
+  // 生成 YAML frontmatter
+  const frontmatter = yaml.dump(config, {
+    indent: 2,
+    lineWidth: 120,
+    noRefs: true,
+  });
+
+  // 生成文档内容
+  const docs = `# Oh My Engine Configuration
+
+## Project Information
+
+- **Project Name**: ${projectName}
+- **Template**: ${template}
+- **Version**: 1.0.0
+
+## Workflows
+
+This project has the following workflows enabled:
+
+- **ui-restore**: UI restoration workflow with i18n, theme, and design-tokens rules
+- **bug-analysis**: Bug analysis workflow with code-style rules
+- **component-gen**: Component generation workflow
+- **api-integration**: API integration workflow
+- **spec**: OpenSpec workflow for structured change management
+
+## Memory System
+
+The memory system is enabled with selective capture mode. It records:
+- Workflow command executions
+- Explicit remember requests
+- Post-run promotions
+
+## Evolution System
+
+The evolution system analyzes patterns and suggests improvements. It requires verification before adopting changes.
+
+## Getting Started
+
+Run \`ome help\` to see available commands.
+`;
+
+  return `---
+${frontmatter}---
+
+${docs}`;
 }
 
 export function parseInitArgs(args: string[], defaults: Partial<InitOptions> = {}): InitOptions {
@@ -240,8 +294,8 @@ export function initializeProject(options: InitOptions): InitResult {
   }
 
   const configCreated = writeFileIfNeeded(
-    currentEnginePath(options.projectRoot, 'config.json'),
-    buildConfig(projectName, options.template),
+    path.join(options.projectRoot, 'OME.md'),
+    buildOMEMarkdown(projectName, options.template),
     options.force
   );
 

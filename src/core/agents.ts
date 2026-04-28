@@ -90,7 +90,7 @@ function renderCommandPrompt(agent: AgentDefinition, workflow: WorkflowDefinitio
     `Terminal equivalent: \`${workflow.usage}\``,
     '',
     'Before making changes:',
-    '- Read `.ome/config.json` if present.',
+    '- Read `OME.md` if present.',
     '- Read relevant files under `.ome/rules/`.',
     '- Treat `.ome/` as the project-local source of truth.',
     '- If `.ome/` is missing, ask the user to run `ome init` in the project root.',

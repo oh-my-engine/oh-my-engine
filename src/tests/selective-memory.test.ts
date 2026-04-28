@@ -375,12 +375,17 @@ test('project init writes selective memory defaults', () => {
 
   runOme(workspace, ['init']);
 
-  const config = JSON.parse(
-    fs.readFileSync(
-      path.join(workspace, '.ome', 'config.json'),
-      'utf8'
-    )
+  const yaml = require('js-yaml');
+  const omeContent = fs.readFileSync(
+    path.join(workspace, 'OME.md'),
+    'utf8'
   );
+
+  // Extract YAML frontmatter
+  const match = omeContent.match(/^---\n([\s\S]*?)\n---/);
+  assert.ok(match, 'OME.md should have YAML frontmatter');
+
+  const config = yaml.load(match[1]);
 
   assert.equal(config.memory.captureMode, 'selective');
   assert.equal(config.memory.allowSources.workflow_command, true);

@@ -42,7 +42,7 @@ test('ome agents install writes global short command entries', () => {
   const claudeCommand = fs.readFileSync(path.join(home, '.claude', 'commands', 'ome-bug.md'), 'utf8');
   const codexSkill = fs.readFileSync(path.join(home, '.codex', 'skills', 'ome-bug', 'SKILL.md'), 'utf8');
   const antigravityWorkflow = fs.readFileSync(path.join(home, '.gemini', 'antigravity', 'global_workflows', 'ome-bug.md'), 'utf8');
-  assert.match(claudeCommand, /Read `.ome\/config.json`/);
+  assert.match(claudeCommand, /Read `OME\.md`/);
   assert.match(claudeCommand, /ome-bug/);
   assert.match(codexSkill, /^---\nname: ome-bug\n/);
   assert.match(codexSkill, /\ntags: \[ome, bug, workflow\]\n---\n/);
@@ -96,7 +96,7 @@ test('ome init --install-agents initializes project rules and global commands', 
 
   assert.match(output, /Integration targets synced:/);
   assert.match(output, /Agent commands installed:/);
-  assert.equal(fs.existsSync(path.join(workspace, '.ome', 'config.json')), true);
+  assert.equal(fs.existsSync(path.join(workspace, 'OME.md')), true);
   assert.equal(fs.existsSync(path.join(workspace, 'CLAUDE.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.claude', 'commands', 'ome-bug.md')), true);
 });

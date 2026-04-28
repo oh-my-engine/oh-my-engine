@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
+const yaml = require('js-yaml');
 
 const { OME_BIN } = require('./helpers');
 
@@ -18,19 +19,26 @@ function runOme(args: string[], cwd: string): string {
   });
 }
 
+function parseOMEConfig(workspace: string): any {
+  const omeContent = fs.readFileSync(path.join(workspace, 'OME.md'), 'utf8');
+  const match = omeContent.match(/^---\n([\s\S]*?)\n---/);
+  if (!match) throw new Error('OME.md missing YAML frontmatter');
+  return yaml.load(match[1]);
+}
+
 test('ome init initializes project directories and defaults from TypeScript CLI', () => {
   const workspace = createWorkspace();
 
   const output = runOme(['init', '--template', 'node'], workspace);
 
   assert.match(output, /Initialized Oh My Engine project/);
-  assert.equal(fs.existsSync(path.join(workspace, '.ome', 'config.json')), true);
+  assert.equal(fs.existsSync(path.join(workspace, 'OME.md')), true);
   assert.equal(fs.existsSync(path.join(workspace, '.ome', 'rules', 'code-style.md')), true);
   assert.equal(fs.existsSync(path.join(workspace, 'openspec', 'project.md')), true);
   assert.equal(fs.existsSync(path.join(workspace, 'CLAUDE.md')), true);
   assert.equal(fs.existsSync(path.join(workspace, 'AGENTS.md')), true);
 
-  const config = JSON.parse(fs.readFileSync(path.join(workspace, '.ome', 'config.json'), 'utf8'));
+  const config = parseOMEConfig(workspace);
   assert.equal(config.project.name, path.basename(workspace));
   assert.equal(config.project.template, 'node');
   assert.equal(config.memory.captureMode, 'selective');
@@ -43,16 +51,27 @@ test('ome init preserves existing files unless force is set', () => {
   const workspace = createWorkspace();
 
   runOme(['init'], workspace);
-  const configPath = path.join(workspace, '.ome', 'config.json');
-  fs.writeFileSync(configPath, '{"custom":true}\n', 'utf8');
+  const configPath = path.join(workspace, 'OME.md');
+  const customConfig = `---
+project:
+  name: custom
+  template: custom
+custom: true
+---
+
+# Custom Config
+`;
+  fs.writeFileSync(configPath, customConfig, 'utf8');
 
   const preservedOutput = runOme(['init'], workspace);
   assert.match(preservedOutput, /Config: preserved/);
-  assert.deepEqual(JSON.parse(fs.readFileSync(configPath, 'utf8')), { custom: true });
+  const preservedConfig = parseOMEConfig(workspace);
+  assert.equal(preservedConfig.custom, true);
 
   const forcedOutput = runOme(['init', '--force'], workspace);
   assert.match(forcedOutput, /Config: created/);
-  assert.equal(JSON.parse(fs.readFileSync(configPath, 'utf8')).custom, undefined);
+  const forcedConfig = parseOMEConfig(workspace);
+  assert.equal(forcedConfig.custom, undefined);
 });
 
 test('ome init migrates legacy .oh-my-engine projects to .ome', () => {
@@ -65,8 +84,11 @@ test('ome init migrates legacy .oh-my-engine projects to .ome', () => {
 
   assert.match(output, /migrated to .ome/);
   assert.equal(fs.existsSync(path.join(workspace, '.oh-my-engine')), false);
-  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(workspace, '.ome', 'config.json'), 'utf8')), { legacy: true });
+  assert.equal(fs.existsSync(path.join(workspace, 'OME.md')), true);
   assert.equal(fs.existsSync(path.join(workspace, '.ome', 'rules', 'custom.md')), true);
+
+  const config = parseOMEConfig(workspace);
+  assert.ok(config.project, 'Config should have project section');
 });
 
 export {};
