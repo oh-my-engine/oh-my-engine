@@ -21,6 +21,11 @@ Oh My Engine is a powerful framework that transforms Claude Code and Codex into 
 
 ## 🚀 Quick Start
 
+### Requirements
+
+- Node.js >= 22
+- npm >= 10
+
 ### Installation
 
 #### Method 1: npm CLI Install (Recommended)
@@ -167,6 +172,22 @@ Platform adapters live under `src/adapters/platforms/` and expose detection meta
 Generated artifact policy is documented in `docs/generated-artifacts.md`.
 
 Packaging is guarded by `npm run verify` and `prepack`, which run typecheck, clean build, and the full test suite before publishing.
+
+### Framework API
+
+The package also exposes a typed CommonJS API for tools that embed Oh My Engine instead of shelling out to the CLI:
+
+```js
+const {
+  initializeProject,
+  listAdapterManifests,
+  previewAdapterSync,
+  renderWorkflowCommand,
+  validateJsonFile
+} = require('oh-my-engine');
+```
+
+See [docs/framework-api.md](docs/framework-api.md) for the public API surface, adapter dry-run behavior, and schema validation notes.
 
 ### Available Commands
 

@@ -36,4 +36,31 @@ test('ome doctor reports schema failures', () => {
   assert.match(result.stdout, /OME\.md validation: invalid/);
 });
 
+test('ome doctor validates legacy config and platforms schemas', () => {
+  const workspace = createWorkspace();
+  runOme(['init'], workspace);
+  fs.rmSync(path.join(workspace, 'OME.md'));
+  fs.writeFileSync(
+    path.join(workspace, '.ome', 'config.json'),
+    `${JSON.stringify({
+      version: '1.0.0',
+      project: { name: 'legacy-project', type: 'application', framework: 'node' },
+      workflows: {
+        'bug-analysis': { enabled: true, rules: ['code-style'], options: {} }
+      },
+      memory: { enabled: true, captureMode: 'selective' },
+      evolution: { enabled: true }
+    }, null, 2)}\n`,
+    'utf8'
+  );
+
+  const result = spawnSync(OME_BIN, ['doctor'], { cwd: workspace, encoding: 'utf8' });
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stdout, /Config format: config\.json \(legacy\)/);
+  assert.match(result.stdout, /Config schema: valid/);
+  assert.match(result.stdout, /Platforms schema: valid/);
+  assert.match(result.stdout, /Consider migrating to OME\.md/);
+});
+
 export {};

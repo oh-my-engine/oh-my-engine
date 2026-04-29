@@ -5,7 +5,25 @@
   "required": ["enabled", "platforms"],
   "properties": {
     "enabled": { "type": "array", "items": { "type": "string" } },
-    "platforms": { "type": "object" },
+    "platforms": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "type": { "type": "string", "enum": ["single-file", "multi-file"] },
+          "file": { "type": "string" },
+          "directory": { "type": "string" },
+          "format": { "type": "string" },
+          "extension": { "type": "string" },
+          "autoSync": { "type": "boolean" },
+          "frontmatter": { "type": "object" },
+          "numberedPrefix": { "type": "boolean" }
+        }
+      }
+    },
     "ruleMapping": { "type": "object" }
   }
 }

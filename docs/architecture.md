@@ -2,11 +2,23 @@
 
 ## Overview
 
-Oh My Engine is a two-layer architecture that combines a TypeScript-driven `ome` CLI with optional agent skills and project-specific configurations. Spec-driven work uses an OpenSpec-compatible workspace so long-lived specs and active changes stay separate from project memory.
+Oh My Engine is a TypeScript-driven workflow engine with a CLI runtime, a typed framework API, optional agent skills, and project-specific configuration. Spec-driven work uses an OpenSpec-compatible workspace so long-lived specs and active changes stay separate from project memory.
 
 ## Architecture Layers
 
-### Layer 1: CLI Runtime (`ome`)
+### Layer 1: Runtime Package (`oh-my-engine`)
+
+The npm package publishes CommonJS runtime files and TypeScript declarations:
+
+- `dist/index.js`
+- `dist/index.d.ts`
+- `dist/bin/*.js`
+- `dist/core/`
+- `dist/adapters/`
+
+The public API is exported from `src/index.ts` and includes stable surfaces for project initialization, adapter discovery, schema validation, workflow guidance rendering, and selected spec utilities. See [Framework API](framework-api.md).
+
+### Layer 2: CLI Runtime (`ome`)
 
 The `ome` CLI is the source of truth for engine operations:
 
@@ -17,7 +29,9 @@ The `ome` CLI is the source of truth for engine operations:
 - `ome memory view`
 - `ome evolve ...`
 
-### Layer 2: Optional Agent Skills (`~/.claude/skills/`, `~/.codex/skills/`)
+The CLI dispatcher is command-registry based, so new top-level commands can be added without extending a long conditional chain.
+
+### Layer 3: Optional Agent Skills (`~/.claude/skills/`, `~/.codex/skills/`)
 
 Agent skills are optional native entry points for Claude Code and Codex. They should delegate engine operations to `ome` rather than reintroducing shell or JavaScript compatibility wrappers.
 
@@ -34,7 +48,7 @@ Agent skills are optional native entry points for Claude Code and Codex. They sh
 └── ome-evolve/            # Evolution analyzer
 ```
 
-### Layer 3: Project Configuration (`.ome/`)
+### Layer 4: Project Configuration (`.ome/`)
 
 Each project has its own configuration that customizes how workflows behave.
 
@@ -67,7 +81,9 @@ project/openspec/
 
 ### 1. Configuration System
 
-**config.json** defines:
+`OME.md` is the preferred project configuration format. Legacy `.ome/config.json` is still recognized by doctor and migration flows.
+
+Project configuration defines:
 - Project metadata (name, type, framework)
 - Enabled workflows and their settings
 - Skills to load for each workflow
@@ -171,6 +187,23 @@ priority: high
 
 Rules are loaded automatically based on workflow configuration and applied during code generation.
 
+### 5. Platform Adapter System
+
+Platform adapters describe how each supported tool consumes rules and commands. The adapter layer exposes:
+
+- status detection for generated targets
+- manifests for capability discovery
+- dry-run sync plans that report `create` or `update` without writing files
+- capabilities such as `rules:index`, `rules:multi-file`, `rules:mdc`, `skills:codex`, and `skills:claude`
+
+This keeps platform-specific behavior behind `src/adapters/` instead of scattering file-target decisions across workflows.
+
+### 6. Schema and State Safety
+
+Project state validation uses bundled schemas under `schemas/` plus the lightweight validator in `src/core/schema/validator.ts`. The validator supports the subset used by the engine: object and array types, required properties, additional properties, enum and const, string length and pattern checks, numeric ranges, and nested item validation.
+
+State writes that go through `src/core/file-system.ts` use a temporary sibling file followed by rename, reducing the chance of partially written JSON or Markdown state files.
+
 ## Workflow Execution Flow
 
 ```
@@ -190,9 +223,11 @@ Rules are loaded automatically based on workflow configuration and applied durin
    ↓
 8. Generate code/output
    ↓
-9. Run the selective memory gate
+9. Write state through atomic helpers where available
    ↓
-10. Persist only approved execution or promotion records
+10. Run the selective memory gate
+   ↓
+11. Persist only approved execution or promotion records
 ```
 
 Non-spec workflow helpers can now consume adopted engine knowledge directly through:

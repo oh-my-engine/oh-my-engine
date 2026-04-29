@@ -20,6 +20,17 @@ export interface PlatformAdapterStatus {
   capabilities: string[];
 }
 
+export interface PlatformAdapterManifest extends PlatformAdapterStatus {
+  config: PlatformConfig;
+}
+
+export interface PlatformAdapterSyncPlan {
+  platform: string;
+  target: string;
+  action: 'create' | 'update';
+  files?: string[];
+}
+
 export interface PlatformAdapter {
   id: string;
   defaultName: string;
@@ -27,4 +38,6 @@ export interface PlatformAdapter {
   getTarget(config: PlatformConfig): string;
   detect(projectRoot: string, config: PlatformConfig): boolean;
   status(projectRoot: string, config: PlatformConfig): PlatformAdapterStatus;
+  manifest(projectRoot: string, config: PlatformConfig): PlatformAdapterManifest;
+  planSync(projectRoot: string, config: PlatformConfig, files?: string[]): PlatformAdapterSyncPlan;
 }

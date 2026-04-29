@@ -8,11 +8,19 @@ const { initializeProject, parseInitArgs, renderInitResult } = require('../core/
 const { runAgentsCommand } = require('../core/agents');
 const { renderWorkflowCommand } = require('../core/workflows');
 const { migrateJsonToMarkdown, validateMarkdownConfig } = require('../core/config-migrator');
-const { loadProjectConfig } = require('../core/config-loader');
 const { getCurrentSession, collectExecutionInfo, inferExecutionStatus, calculateComplexity, calculateReusePotential, cleanupSession, cleanupStaleSessions, formatDuration } = require('../core/session');
+
+type CommandHandler = (args: string[]) => void;
+
+const WORKFLOW_COMMANDS = ['bug', 'ui', 'comp', 'api', 'perf', 'security', 'test', 'review'] as const;
+type WorkflowCommand = typeof WORKFLOW_COMMANDS[number];
 
 function printHelp(): void {
   process.stdout.write(`Oh My Engine\n\nUsage:\n  ome <command> [args]\n\nCommands:\n  doctor                  Check project and platform status\n  init [args]             Initialize .ome, openspec, and project Agent rules\n  agents <command>        Install/list/doctor global Agent command entries\n  bug <description>       Render bug-analysis workflow guidance\n  ui <source>             Render UI restoration workflow guidance\n  comp <name>             Render component-generation workflow guidance\n  api <source>            Render API integration workflow guidance\n  perf <target>           Render performance optimization workflow guidance\n  security <concern>      Render security audit workflow guidance\n  test <target>           Render test generation workflow guidance\n  review <target>         Render code review workflow guidance\n  finish                  Finish workflow session and record execution\n  rules list              List all available rules\n  rules validate          Validate rule references\n  rules preview [platform] Show rule sync targets\n  rules sync              Sync rules to platform files\n  config migrate          Migrate config.json to OME.md\n  config validate         Validate OME.md configuration\n  spec <command> [args]   Run spec workflow commands\n  guidance <workflow>     Render workflow memory guidance\n  memory view [args]      View engine memory\n  evolve analyze [args]   Analyze memory evolution candidates\n  evolve review           Review pending candidates for approval\n  evolve verify-learning  Verify a learning candidate\n  evolve verify-skill     Verify a skill candidate\n  evolve adopt-learning   Adopt a verified learning\n  evolve adopt-skill      Adopt a verified generated skill\n  adapters list           List configured platform adapters\n  help                    Show this help\n\nSpec commands:\n  ${listSpecCommands().join(', ')}\n`);
+}
+
+function runWorkflow(workflow: WorkflowCommand, args: string[]): void {
+  process.stdout.write(renderWorkflowCommand(workflow, args));
 }
 
 function runDoctor(): void {
@@ -238,6 +246,30 @@ function runConfig(args: string[]): void {
   throw new Error(`Unknown config command: ${subcommand}`);
 }
 
+function buildCommandHandlers(): Record<string, CommandHandler> {
+  const handlers: Record<string, CommandHandler> = {
+    doctor: () => runDoctor(),
+    init: runInit,
+    agents: runAgentsCommand,
+    finish: runFinish,
+    rules: runRules,
+    config: runConfig,
+    spec: args => runSpecCommand(args[0], args.slice(1)),
+    guidance: runGuidanceCommand,
+    memory: args => runMemoryCommand(args[0], args.slice(1)),
+    evolve: args => runEvolveCommand(args[0], args.slice(1)),
+    adapters: runAdapters
+  };
+
+  for (const workflow of WORKFLOW_COMMANDS) {
+    handlers[workflow] = args => runWorkflow(workflow, args);
+  }
+
+  return handlers;
+}
+
+const COMMAND_HANDLERS = buildCommandHandlers();
+
 function main(argv: string[]): void {
   // 在执行任何命令前，清理过期会话
   cleanupStaleSessions();
@@ -250,49 +282,11 @@ function main(argv: string[]): void {
     return;
   }
 
-  if (command === 'doctor') return runDoctor();
-  if (command === 'init') return runInit(args);
-  if (command === 'agents') return runAgentsCommand(args);
-  if (command === 'finish') return runFinish(args);
-  if (command === 'bug') {
-    process.stdout.write(renderWorkflowCommand('bug', args));
+  const handler = COMMAND_HANDLERS[command];
+  if (handler) {
+    handler(args);
     return;
   }
-  if (command === 'ui') {
-    process.stdout.write(renderWorkflowCommand('ui', args));
-    return;
-  }
-  if (command === 'comp') {
-    process.stdout.write(renderWorkflowCommand('comp', args));
-    return;
-  }
-  if (command === 'api') {
-    process.stdout.write(renderWorkflowCommand('api', args));
-    return;
-  }
-  if (command === 'perf') {
-    process.stdout.write(renderWorkflowCommand('perf', args));
-    return;
-  }
-  if (command === 'security') {
-    process.stdout.write(renderWorkflowCommand('security', args));
-    return;
-  }
-  if (command === 'test') {
-    process.stdout.write(renderWorkflowCommand('test', args));
-    return;
-  }
-  if (command === 'review') {
-    process.stdout.write(renderWorkflowCommand('review', args));
-    return;
-  }
-  if (command === 'rules') return runRules(args);
-  if (command === 'config') return runConfig(args);
-  if (command === 'spec') return runSpecCommand(args[0], args.slice(1));
-  if (command === 'guidance') return runGuidanceCommand(args);
-  if (command === 'memory') return runMemoryCommand(args[0], args.slice(1));
-  if (command === 'evolve') return runEvolveCommand(args[0], args.slice(1));
-  if (command === 'adapters') return runAdapters(args);
 
   throw new Error(`Unknown command: ${command}`);
 }
@@ -308,14 +302,7 @@ export function run(argv: string[]): void {
 
 export function runShortcut(shortcut: string, args: string[]): void {
   if (shortcut === 'init') return run(['init', ...args]);
-  if (shortcut === 'bug') return run(['bug', ...args]);
-  if (shortcut === 'ui') return run(['ui', ...args]);
-  if (shortcut === 'comp') return run(['comp', ...args]);
-  if (shortcut === 'api') return run(['api', ...args]);
-  if (shortcut === 'perf') return run(['perf', ...args]);
-  if (shortcut === 'security') return run(['security', ...args]);
-  if (shortcut === 'test') return run(['test', ...args]);
-  if (shortcut === 'review') return run(['review', ...args]);
+  if ((WORKFLOW_COMMANDS as readonly string[]).includes(shortcut)) return run([shortcut, ...args]);
   if (shortcut === 'spec') return run(['spec', ...args]);
   if (shortcut === 'memory') return run(['memory', 'view', ...args]);
   if (shortcut === 'evolve') return run(['evolve', 'analyze', ...args]);

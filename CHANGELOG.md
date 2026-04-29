@@ -5,6 +5,27 @@ All notable changes to Oh My Engine will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-04-29
+
+### Added
+- Public CommonJS framework API entrypoint with generated TypeScript declarations.
+- Package `main`, `types`, and `exports` metadata for library consumers.
+- Adapter manifests and dry-run sync plans for platform capability discovery.
+- GitHub Actions CI for Node 22 and Node 24.
+- Framework API documentation covering embedding, adapter dry-runs, schema validation, and file utilities.
+- Atomic text/JSON write helpers and reusable spec utility exports.
+
+### Changed
+- Raised the runtime baseline to Node.js >= 22.
+- Upgraded TypeScript to 6.0.3 and Node types to 25.6.0.
+- Refactored CLI top-level command routing into a command registry.
+- Split reusable spec helpers out of the spec workflow core.
+- Strengthened config, platforms, and spec-state schemas.
+
+### Fixed
+- Expanded schema validation for enum, const, additional properties, nested arrays, string constraints, and numeric ranges.
+- Added regression coverage for package API exports, legacy config doctor checks, adapter dry-run plans, and core file/spec utilities.
+
 ## [0.3.0] - 2024-04-28
 
 ### Added
@@ -75,7 +96,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Spec workflow support
 - Multi-platform agent support
 
-[Unreleased]: https://github.com/oh-my-engine/oh-my-engine/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/oh-my-engine/oh-my-engine/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/oh-my-engine/oh-my-engine/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/oh-my-engine/oh-my-engine/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/oh-my-engine/oh-my-engine/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/oh-my-engine/oh-my-engine/releases/tag/v0.2.0

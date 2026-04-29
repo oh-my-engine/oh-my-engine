@@ -4,10 +4,62 @@
   "type": "object",
   "required": ["version", "project", "workflows", "memory", "evolution"],
   "properties": {
-    "version": { "type": "string" },
-    "project": { "type": "object", "required": ["name"] },
-    "workflows": { "type": "object" },
-    "memory": { "type": "object", "required": ["enabled", "captureMode"] },
-    "evolution": { "type": "object", "required": ["enabled"] }
+    "version": { "type": "string", "minLength": 1 },
+    "project": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "type": "string" },
+        "framework": { "type": "string" },
+        "language": { "type": "string" }
+      }
+    },
+    "workflows": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["enabled"],
+        "properties": {
+          "enabled": { "type": "boolean" },
+          "description": { "type": "string" },
+          "skills": { "type": "array", "items": { "type": "string" } },
+          "rules": { "type": "array", "items": { "type": "string" } },
+          "options": { "type": "object" }
+        }
+      }
+    },
+    "rules": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "description": { "type": "string" },
+          "required": { "type": "boolean" }
+        }
+      }
+    },
+    "memory": {
+      "type": "object",
+      "required": ["enabled", "captureMode"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "captureMode": { "type": "string", "minLength": 1 },
+        "allowSources": { "type": "object" },
+        "thresholds": { "type": "object" },
+        "retention_days": { "type": "number", "minimum": 1 }
+      }
+    },
+    "evolution": {
+      "type": "object",
+      "required": ["enabled"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "autoApply": { "type": "boolean" },
+        "requireVerification": { "type": "boolean" },
+        "candidateOnly": { "type": "boolean" },
+        "thresholds": { "type": "object" }
+      }
+    }
   }
 }

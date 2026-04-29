@@ -3,6 +3,8 @@ const path = require('node:path');
 
 const { initializeProject, parseInitArgs } = require('./init');
 const { ENGINE_DIR, enginePath } = require('./paths');
+const { ensureDirectory, writeJsonFile, writeTextFile } = require('./file-system');
+const { countDoneCheckboxes, countOpenCheckboxes, renderTemplate, slugify, utcIso, utcStamp } = require('./spec-utils');
 
 
 const SPEC_COMMANDS = ['init', 'import', 'decompose', 'propose', 'plan', 'apply', 'status', 'verify', 'archive'];
@@ -16,44 +18,8 @@ interface SpecProposeOptions {
   repoRoot: string;
 }
 
-function ensureDirectory(directoryPath: string): void {
-  fs.mkdirSync(directoryPath, { recursive: true });
-}
-
-function slugify(value: string): string {
-  return String(value || '')
-    .toLowerCase()
-    .replace(/[^a-z0-9_-]+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-/, '')
-    .replace(/-$/, '');
-}
-
-function utcIso(): string {
-  return new Date().toISOString();
-}
-
-function renderTemplate(sourcePath: string, replacements: Record<string, string>): string {
-  let content = fs.readFileSync(sourcePath, 'utf8');
-  for (const [key, value] of Object.entries(replacements)) {
-    content = content.split(key).join(value);
-  }
-  return content;
-}
-
 function writeFile(filePath: string, content: string): void {
-  ensureDirectory(path.dirname(filePath));
-  fs.writeFileSync(filePath, content.endsWith('\n') ? content : `${content}\n`, 'utf8');
-}
-
-function countOpenCheckboxes(filePath: string): number {
-  if (!fs.existsSync(filePath)) return 0;
-  return fs.readFileSync(filePath, 'utf8').split('\n').filter((line: string) => /^- \[ \]/.test(line)).length;
-}
-
-function countDoneCheckboxes(filePath: string): number {
-  if (!fs.existsSync(filePath)) return 0;
-  return fs.readFileSync(filePath, 'utf8').split('\n').filter((line: string) => /^- \[[xX]\]/.test(line)).length;
+  writeTextFile(filePath, content);
 }
 
 function parseSpecProposeArgs(args: string[]): SpecProposeOptions {
@@ -229,7 +195,7 @@ function readJson(filePath: string): Record<string, any> {
 }
 
 function writeJson(filePath: string, payload: Record<string, any>): void {
-  writeFile(filePath, JSON.stringify(payload, null, 2));
+  writeJsonFile(filePath, payload);
 }
 
 function ensureChangeContext(changeInput: string): { changeSlug: string; projectRoot: string; changeDirectory: string; memoryFile: string; memory: Record<string, any> } {
@@ -276,7 +242,7 @@ function appendPlanningNotes(designPath: string): void {
 
 function setAllCheckboxes(filePath: string, marker: 'x' | ' '): void {
   const content = fs.readFileSync(filePath, 'utf8');
-  fs.writeFileSync(filePath, content.replace(/^- \[[ xX]\]/gm, `- [${marker}]`), 'utf8');
+  writeTextFile(filePath, content.replace(/^- \[[ xX]\]/gm, `- [${marker}]`), { finalNewline: false });
 }
 
 function setFirstMatchingCheckbox(filePath: string, query: string, marker: 'x' | ' '): boolean {
@@ -284,7 +250,7 @@ function setFirstMatchingCheckbox(filePath: string, query: string, marker: 'x' |
   const index = lines.findIndex((line: string) => /^- \[[ xX]\]/.test(line) && line.includes(query));
   if (index < 0) return false;
   lines[index] = lines[index].replace(/^- \[[ xX]\]/, `- [${marker}]`);
-  fs.writeFileSync(filePath, lines.join('\n'), 'utf8');
+  writeTextFile(filePath, lines.join('\n'), { finalNewline: false });
   return true;
 }
 
@@ -536,10 +502,6 @@ function buildCapabilitySpec(projectRoot: string, repoRoot: string, capability: 
   targetContent = replaceSectionBody(targetContent, '## Current Accepted Delta', changeBlock);
   targetContent = replaceSectionBody(targetContent, '## Change History', historyBlock);
   writeFile(targetPath, targetContent);
-}
-
-function utcStamp(): string {
-  return new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z').replace('T', '-');
 }
 
 export function runSpecArchive(args: string[]): void {

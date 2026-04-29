@@ -7,6 +7,13 @@ Oh My Engine has two layers:
 
 Do not run removed compatibility scripts directly. Use `ome ...` for engine operations.
 
+## Requirements
+
+- Node.js >= 22
+- npm >= 10
+
+The package is built with TypeScript 6 and publishes CommonJS runtime files plus `.d.ts` declarations under `dist/`.
+
 ## Recommended Install
 
 ### From npm
@@ -98,6 +105,31 @@ ome guidance ui-restore --input "https://mastergo.com/goto/demo"
 ome guidance component-gen --input "UserCard"
 ome guidance api-integration --input "./specs/user-api.yaml"
 ```
+
+### Framework API
+
+Tools can embed Oh My Engine directly through the package entrypoint:
+
+```js
+const {
+  initializeProject,
+  listAdapters,
+  listAdapterManifests,
+  previewAdapterSync,
+  renderWorkflowCommand,
+  validateJsonFile
+} = require('oh-my-engine');
+```
+
+Useful integration surfaces:
+
+- `initializeProject(...)` prepares `.ome/` and `openspec/` state.
+- `listAdapterManifests(...)` reports adapter capabilities and target config without writing files.
+- `previewAdapterSync(...)` returns a create/update dry-run plan for one platform.
+- `renderWorkflowCommand(...)` renders the same workflow guidance used by CLI shortcuts.
+- `validateJsonFile(...)` validates project state against the bundled schemas.
+
+See [Framework API](framework-api.md) for details.
 
 ### Claude Code
 
@@ -290,6 +322,14 @@ Before publishing:
 npm run verify
 npm pack --dry-run
 ```
+
+If the local npm cache has permission problems, use an isolated cache without changing the user's home directory:
+
+```bash
+npm --cache /tmp/oh-my-engine-npm-cache pack --dry-run
+```
+
+The dry-run package should include `dist/index.js`, `dist/index.d.ts`, CLI bins under `dist/bin/`, schemas, skills, and the public docs.
 
 For npm:
 

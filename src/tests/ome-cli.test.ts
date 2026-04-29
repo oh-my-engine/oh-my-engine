@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { execFileSync } = require('node:child_process');
+const { execFileSync, spawnSync } = require('node:child_process');
 
 const { OME_BIN, REPO_ROOT } = require('./helpers');
 
@@ -52,6 +52,16 @@ test('ome bug renders project workflow guidance', () => {
   assert.match(output, /Bug Analysis Workflow/);
   assert.match(output, /\.ome\/rules/);
   assert.match(output, /login fails/);
+});
+
+test('ome unknown command exits non-zero with a clear error', () => {
+  const result = spawnSync(OME_BIN, ['missing-command'], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8'
+  });
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /Unknown command: missing-command/);
 });
 
 export {};
