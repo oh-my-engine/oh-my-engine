@@ -158,6 +158,9 @@ function workflowSpecificInstructions(workflow: WorkflowDefinition): string[] {
       '- Read `OME.md`, `.ome/context/project-scan.json`, and `.ome/context/rules-generation-prompt.md`.',
       '- Inspect representative current source files, tests, scripts, and existing conventions before editing rules.',
       '- Rewrite `.ome/rules/*.md` so they are specific to this repository, not generic framework advice.',
+      '- Add, rename, or remove rule files as needed; do not force the project into a fixed four-rule template.',
+      '- Use project-specific rule names when the scan supports them, such as `server-koa`, `routing-middleware`, `build-gulp`, `views-static-assets`, `data-access`, or `deployment`.',
+      '- Do not create React Native, theme, design-token, or i18n rules unless current source/dependencies show those signals.',
       '- Run `ome rules sync` after editing rules.',
       '- Report which rule files changed and which verification commands were run.'
     ];

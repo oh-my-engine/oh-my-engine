@@ -111,6 +111,8 @@ This creates a `.ome/` directory with:
 - `rules/` - Project-specific rules (single source of truth, auto-syncs to all platforms)
 - `memory/` - Execution history and learnings in Markdown format (git-ignored, human-readable)
 
+The generated rule set is dynamic. `ome init-rules` scans the repository and creates rule files that match detected code, frameworks, build tools, routes, templates, styles, configs, tests, and deployment signals instead of forcing a fixed four-file template.
+
 It also creates an `openspec/` workspace for long-lived specs and active changes:
 - `project.md` - Project-level context
 - `changes/` - In-progress changes

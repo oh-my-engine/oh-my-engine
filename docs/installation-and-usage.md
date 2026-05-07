@@ -33,6 +33,8 @@ ome doctor
 ome agents install
 ```
 
+`ome init` and `ome init-rules` scan the current repository before writing rules. The generated `.ome/rules/*.md` set is intentionally dynamic: a Koa/Gulp app can get server, routing, build, static asset, and configuration rules, while a React app can get UI/theme rules, and a backend without UI signals will not receive React Native or design-token rules.
+
 ### From GitHub
 
 ```bash
@@ -84,6 +86,8 @@ ome rules validate
 ome rules sync
 ome agents list
 ```
+
+`ome init-rules` refreshes `.ome/context/project-scan.json`, rewrites local deterministic rule drafts, and tells the active Agent editor to inspect the latest source before final personalization. It does not call an AI API or require network access.
 
 Spec workflow:
 
@@ -329,6 +333,8 @@ OME.md
 openspec/project.md
 openspec/specs/
 ```
+
+Do not assume `.ome/rules/` contains a fixed template set. Commit whatever project-specific files `ome init-rules` generated and your Agent editor refined.
 
 Usually commit generated rule files if your team wants consistent AI behavior across tools:
 

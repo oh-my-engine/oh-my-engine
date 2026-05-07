@@ -88,8 +88,10 @@ test('ome init scans TypeScript Node projects and writes agent personalization c
 
   const scan = JSON.parse(fs.readFileSync(scanPath, 'utf8'));
   assert.equal(scan.framework, 'Node.js');
+  assert.deepEqual(scan.frameworks, ['Node.js']);
   assert.equal(scan.language, 'TypeScript');
   assert.equal(scan.sourceExtensions['.ts'], 2);
+  assert.equal(scan.filesScanned > 0, true);
   assert.equal(scan.hasUi, false);
 
   const prompt = fs.readFileSync(promptPath, 'utf8');
@@ -98,7 +100,7 @@ test('ome init scans TypeScript Node projects and writes agent personalization c
 
   const codeStyle = fs.readFileSync(path.join(workspace, '.ome', 'rules', 'code-style.md'), 'utf8');
   assert.match(codeStyle, /Project Profile/);
-  assert.match(codeStyle, /Framework: Node\.js/);
+  assert.match(codeStyle, /Primary framework: Node\.js/);
   assert.match(codeStyle, /Language: TypeScript/);
 
   assert.equal(fs.existsSync(path.join(workspace, '.ome', 'rules', 'theme.md')), false);
@@ -128,7 +130,106 @@ test('ome init generates UI rules only when a UI framework is detected', () => {
   assert.equal(config.workflows['ui-restore'].enabled, true);
   assert.equal(fs.existsSync(path.join(workspace, '.ome', 'rules', 'theme.md')), true);
   assert.equal(fs.existsSync(path.join(workspace, '.ome', 'rules', 'design-tokens.md')), true);
-  assert.equal(fs.existsSync(path.join(workspace, '.ome', 'rules', 'i18n.md')), true);
+  assert.equal(fs.existsSync(path.join(workspace, '.ome', 'rules', 'i18n.md')), false);
+});
+
+test('ome init scans Koa Gulp apps and generates project-specific rule files', () => {
+  const workspace = createWorkspace();
+  fs.writeFileSync(path.join(workspace, 'package.json'), JSON.stringify({
+    name: 'koa-gulp-target',
+    main: 'src/app.js',
+    scripts: {
+      start: 'node src/app.js',
+      build: 'gulp build',
+      test: 'mocha "test/**/*.test.js"'
+    },
+    dependencies: {
+      koa: '^2.15.0',
+      '@koa/router': '^12.0.0',
+      'koa-static': '^5.0.0',
+      ejs: '^3.1.10'
+    },
+    devDependencies: {
+      gulp: '^4.0.2',
+      mocha: '^10.0.0',
+      sass: '^1.70.0'
+    }
+  }, null, 2), 'utf8');
+  fs.writeFileSync(path.join(workspace, 'gulpfile.js'), 'exports.build = done => done();\n', 'utf8');
+  fs.writeFileSync(path.join(workspace, '.env.example'), 'PORT=3000\n', 'utf8');
+  fs.mkdirSync(path.join(workspace, 'src', 'routes'), { recursive: true });
+  fs.mkdirSync(path.join(workspace, 'src', 'middleware'), { recursive: true });
+  fs.mkdirSync(path.join(workspace, 'src', 'views'), { recursive: true });
+  fs.mkdirSync(path.join(workspace, 'public', 'styles'), { recursive: true });
+  fs.mkdirSync(path.join(workspace, 'test'), { recursive: true });
+  fs.writeFileSync(path.join(workspace, 'src', 'app.js'), [
+    "const Koa = require('koa');",
+    "const Router = require('@koa/router');",
+    "const serve = require('koa-static');",
+    'const app = new Koa();',
+    'const router = new Router();',
+    "router.get('/health', ctx => { ctx.body = { ok: true, port: process.env.PORT }; });",
+    'app.use(serve("public"));',
+    'app.use(router.routes());',
+    'module.exports = app;'
+  ].join('\n'), 'utf8');
+  fs.writeFileSync(path.join(workspace, 'src', 'routes', 'home.js'), "module.exports = router => router.get('/', ctx => { ctx.body = 'ok'; });\n", 'utf8');
+  fs.writeFileSync(path.join(workspace, 'src', 'middleware', 'errors.js'), "module.exports = async (ctx, next) => { try { await next(); } catch (error) { ctx.status = 500; } };\n", 'utf8');
+  fs.writeFileSync(path.join(workspace, 'src', 'views', 'index.ejs'), '<main><%= title %></main>\n', 'utf8');
+  fs.writeFileSync(path.join(workspace, 'public', 'styles', 'app.scss'), '$color: #123456;\nbody { color: $color; }\n', 'utf8');
+  fs.writeFileSync(path.join(workspace, 'test', 'app.test.js'), "const assert = require('node:assert/strict');\n", 'utf8');
+
+  const output = runOme(['init'], workspace);
+
+  assert.match(output, /Project scan: backend \/ Koa \/ JavaScript \/ \d+ files scanned/);
+
+  const config = parseOMEConfig(workspace);
+  assert.equal(config.project.framework, 'Koa');
+  assert.deepEqual(config.project.frameworks, ['Koa']);
+  assert.equal(config.project.language, 'JavaScript');
+  assert.equal(config.project.buildTools.includes('gulp'), true);
+  assert.equal(config.workflows['api-integration'].rules.includes('server-koa'), true);
+
+  const scan = JSON.parse(fs.readFileSync(path.join(workspace, '.ome', 'context', 'project-scan.json'), 'utf8'));
+  assert.equal(scan.serverFrameworks.includes('Koa'), true);
+  assert.equal(scan.buildTools.includes('gulp'), true);
+  assert.equal(scan.templateEngines.includes('ejs'), true);
+  assert.equal(scan.styleSystems.includes('sass'), true);
+  assert.equal(scan.routeFiles.includes('src/routes/home.js'), true);
+  assert.equal(scan.middlewareFiles.includes('src/middleware/errors.js'), true);
+  assert.equal(scan.deploymentSignals.includes('env-template'), true);
+
+  const expectedRules = [
+    'project-overview.md',
+    'code-style.md',
+    'testing.md',
+    'architecture.md',
+    'tooling.md',
+    'server-koa.md',
+    'routing-middleware.md',
+    'build-gulp.md',
+    'views-static-assets.md',
+    'styling-assets.md',
+    'configuration-env.md',
+    'security.md',
+    'logging-error-handling.md'
+  ];
+
+  for (const rule of expectedRules) {
+    assert.equal(fs.existsSync(path.join(workspace, '.ome', 'rules', rule)), true, `${rule} should exist`);
+  }
+
+  assert.equal(fs.existsSync(path.join(workspace, '.ome', 'rules', 'theme.md')), false);
+  assert.equal(fs.existsSync(path.join(workspace, '.ome', 'rules', 'design-tokens.md')), false);
+  assert.equal(fs.existsSync(path.join(workspace, '.ome', 'rules', 'i18n.md')), false);
+
+  const serverRule = fs.readFileSync(path.join(workspace, '.ome', 'rules', 'server-koa.md'), 'utf8');
+  assert.match(serverRule, /Koa Server/);
+  assert.match(serverRule, /src\/routes\/home\.js/);
+
+  const cursorRule = path.join(workspace, '.cursor', 'rules', 'code-style.mdc');
+  assert.equal(fs.existsSync(cursorRule), true);
+  assert.equal(fs.existsSync(path.join(workspace, '.cursor', 'rules', 'typescript-react-native.mdc')), false);
 });
 
 test('ome init-rules refreshes scan context and local rule drafts', () => {

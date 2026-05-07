@@ -57,6 +57,8 @@ test('ome agents install writes global short command entries', () => {
   assert.match(claudeCommand, /ome-bug/);
   assert.match(initCommand, /continue with the `ome-init-rules` workflow/);
   assert.match(initRulesCommand, /Read `OME\.md`, `\.ome\/context\/project-scan\.json`, and `\.ome\/context\/rules-generation-prompt\.md`/);
+  assert.match(initRulesCommand, /do not force the project into a fixed four-rule template/);
+  assert.match(initRulesCommand, /server-koa/);
   assert.match(initRulesCommand, /Run `ome rules sync` after editing rules/);
   assert.match(codexSkill, /^---\nname: ome-bug\n/);
   assert.match(codexSkill, /\ntags: \[ome, bug, workflow\]\n---\n/);

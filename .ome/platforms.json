@@ -12,7 +12,7 @@
   "platforms": {
     "claude-code": {
       "name": "Claude Code",
-      "description": "Anthropic 官方 CLI/Desktop/Web",
+      "description": "Anthropic official CLI/Desktop/Web",
       "type": "single-file",
       "file": "CLAUDE.md",
       "format": "markdown-index",
@@ -85,7 +85,7 @@
     }
   },
   "ruleMapping": {
-    "_comment": "规则文件名映射：源文件名 -> 各平台的文件名",
+    "_comment": "Rule file name mapping: source rule name -> platform file name",
     "i18n": {
       "cursor": "i18n-localization",
       "trae": "i18n-localization",
@@ -105,14 +105,14 @@
       "default": "design-tokens"
     },
     "code-style": {
-      "cursor": "typescript-react-native",
-      "trae": "typescript-react-native",
-      "agents": "typescript-react-native",
+      "cursor": "code-style",
+      "trae": "code-style",
+      "agents": "code-style",
       "default": "code-style"
     }
   },
   "customPlatforms": {
-    "_comment": "在这里添加自定义平台",
+    "_comment": "Add custom platforms here",
     "_example": {
       "name": "My Custom Agent",
       "type": "single-file",
