@@ -32,7 +32,11 @@
       "Bash(npm test *)",
       "Bash(/Users/yunxi/Desktop/myProject/oh-my-engine/bin/ome evolve *)",
       "Read(//private/tmp/test-ome-md3/**)",
-      "Bash(cat .ome/memory/executions/spec/*.md)"
+      "Bash(cat .ome/memory/executions/spec/*.md)",
+      "Bash(xargs -I {} sh -c 'echo \"=== {} ===\" && head -20 {}')",
+      "Bash(cat)",
+      "Read(//tmp/**)",
+      "Bash(npx tsc *)"
     ]
   }
 }

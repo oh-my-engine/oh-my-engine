@@ -10,7 +10,9 @@ const {
   listAdapters,
   listAdapterManifests,
   previewAdapterSync,
+  renderLifecycleGuidance,
   renderWorkflowCommand,
+  verifySkillCandidate,
   validateJsonFile
 } = require('oh-my-engine');
 ```
@@ -65,6 +67,30 @@ const guidance = renderWorkflowCommand('bug', ['login fails'], process.cwd());
 ```
 
 Rendering workflow guidance creates a workflow session in `.ome/.session`, matching CLI behavior.
+
+Use `renderLifecycleGuidance` for the lifecycle command family:
+
+```js
+const plan = renderLifecycleGuidance({
+  workflow: 'plan',
+  input: 'add user login',
+  cwd: process.cwd()
+});
+```
+
+Supported lifecycle workflows are `define`, `plan`, `build`, `test`, `review`, and `ship`.
+
+## Skill Candidate Quality
+
+Use `verifySkillCandidate(projectRoot, slug)` to apply the same evolve quality gate used by `ome evolve verify-skill`. The result includes verification metadata with a six-axis score and rejection reasons when a candidate is not adoption-ready.
+
+For direct Markdown validation, pass an object:
+
+```js
+const assessment = verifySkillCandidate({
+  skillMarkdown: '# Skill\n\n## Purpose\n...'
+});
+```
 
 ## Schema Validation
 

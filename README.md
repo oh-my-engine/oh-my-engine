@@ -113,6 +113,8 @@ This creates a `.ome/` directory with:
 
 The generated rule set is dynamic. `ome init-rules` scans the repository and creates rule files that match detected code, frameworks, build tools, routes, templates, styles, configs, tests, and deployment signals instead of forcing a fixed four-file template.
 
+`ome init` also installs project-local Agent workflow entries such as `.claude/commands/`, `.cursor/commands/`, `.qoder/commands/`, `.opencode/command/`, `.windsurf/workflows/`, and `.agent/workflows/` so the initialized rules are reachable from each editor inside the repository.
+
 It also creates an `openspec/` workspace for long-lived specs and active changes:
 - `project.md` - Project-level context
 - `changes/` - In-progress changes
@@ -219,9 +221,26 @@ See [docs/framework-api.md](docs/framework-api.md) for the public API surface, a
 
 ### Available Commands
 
-- Terminal: `ome`, `ome-init`, `ome-init-rules`, `ome-bug`, `ome-ui`, `ome-comp`, `ome-api`, `ome-spec`, `ome-memory`, `ome-evolve`
-- Claude Code: `/ome-init`, `/ome-init-rules`, `/ome-bug`, `/ome-ui`, `/ome-comp`, `/ome-api`, `/ome-spec`, `/ome-memory`, `/ome-evolve`, `/ome-superpowers`
-- Codex skill names: `ome-init`, `ome-init-rules`, `ome-bug`, `ome-ui`, `ome-comp`, `ome-api`, `ome-spec`, `ome-memory`, `ome-evolve`, `ome-superpowers`
+#### Lifecycle Workflows
+
+Oh My Engine now provides structured lifecycle workflows that guide you through the complete software development process:
+
+- `ome define` - Clarify requirements, boundaries, and success criteria
+- `ome plan` - Form implementation plans, interface changes, and test strategies
+- `ome build` - Guide or execute implementation with incremental verification
+- `ome test` - Design tests, run regression checks, and diagnose failures
+- `ome review` - Code review across correctness, security, performance, and architecture
+- `ome ship` - Pre-delivery checks, change summary, and commit preparation
+
+These lifecycle commands work alongside existing workflow-specific commands and enforce structured execution discipline with verification requirements, red flags, and anti-rationalization checks.
+
+See [docs/lifecycle-workflows.md](docs/lifecycle-workflows.md) and [docs/skill-anatomy.md](docs/skill-anatomy.md) for details.
+
+#### All Commands
+
+- Terminal: `ome`, `ome-init`, `ome-init-rules`, `ome-bug`, `ome-ui`, `ome-comp`, `ome-api`, `ome-spec`, `ome-memory`, `ome-evolve`, `ome-define`, `ome-plan`, `ome-build`, `ome-test`, `ome-review`, `ome-ship`
+- Claude Code: `/ome-init`, `/ome-init-rules`, `/ome-bug`, `/ome-ui`, `/ome-comp`, `/ome-api`, `/ome-spec`, `/ome-memory`, `/ome-evolve`, `/ome-superpowers`, `/ome-define`, `/ome-plan`, `/ome-build`, `/ome-test`, `/ome-review`, `/ome-ship`
+- Codex skill names: `ome-init`, `ome-init-rules`, `ome-bug`, `ome-ui`, `ome-comp`, `ome-api`, `ome-spec`, `ome-memory`, `ome-evolve`, `ome-superpowers`, `ome-define`, `ome-plan`, `ome-build`, `ome-test`, `ome-review`, `ome-ship`
 - Cursor, Trae, Windsurf, Qoder, OpenCode, and Antigravity receive the same workflow set through `ome agents install --all`.
 - `ome init` generates project rules for each tool, and `ome init-rules` refreshes scan context plus local rule drafts before an Agent editor rewrites `.ome/rules/*.md`.
 

@@ -17,6 +17,12 @@ test('ome help lists productized command groups', () => {
   assert.match(output, /rules validate/);
   assert.match(output, /agents <command>/);
   assert.match(output, /bug <description>/);
+  assert.match(output, /define <target>/);
+  assert.match(output, /plan <target>/);
+  assert.match(output, /build <target>/);
+  assert.match(output, /test <target>/);
+  assert.match(output, /review <target>/);
+  assert.match(output, /ship <target>/);
   assert.match(output, /spec <command>/);
   assert.match(output, /guidance <workflow>/);
   assert.match(output, /memory view/);
@@ -52,6 +58,22 @@ test('ome bug renders project workflow guidance', () => {
   assert.match(output, /Bug Analysis Workflow/);
   assert.match(output, /\.ome\/rules/);
   assert.match(output, /login fails/);
+});
+
+test('ome lifecycle commands render structured guidance', () => {
+  const define = runOme(['define', 'add user login']);
+  const plan = runOme(['plan', 'add user login']);
+  const review = runOme(['review', 'current diff']);
+
+  assert.match(define, /Define Workflow/);
+  assert.match(define, /Success criteria/);
+  assert.match(define, /Assumptions/);
+  assert.match(plan, /Plan Workflow/);
+  assert.match(plan, /Implementation approach/);
+  assert.match(plan, /Test plan/);
+  assert.match(review, /Review Workflow/);
+  assert.match(review, /correctness, readability, architecture, security, performance, and test coverage/i);
+  assert.match(review, /Verification gaps/);
 });
 
 test('ome unknown command exits non-zero with a clear error', () => {

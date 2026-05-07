@@ -1,121 +1,56 @@
 ---
 name: ome-comp
 version: 1.0.0
-description: 生成可复用组件
-author: yunxi
-tags: [component, generator, react, react-native]
+description: Generate reusable components using project code and design rules.
+author: oh-my-engine
+tags: [ome, component, ui, workflow]
 ---
 
 # ome-comp
 
-快速生成符合项目规范的可复用组件。
+## Purpose
+Create or update a reusable component that matches the project structure, design system, accessibility expectations, and test style.
 
-## 使用方法
+## When to Use
+- Use for new reusable UI components, component variants, or component API updates.
+- Use when component behavior, props, states, or styling must follow project rules.
+- Do not use for full-page redesigns or design-source restoration; use `ome-ui` for design restoration.
 
-```bash
-/ome-comp <component-name> [options]
-ome guidance component-gen --input "<component-name>"
-```
+## Inputs
+- Component name, responsibility, expected states, and props.
+- Existing component patterns, tests, style files, and exports.
+- `OME.md`, `.ome/rules/`, and `ome guidance component-gen --input "<component-name>"`.
+- References: `accessibility.md` and `code-review.md`.
 
-Claude Code 可直接使用上面的 slash command。
-Codex 请按技能名 `ome-comp` 触发，并沿用相同参数。
+## Process
+1. Load OME guidance and project rules before changing code.
+2. Inspect nearby components for naming, props, styling, tests, and export patterns.
+3. Define the component responsibility, public props, states, and non-goals.
+4. Implement the smallest reusable component surface.
+5. Add or update behavior/rendering coverage appropriate to the project.
+6. Verify typecheck, tests, accessibility basics, and exports.
+7. Report changed files, component API, verification, and remaining risks.
 
-## 参数
+## Red Flags
+- The component API is unclear or overlaps an existing component.
+- The implementation introduces a new design system or dependency.
+- Text, focus behavior, or interaction states cannot be verified.
+- The change expands into unrelated layout or page work.
 
-- `component-name`: 组件名称（必填）
-- `--type`: 组件类型（可选：button/input/card/modal/form）
-- `--props`: 组件属性（可选）
+## Common Rationalizations
+- "This component is visual, so tests are optional."
+- "A new abstraction will be useful later."
+- "Existing components are close enough; no need to inspect them."
+- "Accessibility can be checked after implementation."
 
-## 示例
+## Verification
+- Run relevant rendering, interaction, typecheck, or build checks.
+- Verify expected states and accessibility basics.
+- If visual verification is needed but unavailable, state that gap.
 
-```bash
-# 基础用法
-/ome-comp CustomButton
-
-# 指定类型
-/ome-comp LoginForm --type form
-
-# 带属性
-/ome-comp UserCard --props "name:string,avatar:string,onPress:function"
-```
-
-## 执行流程
-
-1. **分析需求**
-   - 先运行/读取 `ome guidance component-gen --input "<component-name>"` 加载 adopted learnings / generated skill directives
-   - 解析组件名称
-   - 推断组件类型
-   - 确定组件属性
-   - 检查是否已存在
-
-2. **生成组件代码**
-   - 生成组件文件
-   - 生成样式文件
-   - 生成类型定义
-   - 生成测试文件
-
-3. **应用规则**
-   - 应用 code-style 规则
-   - 应用 design-tokens 规则
-   - 应用 theme 规则
-
-4. **验证**
-   - 检查语法错误
-   - 运行测试
-   - 检查样式
-
-## 配置
-
-### 项目配置（.ome/config.json）
-
-```json
-{
-  "workflows": {
-    "component-gen": {
-      "enabled": true,
-      "rules": ["code-style", "design-tokens", "theme"],
-      "options": {
-        "outputDir": "src/components",
-        "componentLibrary": "react-native",
-        "styleType": "styled-components",
-        "generateTests": true
-      }
-    }
-  }
-}
-```
-
-## 输出示例
-
-```
-✅ 组件生成完成
-
-生成的文件：
-  - src/components/CustomButton/index.tsx
-  - src/components/CustomButton/styles.ts
-  - src/components/CustomButton/CustomButton.test.tsx
-
-应用的规则：
-  ✅ code-style: 命名规范、代码格式
-  ✅ design-tokens: 使用设计令牌
-  ✅ theme: 使用主题变量
-
-执行时间: 3.5s
-```
-
-## 自动学习
-
-系统会自动记录组件生成历史：
-
-- **组件模式重复 ≥5 次** → 生成快捷模板
-- **代码复用 ≥3 处** → 提取为工具函数
-- **成功率 ≥95%** → 固化为最佳实践
-
-## 相关命令
-
-- `/ome-ui` - 从设计稿生成组件
-- `/ome-memory` - 查看生成历史
-
----
-
-**提示**：这个命令会学习你的组件模式，越用越智能！
+## Output Contract
+Final response must include:
+- Changed files
+- Component API and behavior summary
+- Verification
+- Remaining risks

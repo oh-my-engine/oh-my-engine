@@ -34,9 +34,14 @@ test('ome agents install writes global short command entries', () => {
 
   assert.match(output, /claude-code/);
   assert.equal(fs.existsSync(path.join(home, '.claude', 'commands', 'ome-bug.md')), true);
+  assert.equal(fs.existsSync(path.join(home, '.claude', 'commands', 'ome-define.md')), true);
+  assert.equal(fs.existsSync(path.join(home, '.claude', 'commands', 'ome-plan.md')), true);
+  assert.equal(fs.existsSync(path.join(home, '.claude', 'commands', 'ome-ship.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.claude', 'commands', 'ome-init-rules.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.claude', 'commands', 'ome-superpowers.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.codex', 'skills', 'ome-bug', 'SKILL.md')), true);
+  assert.equal(fs.existsSync(path.join(home, '.codex', 'skills', 'ome-define', 'SKILL.md')), true);
+  assert.equal(fs.existsSync(path.join(home, '.codex', 'skills', 'ome-review', 'SKILL.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.codex', 'skills', 'ome-init-rules', 'SKILL.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.codex', 'skills', 'ome-superpowers', 'SKILL.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.cursor', 'commands', 'ome-init-rules.md')), true);
@@ -54,7 +59,9 @@ test('ome agents install writes global short command entries', () => {
   const codexSkill = fs.readFileSync(path.join(home, '.codex', 'skills', 'ome-bug', 'SKILL.md'), 'utf8');
   const antigravityWorkflow = fs.readFileSync(path.join(home, '.gemini', 'antigravity', 'global_workflows', 'ome-bug.md'), 'utf8');
   assert.match(claudeCommand, /Read `OME\.md`/);
+  assert.match(claudeCommand, /Skill anatomy discipline:/);
   assert.match(claudeCommand, /ome-bug/);
+  assert.match(fs.readFileSync(path.join(home, '.codex', 'skills', 'ome-review', 'SKILL.md'), 'utf8'), /^---\nname: ome-review\n/);
   assert.match(initCommand, /continue with the `ome-init-rules` workflow/);
   assert.match(initRulesCommand, /Read `OME\.md`, `\.ome\/context\/project-scan\.json`, and `\.ome\/context\/rules-generation-prompt\.md`/);
   assert.match(initRulesCommand, /do not force the project into a fixed four-rule template/);

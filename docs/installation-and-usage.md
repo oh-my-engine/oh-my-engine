@@ -35,6 +35,8 @@ ome agents install
 
 `ome init` and `ome init-rules` scan the current repository before writing rules. The generated `.ome/rules/*.md` set is intentionally dynamic: a Koa/Gulp app can get server, routing, build, static asset, and configuration rules, while a React app can get UI/theme rules, and a backend without UI signals will not receive React Native or design-token rules.
 
+`ome init` also writes project-local Agent workflow entry files so the rules are reachable from the repository itself, not only from global installs. That includes paths such as `.claude/commands/`, `.cursor/commands/`, `.qoder/commands/`, `.opencode/command/`, `.windsurf/workflows/`, and `.agent/workflows/`.
+
 ### From GitHub
 
 ```bash
@@ -115,6 +117,12 @@ Workflow guidance:
 ```bash
 ome bug "Login button click does nothing"
 ome-bug "Login button click does nothing"
+ome define "add user login"
+ome plan "add user login"
+ome build "add user login"
+ome test "login rejects invalid password"
+ome review "current diff"
+ome ship "login change"
 ome-spec propose add-auth
 ome guidance bug-analysis --input "Login button click does nothing"
 ome guidance ui-restore --input "https://mastergo.com/goto/demo"

@@ -106,3 +106,18 @@ export {
 export type {
   WorkflowName
 } from './core/workflows';
+
+export {
+  lifecycleWorkflowNames,
+  renderLifecycleGuidance
+} from './core/lifecycle';
+
+export type {
+  LifecycleGuidanceOptions,
+  LifecycleWorkflowName
+} from './core/lifecycle';
+
+export {
+  assessSkillMarkdown,
+  verifySkillCandidate
+} from './skills/oh-my-engine/lib/skill-candidate-verifier';

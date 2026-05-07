@@ -42,7 +42,7 @@ export function runVerifySkillCandidate(argv: string[] = process.argv.slice(2)):
   const result = verifySkillCandidate(
     path.resolve(options.projectRoot),
     options.slug
-  );
+  ) as Record<string, any>;
 
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }

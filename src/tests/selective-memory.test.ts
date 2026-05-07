@@ -705,6 +705,65 @@ test('skill candidates must be verified before adoption and preserve adopted sta
   assert.equal(candidateView.records[0].verification.state, 'passed');
 });
 
+test('skill candidate verifier rejects incomplete markdown and accepts anatomy-complete markdown', () => {
+  const { assessSkillMarkdown } = require('../skills/oh-my-engine/lib/skill-candidate-verifier');
+
+  const incomplete = assessSkillMarkdown('# Weak Skill\n\n## Purpose\nDo a thing.\n');
+  assert.equal(incomplete.ok, false);
+  assert.ok(incomplete.missingSections.includes('Verification'));
+  assert.ok(incomplete.rejectionReasons.length > 0);
+
+  const complete = assessSkillMarkdown(`# Strong Skill
+
+## Purpose
+Apply a focused project pattern safely.
+
+## When to Use
+- Use when the current task matches verified evidence.
+- Do not use for unrelated scope.
+
+## Inputs
+- User task input.
+- Relevant source files and tests.
+- OME.md and .ome/rules/.
+
+## Process
+1. Read project rules and relevant files.
+2. Confirm assumptions and conflicts.
+3. Make the smallest focused change using existing patterns.
+4. Add regression coverage for behavior changes.
+5. Run tests, typecheck, or build.
+6. Report changed files and remaining risks.
+
+## Red Flags
+- Requirement conflict with current code.
+- Security risk or unrequested dependency.
+- Scope expands into unrelated cleanup.
+
+## Common Rationalizations
+- This is too small to test.
+- No error output means complete.
+- I can clean unrelated code while here.
+
+## Verification
+- Run relevant tests, typecheck, build, or lint.
+- Bugfix work must include regression evidence.
+- If checks cannot run, report the blocker and remaining risks.
+
+## Output Contract
+- Changed files
+- What changed
+- Verification
+- Remaining risks
+`);
+
+  assert.equal(complete.ok, true);
+  assert.equal(complete.missingSections.length, 0);
+  assert.equal(complete.rejectionReasons.length, 0);
+  assert.ok(complete.score.verification >= 4);
+  assert.ok(complete.score.scopeControl >= 4);
+});
+
 test('spec plan and apply load adopted engine memory context', () => {
   const workspace = createWorkspace();
   const learningSlug =

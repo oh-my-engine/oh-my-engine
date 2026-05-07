@@ -27,6 +27,7 @@ export interface InitResult {
   directories: string[];
   migratedLegacy: boolean;
   syncedTargets: string[];
+  projectAgentTargets: string[];
   installedAgentTargets: string[];
   scanSummary: string;
   contextFilesUpdated: number;
@@ -860,9 +861,16 @@ export function initializeProject(options: InitOptions): InitResult {
     ? syncRules([], options.projectRoot).map((result: Record<string, any>) => `${result.platform}: ${result.target}`)
     : [];
 
+  const { installAgents } = require('./agents');
+  const projectAgentTargets = installAgents({
+    platforms: [],
+    all: true,
+    project: true,
+    projectRoot: options.projectRoot
+  }).map((result: Record<string, any>) => `${result.platform}: ${result.target}`);
+
   let installedAgentTargets: string[] = [];
   if (options.installAgents === true) {
-    const { installAgents } = require('./agents');
     installedAgentTargets = installAgents({ platforms: [], all: true, home: options.home }).map((result: Record<string, any>) => `${result.platform}: ${result.target}`);
   }
 
@@ -875,6 +883,7 @@ export function initializeProject(options: InitOptions): InitResult {
     directories: createdDirectories,
     migratedLegacy: Boolean(migration.migrated),
     syncedTargets,
+    projectAgentTargets,
     installedAgentTargets,
     scanSummary: renderScanSummary(scan),
     contextFilesUpdated
@@ -928,6 +937,8 @@ export function renderInitResult(result: InitResult): string {
     `Agent context files updated: ${result.contextFilesUpdated}`,
     `Integration targets synced: ${result.syncedTargets.length}`,
     ...result.syncedTargets.map(target => `  - ${target}`),
+    `Project agent commands installed: ${result.projectAgentTargets.length}`,
+    ...result.projectAgentTargets.map(target => `  - ${target}`),
     `Agent commands installed: ${result.installedAgentTargets.length}`,
     ...result.installedAgentTargets.map(target => `  - ${target}`),
     'Created directories:',

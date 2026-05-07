@@ -1,144 +1,56 @@
 ---
 name: ome-ui
 version: 1.0.0
-description: 从设计稿还原 UI 组件
-author: yunxi
-tags: [ui, design, mastergo, figma, code-generation]
+description: Restore UI components from a design source with project design rules.
+author: oh-my-engine
+tags: [ome, ui, design, workflow]
 ---
 
 # ome-ui
 
-从 MasterGo/Figma 设计稿自动生成 UI 组件代码。
+## Purpose
+Restore or implement UI from a design source while preserving project layout, theme, i18n, accessibility, responsiveness, and component conventions.
 
-## 使用方法
+## When to Use
+- Use for Figma, MasterGo, screenshots, design descriptions, or UI restoration requests.
+- Use when the output is a concrete UI component, view, or interaction.
+- Do not use for generic component scaffolding without a design target; use `ome-comp`.
 
-```bash
-/ome-ui <design-url>
-ome guidance ui-restore --input "<design-url>"
-```
+## Inputs
+- Design URL, screenshot, description, or component target.
+- Existing UI components, styles, tokens, routes, tests, and screenshots if available.
+- `OME.md`, `.ome/rules/`, and `ome guidance ui-restore --input "<design-source>"`.
+- References: `accessibility.md` and `testing.md`.
 
-Claude Code 可直接使用上面的 slash command。
-Codex 请按技能名 `ome-ui` 触发，并沿用相同参数。
+## Process
+1. Load OME guidance and project rules before changing code.
+2. Identify the design target, required states, responsive behavior, and asset needs.
+3. Inspect existing UI patterns, tokens, typography, spacing, i18n, and test style.
+4. Implement the smallest faithful UI slice using existing project conventions.
+5. Verify responsive behavior, accessibility basics, and relevant tests.
+6. If visual tooling is available, inspect the rendered result before final handoff.
+7. Report changed files, UI behavior, verification, and remaining risks.
 
-## 参数
+## Red Flags
+- The design source is inaccessible or missing critical state details.
+- The implementation would invent a new theme, token system, or layout framework.
+- Text overlaps, controls lack accessible names, or keyboard behavior is broken.
+- The requested UI conflicts with existing project rules.
 
-- `design-url`: MasterGo 或 Figma 设计稿链接
+## Common Rationalizations
+- "The screenshot looks close enough without running it."
+- "Accessibility can wait until after visual matching."
+- "A one-off style is faster than using project tokens."
+- "Responsive behavior is obvious from the desktop design."
 
-## 示例
+## Verification
+- Run relevant UI tests, typecheck, build, or visual/manual checks.
+- Verify responsive constraints and accessibility basics.
+- State exact gaps if design data or rendering verification is unavailable.
 
-```bash
-# MasterGo 设计稿
-/ome-ui https://mastergo.com/goto/xxxxx
-
-# Figma 设计稿
-/ome-ui https://www.figma.com/file/xxxxx
-```
-
-## 执行流程
-
-1. **解析设计稿 URL**
-   - 先运行/读取 `ome guidance ui-restore --input "<design-url>"` 加载 adopted learnings / generated skill directives
-   - 验证 URL 格式
-   - 提取 fileId 和 layerId
-   - 检测设计工具类型
-
-2. **获取设计数据**
-   - 调用 MCP 获取 DSL 数据
-   - 获取组件元数据
-   - 下载设计资源
-
-3. **分析设计结构**
-   - 识别组件类型
-   - 提取设计 tokens
-   - 分析布局结构
-
-4. **应用规则验证**
-   - 加载项目规则（.ome/rules/）
-   - 验证 i18n、theme、design-tokens 规则
-   - 记录验证结果
-
-5. **生成代码**
-   - 生成组件文件
-   - 生成样式文件
-   - 生成类型定义
-   - 生成测试文件
-
-6. **写入文件**
-   - 检查输出目录
-   - 写入生成的文件
-   - 更新 index 文件
-
-7. **验证生成结果**
-   - 检查语法错误
-   - 检查样式错误
-   - 运行测试
-
-8. **保存记忆**
-   - 记录执行时间
-   - 记录成功/失败状态
-   - 记录应用的规则
-   - 触发进化分析（后台）
-
-## 配置
-
-### 项目配置（.ome/config.json）
-
-```json
-{
-  "workflows": {
-    "ui-restore": {
-      "enabled": true,
-      "rules": ["i18n", "theme", "design-tokens"],
-      "options": {
-        "languages": ["en", "zh-CN", "zh-TW", "th"],
-        "themeSystem": "ThemedStyle",
-        "designTokens": true,
-        "outputDir": "src/components"
-      }
-    }
-  }
-}
-```
-
-### 全局默认配置
-
-如果项目没有 `.ome/` 配置，将使用全局默认模板：
-- 位置：`~/.claude/skills/oh-my-engine/templates/ui-restore.md`
-- 规则：`~/.claude/skills/oh-my-engine/rules/`
-
-## 输出示例
-
-```
-✅ UI 还原完成
-
-生成的文件：
-  - src/components/LoginButton/index.tsx
-  - src/components/LoginButton/styles.module.css
-  - src/components/LoginButton/types.d.ts
-  - src/components/LoginButton/LoginButton.test.tsx
-
-应用的规则：
-  ✅ i18n: 所有文本已国际化
-  ✅ theme: 使用主题变量
-  ✅ design-tokens: 使用设计令牌
-
-执行时间: 8.5s
-```
-
-## 自动学习
-
-系统会自动记录执行历史，当检测到可优化模式时：
-
-- **错误重复 ≥3 次** → 自动生成修复 Skill
-- **代码复用 ≥3 处** → 自动提取工具 Skill
-- **成功率 ≥95%** → 固化为最佳实践
-
-## 相关命令
-
-- `ome init` - 初始化项目配置
-- `/ome-memory` - 查看执行历史
-- `/ome-evolve` - 触发进化分析
-
----
-
-**提示**：这个命令会随着使用次数增加而变得越来越智能！
+## Output Contract
+Final response must include:
+- Changed files
+- UI implementation summary
+- Verification
+- Remaining risks

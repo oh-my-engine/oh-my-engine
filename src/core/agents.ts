@@ -48,7 +48,13 @@ const WORKFLOWS: WorkflowDefinition[] = [
   { id: 'spec', command: 'ome-spec', title: 'Spec Workflow', usage: 'ome-spec <command> [args]', description: 'Run OpenSpec-compatible proposal, plan, apply, verify, and archive workflows.' },
   { id: 'memory', command: 'ome-memory', title: 'Memory Viewer', usage: 'ome-memory [options]', description: 'Inspect local Oh My Engine memory and adopted learnings.' },
   { id: 'evolve', command: 'ome-evolve', title: 'Evolution Analyzer', usage: 'ome-evolve [options]', description: 'Analyze local memory for learning and skill candidates.' },
-  { id: 'superpowers', command: 'ome-superpowers', title: 'Superpowers Bridge', usage: 'ome superpowers <install|update|doctor>', description: 'Install, update, or inspect Superpowers bridge entries for supported Agent editors.' }
+  { id: 'superpowers', command: 'ome-superpowers', title: 'Superpowers Bridge', usage: 'ome superpowers <install|update|doctor>', description: 'Install, update, or inspect Superpowers bridge entries for supported Agent editors.' },
+  { id: 'define', command: 'ome-define', title: 'Define Workflow', usage: 'ome define "<task or requirement>"', description: 'Clarify goal, scope, success criteria, and assumptions before implementation.' },
+  { id: 'plan', command: 'ome-plan', title: 'Plan Workflow', usage: 'ome plan "<task or requirement>"', description: 'Create implementation guidance with interfaces, edge cases, and test strategy.' },
+  { id: 'build', command: 'ome-build', title: 'Build Workflow', usage: 'ome build "<task or plan>"', description: 'Implement scoped changes in small verified slices using project rules.' },
+  { id: 'test', command: 'ome-test', title: 'Test Workflow', usage: 'ome test "<target or behavior>"', description: 'Design behavior-focused tests, regression coverage, and failure diagnosis.' },
+  { id: 'review', command: 'ome-review', title: 'Review Workflow', usage: 'ome review "<path, diff, or PR description>"', description: 'Review correctness, readability, architecture, security, performance, and tests.' },
+  { id: 'ship', command: 'ome-ship', title: 'Ship Workflow', usage: 'ome ship "<completed change>"', description: 'Run final readiness checks and prepare user-facing handoff or commit notes.' }
 ];
 
 const AGENTS: AgentDefinition[] = [
@@ -97,6 +103,13 @@ function renderCommandPrompt(agent: AgentDefinition, workflow: WorkflowDefinitio
     '- Treat `.ome/` as the project-local source of truth.',
     '- If `.ome/` is missing, ask the user to run `ome init` in the project root.',
     '',
+    'Skill anatomy discipline:',
+    '- Start by deciding whether the task is define, plan, build, test, review, or ship work.',
+    '- Name assumptions before relying on them.',
+    '- Stop and surface concrete conflicts when requirements, code, tests, or rules disagree.',
+    '- Prefer the smallest project-consistent implementation and avoid unrelated cleanup.',
+    '- Reject shortcuts such as skipping tests, testing later, or treating no error output as proof.',
+    '',
     'Task:',
     `- ${workflow.description}`,
     ...workflowSpecificInstructions(workflow),
@@ -138,6 +151,17 @@ function renderCommandPrompt(agent: AgentDefinition, workflow: WorkflowDefinitio
     ].join('\n');
   }
 
+  // Claude Code and other slash-command platforms: add frontmatter for description
+  if (agent.commandStyle === 'slash') {
+    return [
+      '---',
+      `description: ${workflow.description}`,
+      '---',
+      '',
+      ...body
+    ].join('\n');
+  }
+
   return body.join('\n');
 }
 
@@ -172,6 +196,14 @@ function workflowSpecificInstructions(workflow: WorkflowDefinition): string[] {
       '- Use `ome superpowers install all` when the user asks to install across Agent editors.',
       '- For editors without native Superpowers support, use the generated Oh My Engine wrapper workflow.',
       '- Do not copy third-party Superpowers sources into project rules.'
+    ];
+  }
+
+  if (['define', 'plan', 'build', 'test', 'review', 'ship'].includes(workflow.id)) {
+    return [
+      '- Use the lifecycle output contract named by this workflow; do not substitute a vague summary.',
+      '- Load relevant references from `skills/oh-my-engine/references/` when available.',
+      '- Finish with verification evidence or a clear statement of what could not be verified.'
     ];
   }
 
