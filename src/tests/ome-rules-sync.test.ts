@@ -5,7 +5,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 
-const { OME_BIN, repoPath } = require('./helpers');
+const { OME_BIN, omeArgs, repoPath } = require('./helpers');
 
 function createWorkspace(): string {
   const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'oh-my-engine-rules-'));
@@ -18,7 +18,7 @@ function createWorkspace(): string {
 }
 
 function runOme(args: string[], cwd: string): string {
-  return execFileSync(OME_BIN, args, { cwd, encoding: 'utf8' });
+  return execFileSync(OME_BIN, omeArgs(args), { cwd, encoding: 'utf8' });
 }
 
 test('ome rules sync writes single-file and multi-file platform targets through TypeScript core', () => {

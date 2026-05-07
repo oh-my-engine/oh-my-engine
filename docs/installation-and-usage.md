@@ -28,6 +28,7 @@ Then initialize any project:
 ```bash
 cd your-project
 ome init
+ome init-rules
 ome doctor
 ome agents install
 ```
@@ -51,6 +52,15 @@ ome agents install --all
 ome agents doctor
 ```
 
+`ome agents install --all` installs the same workflow set into Claude Code, Codex, Cursor, Trae, Windsurf, Qoder, OpenCode, and Antigravity. The set includes `ome-init-rules` for codebase-specific rule generation and `ome-superpowers` for the Superpowers bridge.
+
+Install Superpowers wrappers:
+
+```bash
+ome superpowers install all
+ome superpowers doctor all
+```
+
 Legacy one-line skill installation from GitHub remains available only for deprecated `/oh-my-engine-*` compatibility:
 
 ```bash
@@ -67,7 +77,9 @@ Works in any terminal and any project:
 
 ```bash
 ome init
+ome init-rules
 ome doctor
+ome rules init
 ome rules validate
 ome rules sync
 ome agents list
@@ -143,6 +155,8 @@ Use slash commands:
 
 ```bash
 /ome-init
+/ome-init-rules
+/ome-superpowers
 /ome-spec propose add-auth
 /ome-bug "Login button click does nothing"
 ```
@@ -165,6 +179,8 @@ Invoke installed skills by name:
 
 ```text
 ome-init
+ome-init-rules
+ome-superpowers
 ome-spec propose add-auth
 ome-bug Login button click does nothing
 ```
@@ -177,10 +193,17 @@ ome rules sync codex
 
 ### Trae
 
+Install global command wrappers:
+
+```bash
+ome agents install trae
+```
+
 Trae primarily consumes project rule files. Run:
 
 ```bash
 ome init
+ome init-rules
 ome rules sync trae
 ```
 
@@ -193,7 +216,9 @@ Generated rules target:
 ### Cursor
 
 ```bash
+ome agents install cursor
 ome init
+ome init-rules
 ome rules sync cursor
 ```
 
@@ -206,7 +231,9 @@ Generated rules target:
 ### OpenCode
 
 ```bash
+ome agents install opencode
 ome init
+ome init-rules
 ome rules sync opencode
 ```
 
@@ -219,7 +246,9 @@ AGENTS.md
 ### Windsurf
 
 ```bash
+ome agents install windsurf
 ome init
+ome init-rules
 ome rules sync windsurf
 ```
 
@@ -232,7 +261,9 @@ Generated rules target:
 ### Qoder
 
 ```bash
+ome agents install qoder
 ome init
+ome init-rules
 ome rules sync qoder
 ```
 
@@ -270,6 +301,7 @@ Generated project workflow target:
 
 ```bash
 ome init
+ome init-rules
 ome rules sync antigravity
 ```
 
@@ -290,8 +322,10 @@ ome agents install --project
 Commit project configuration and rules:
 
 ```text
-.ome/config.json
+.ome/context/project-scan.json
+.ome/context/rules-generation-prompt.md
 .ome/rules/
+OME.md
 openspec/project.md
 openspec/specs/
 ```
@@ -323,6 +357,16 @@ npm run verify
 npm pack --dry-run
 ```
 
+On Windows, if `npm run verify` fails at the Unix `rm -rf dist` clean step, run the equivalent verification sequence:
+
+```powershell
+Remove-Item -LiteralPath dist -Recurse -Force -ErrorAction SilentlyContinue
+.\node_modules\.bin\tsc.cmd -p tsconfig.json
+node dist\scripts\restore-shebangs.js
+node --test dist\tests\*.test.js
+npm pack --dry-run
+```
+
 If the local npm cache has permission problems, use an isolated cache without changing the user's home directory:
 
 ```bash
@@ -334,6 +378,7 @@ The dry-run package should include `dist/index.js`, `dist/index.d.ts`, CLI bins 
 For npm:
 
 ```bash
+npm version patch
 npm publish
 ```
 

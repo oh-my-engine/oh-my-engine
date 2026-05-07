@@ -43,6 +43,7 @@ Then initialize any project:
 ```bash
 cd your-project
 ome init
+ome init-rules
 ome doctor
 ```
 
@@ -65,6 +66,15 @@ The CLI works everywhere. Install global Agent commands when you want native `/o
 ome agents install          # interactive, default all supported agents
 ome agents install --all    # non-interactive all
 ome agents doctor
+```
+
+This installs the same workflow set into every supported Agent editor: Claude Code, Codex, Cursor, Trae, Windsurf, Qoder, OpenCode, and Antigravity. The installed set includes `ome-init-rules` and `ome-superpowers`.
+
+Install Superpowers bridge wrappers for all supported editors:
+
+```bash
+ome superpowers install all
+ome superpowers doctor all
 ```
 
 Legacy GitHub skill installers still exist for deprecated `/oh-my-engine-*` compatibility:
@@ -90,12 +100,14 @@ In your project directory:
 
 ```bash
 ome init
+ome init-rules
 ```
 
 Agent-specific legacy commands such as `/oh-my-engine-init` remain available only for compatibility. New commands use `ome-*`.
 
 This creates a `.ome/` directory with:
-- `config.json` - Workflow configurations
+- `context/project-scan.json` - A deterministic local scan of the project codebase
+- `context/rules-generation-prompt.md` - Agent instructions for personalizing rules from current source code
 - `rules/` - Project-specific rules (single source of truth, auto-syncs to all platforms)
 - `memory/` - Execution history and learnings in Markdown format (git-ignored, human-readable)
 
@@ -133,8 +145,14 @@ ome-bug "Login button click does nothing"
 
 # Validate and sync rules
 ome rules validate
+ome rules init
+ome init-rules
 ome rules preview codex
 ome rules sync
+
+# Install Superpowers bridge wrappers
+ome superpowers install all
+ome superpowers doctor all
 ```
 
 Rules sync is implemented in `src/core/rules.ts`; use `ome rules sync` instead of removed compatibility entrypoints.
@@ -171,7 +189,15 @@ Platform adapters live under `src/adapters/platforms/` and expose detection meta
 
 Generated artifact policy is documented in `docs/generated-artifacts.md`.
 
-Packaging is guarded by `npm run verify` and `prepack`, which run typecheck, clean build, and the full test suite before publishing.
+Packaging is guarded by `npm run verify` and `prepack`, which run typecheck, clean build, and the full test suite before publishing. On Windows, if `npm run verify` fails on the Unix `rm -rf dist` clean step, use:
+
+```powershell
+Remove-Item -LiteralPath dist -Recurse -Force -ErrorAction SilentlyContinue
+.\node_modules\.bin\tsc.cmd -p tsconfig.json
+node dist\scripts\restore-shebangs.js
+node --test dist\tests\*.test.js
+npm publish
+```
 
 ### Framework API
 
@@ -191,12 +217,11 @@ See [docs/framework-api.md](docs/framework-api.md) for the public API surface, a
 
 ### Available Commands
 
-- Terminal: `ome`, `ome-init`, `ome-bug`, `ome-ui`, `ome-comp`, `ome-api`, `ome-spec`, `ome-memory`, `ome-evolve`
-- Claude Code: `/ome-init`, `/ome-bug`, `/ome-ui`, `/ome-comp`, `/ome-api`, `/ome-spec`, `/ome-memory`, `/ome-evolve`
-- Codex skill names: `ome-init`, `ome-bug`, `ome-ui`, `ome-comp`, `ome-api`, `ome-spec`, `ome-memory`, `ome-evolve`
-- Antigravity workflows: `ome agents install antigravity` writes `~/.gemini/antigravity/global_workflows/*.md`; `--project` writes `.agent/workflows/*.md`.
-- Cursor/Windsurf/Qoder/OpenCode/Antigravity: `ome agents install --project` can generate project command/workflow entries where supported.
-- Trae/Cursor/Windsurf/OpenCode/Qoder/Antigravity: `ome init` generates project rules for each tool.
+- Terminal: `ome`, `ome-init`, `ome-init-rules`, `ome-bug`, `ome-ui`, `ome-comp`, `ome-api`, `ome-spec`, `ome-memory`, `ome-evolve`
+- Claude Code: `/ome-init`, `/ome-init-rules`, `/ome-bug`, `/ome-ui`, `/ome-comp`, `/ome-api`, `/ome-spec`, `/ome-memory`, `/ome-evolve`, `/ome-superpowers`
+- Codex skill names: `ome-init`, `ome-init-rules`, `ome-bug`, `ome-ui`, `ome-comp`, `ome-api`, `ome-spec`, `ome-memory`, `ome-evolve`, `ome-superpowers`
+- Cursor, Trae, Windsurf, Qoder, OpenCode, and Antigravity receive the same workflow set through `ome agents install --all`.
+- `ome init` generates project rules for each tool, and `ome init-rules` refreshes scan context plus local rule drafts before an Agent editor rewrites `.ome/rules/*.md`.
 
 ### Spec Workflow
 

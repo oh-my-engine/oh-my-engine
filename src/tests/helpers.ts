@@ -22,7 +22,13 @@ function findRepoRoot(startDirectory: string): string {
 
 const REPO_ROOT = findRepoRoot(__dirname);
 const RUNTIME_ROOT = path.join(REPO_ROOT, 'dist');
-const OME_BIN = path.join(REPO_ROOT, 'bin', 'ome');
+
+function omeArgs(args: string[]): string[] {
+  if (process.platform === 'win32') return [path.join(RUNTIME_ROOT, 'bin', 'ome.js'), ...args];
+  return args;
+}
+
+const OME_BIN = process.platform === 'win32' ? process.execPath : path.join(REPO_ROOT, 'bin', 'ome');
 
 function repoPath(...segments: string[]): string {
   return path.join(REPO_ROOT, ...segments);
@@ -36,6 +42,7 @@ module.exports = {
   OME_BIN,
   REPO_ROOT,
   RUNTIME_ROOT,
+  omeArgs,
   repoPath,
   runtimePath
 };

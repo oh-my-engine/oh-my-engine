@@ -6,7 +6,7 @@ const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const matter = require('gray-matter');
 
-const { OME_BIN, RUNTIME_ROOT, repoPath } = require('./helpers');
+const { OME_BIN, RUNTIME_ROOT, omeArgs, repoPath } = require('./helpers');
 const {
   recordExecutionMemory,
   recordPreferenceMemory
@@ -34,7 +34,7 @@ function run(command: string, args: string[], cwd: string): string {
 }
 
 function runOme(workspace: string, args: string[]): string {
-  return run(OME_BIN, args, workspace);
+  return run(OME_BIN, omeArgs(args), workspace);
 }
 
 function recordExecutionEvent(workspace: string, event: Record<string, any>): void {

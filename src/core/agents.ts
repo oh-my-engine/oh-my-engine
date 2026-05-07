@@ -40,13 +40,15 @@ interface WorkflowDefinition {
 
 const WORKFLOWS: WorkflowDefinition[] = [
   { id: 'init', command: 'ome-init', title: 'Initialize Oh My Engine', usage: 'ome-init [--install-agents]', description: 'Initialize .ome project configuration and Agent rules.' },
+  { id: 'init-rules', command: 'ome-init-rules', title: 'Personalize Oh My Engine Rules', usage: 'ome init-rules', description: 'Refresh scan context, inspect current source code, rewrite .ome/rules, and sync Agent rules.' },
   { id: 'bug', command: 'ome-bug', title: 'Bug Analysis Workflow', usage: 'ome-bug "<issue description>"', description: 'Analyze, diagnose, and plan a bug fix using project rules.' },
   { id: 'ui', command: 'ome-ui', title: 'UI Restoration Workflow', usage: 'ome-ui <design-url-or-description>', description: 'Restore UI components from a design source with project design rules.' },
   { id: 'comp', command: 'ome-comp', title: 'Component Generation Workflow', usage: 'ome-comp <component-name>', description: 'Generate reusable components using project code and design rules.' },
   { id: 'api', command: 'ome-api', title: 'API Integration Workflow', usage: 'ome-api <api-spec-or-description>', description: 'Integrate API clients, services, and contracts using project rules.' },
   { id: 'spec', command: 'ome-spec', title: 'Spec Workflow', usage: 'ome-spec <command> [args]', description: 'Run OpenSpec-compatible proposal, plan, apply, verify, and archive workflows.' },
   { id: 'memory', command: 'ome-memory', title: 'Memory Viewer', usage: 'ome-memory [options]', description: 'Inspect local Oh My Engine memory and adopted learnings.' },
-  { id: 'evolve', command: 'ome-evolve', title: 'Evolution Analyzer', usage: 'ome-evolve [options]', description: 'Analyze local memory for learning and skill candidates.' }
+  { id: 'evolve', command: 'ome-evolve', title: 'Evolution Analyzer', usage: 'ome-evolve [options]', description: 'Analyze local memory for learning and skill candidates.' },
+  { id: 'superpowers', command: 'ome-superpowers', title: 'Superpowers Bridge', usage: 'ome superpowers <install|update|doctor>', description: 'Install, update, or inspect Superpowers bridge entries for supported Agent editors.' }
 ];
 
 const AGENTS: AgentDefinition[] = [
@@ -97,6 +99,7 @@ function renderCommandPrompt(agent: AgentDefinition, workflow: WorkflowDefinitio
     '',
     'Task:',
     `- ${workflow.description}`,
+    ...workflowSpecificInstructions(workflow),
     '- Use the user arguments as the workflow input.',
     '- Keep generated project rules in the project; do not write project rules to the global Agent directory.',
     '',
@@ -136,6 +139,40 @@ function renderCommandPrompt(agent: AgentDefinition, workflow: WorkflowDefinitio
   }
 
   return body.join('\n');
+}
+
+function workflowSpecificInstructions(workflow: WorkflowDefinition): string[] {
+  if (workflow.id === 'init') {
+    return [
+      '- Run or guide the equivalent `ome init` command first.',
+      '- After initialization, continue with the `ome-init-rules` workflow in the same project.',
+      '- Do not stop after summarizing initialization; personalize `.ome/rules/*.md` from the current source code.',
+      '- Finish by running `ome rules sync` so all Agent editor files receive the updated rules.'
+    ];
+  }
+
+  if (workflow.id === 'init-rules') {
+    return [
+      '- Run or guide `ome init-rules` to refresh `.ome/context/project-scan.json` and `.ome/context/rules-generation-prompt.md`.',
+      '- If `ome init-rules` is unavailable, do not stop; read the existing `.ome/context/rules-generation-prompt.md` and continue manually.',
+      '- Read `OME.md`, `.ome/context/project-scan.json`, and `.ome/context/rules-generation-prompt.md`.',
+      '- Inspect representative current source files, tests, scripts, and existing conventions before editing rules.',
+      '- Rewrite `.ome/rules/*.md` so they are specific to this repository, not generic framework advice.',
+      '- Run `ome rules sync` after editing rules.',
+      '- Report which rule files changed and which verification commands were run.'
+    ];
+  }
+
+  if (workflow.id === 'superpowers') {
+    return [
+      '- Run or guide `ome superpowers doctor` first to inspect support status.',
+      '- Use `ome superpowers install all` when the user asks to install across Agent editors.',
+      '- For editors without native Superpowers support, use the generated Oh My Engine wrapper workflow.',
+      '- Do not copy third-party Superpowers sources into project rules.'
+    ];
+  }
+
+  return [];
 }
 
 function targetPath(baseDirectory: string, agent: AgentDefinition, workflow: WorkflowDefinition): string {
@@ -262,20 +299,18 @@ export function renderAgentsDoctor(options: AgentInstallOptions): string {
   const lines = ['Oh My Engine Agents Doctor', ''];
 
   for (const agent of selectedAgents(options.platforms, options.all || options.platforms.length === 0)) {
-    const globalStatus = agent.globalCommandDirectory
-      ? fs.existsSync(path.join(home, agent.globalCommandDirectory, agent.commandStyle === 'skill' ? WORKFLOWS[0].command : `${WORKFLOWS[0].command}.md`)) || fs.existsSync(path.join(home, agent.globalCommandDirectory, WORKFLOWS[0].command, 'SKILL.md'))
-        ? 'installed'
-        : 'missing'
-      : 'not-supported';
-    const projectStatus = agent.projectCommandDirectory
-      ? fs.existsSync(path.join(projectRoot, agent.projectCommandDirectory, `${WORKFLOWS[0].command}.md`))
-        ? 'installed'
-        : 'missing'
-      : 'not-supported';
+    const globalStatus = agent.globalCommandDirectory ? missingWorkflows(path.join(home, agent.globalCommandDirectory), agent).join(', ') || 'installed' : 'not-supported';
+    const projectStatus = agent.projectCommandDirectory ? missingWorkflows(path.join(projectRoot, agent.projectCommandDirectory), { ...agent, commandStyle: 'slash' }).join(', ') || 'installed' : 'not-supported';
     lines.push(`${agent.id}: global=${globalStatus} project=${projectStatus} rules=${agent.projectRules}`);
   }
 
   return `${lines.join('\n')}\n`;
+}
+
+function missingWorkflows(baseDirectory: string, agent: AgentDefinition): string[] {
+  return WORKFLOWS
+    .filter(workflow => !fs.existsSync(targetPath(baseDirectory, agent, workflow)))
+    .map(workflow => workflow.command);
 }
 
 export function runAgentsCommand(args: string[]): void {

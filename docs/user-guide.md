@@ -35,9 +35,18 @@ npm link
 ome --help
 ```
 
-### Install Claude Code / Codex Skills
+### Install Agent Editor Workflows
 
-Skills are optional native entry points for Claude Code and Codex:
+The `ome` CLI is the source of truth. Install native workflow entries for every supported Agent editor:
+
+```bash
+ome agents install --all
+ome agents doctor --all
+ome superpowers install all
+ome superpowers doctor all
+```
+
+Legacy skills remain available for older Claude Code / Codex setups:
 
 ```bash
 ./install.sh --agent claude
@@ -76,15 +85,17 @@ Navigate to your project directory and use the unified CLI:
 
 ```bash
 ome init
+ome init-rules
 ome doctor
 ome rules sync
 ```
 
-This creates the `.ome/` directory with default configuration.
+This creates the `.ome/` directory with project scan context, local rule drafts, and memory/spec scaffolding.
 
 It also creates an `openspec/` workspace for long-lived capability specs and in-progress changes.
 
 `ome rules sync` generates the rule files consumed by Claude Code, Codex, Trae, Cursor, Windsurf, OpenCode, Qoder, and Antigravity.
+`ome init-rules` refreshes `.ome/context/project-scan.json`, `.ome/context/rules-generation-prompt.md`, and local `.ome/rules/*.md` drafts before an Agent editor personalizes them from current source code.
 
 ### 2. Configure Your Project
 
@@ -169,6 +180,8 @@ Claude Code:
 ```bash
 ome rules sync claude-code
 /ome-init
+/ome-init-rules
+/ome-superpowers
 /ome-bug "Login button click does nothing"
 ```
 
@@ -182,6 +195,8 @@ Then invoke installed skills by name:
 
 ```text
 ome-init
+ome-init-rules
+ome-superpowers
 ome-spec propose add-auth
 ```
 
@@ -194,6 +209,12 @@ ome rules sync windsurf
 ome rules sync opencode
 ome rules sync qoder
 ome rules sync antigravity
+```
+
+Install the matching command/workflow wrappers for all of those editors with:
+
+```bash
+ome agents install --all
 ```
 
 Detailed install and platform usage is documented in `docs/installation-and-usage.md`.
@@ -256,15 +277,43 @@ Initialize Oh My Engine in a project.
 
 **What it does**:
 - Creates `.ome/` directory structure
-- Generates default `config.json`
-- Creates example rules
+- Generates `OME.md`, project scan context, and local rule drafts
 - Initializes memory system
 - Updates `.gitignore`
+- Continues into `ome-init-rules` so rules are personalized from current source code
 
 **Usage**:
 ```bash
 cd /path/to/project
 ome init
+ome init-rules
+```
+
+### `/ome-init-rules`
+
+Refresh and personalize project rules.
+
+**What it does**:
+- Refreshes `.ome/context/project-scan.json`
+- Refreshes `.ome/context/rules-generation-prompt.md`
+- Updates deterministic local rule drafts
+- Instructs the Agent to inspect current source code and rewrite `.ome/rules/*.md`
+- Runs `ome rules sync` after rule edits
+
+**Usage**:
+```bash
+ome init-rules
+ome rules init
+```
+
+### `/ome-superpowers`
+
+Install, inspect, or use Superpowers bridge entries across supported Agent editors.
+
+**Usage**:
+```bash
+ome superpowers install all
+ome superpowers doctor all
 ```
 
 ### `/ome-ui`
@@ -1002,16 +1051,13 @@ Configuration should be shared, memory should not.
 ome --help
 ome doctor
 
-# Claude Code install location
-ls ~/.claude/skills/ | grep oh-my-engine
+# Reinstall for every supported Agent editor
+ome agents install --all
+ome agents doctor --all
 
-# Codex install location
-ls ~/.codex/skills/ | grep oh-my-engine
-
-# Reinstall for the intended target if needed
-cd /path/to/oh-my-engine
-./install.sh --agent claude
-./install.sh --agent codex
+# Superpowers wrappers
+ome superpowers install all
+ome superpowers doctor all
 ```
 
 If you do not need native Claude Code/Codex skill entry points, use the CLI directly:

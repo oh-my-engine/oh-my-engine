@@ -38,6 +38,7 @@ ome agents list
 ```bash
 cd your-project
 ome init
+ome init-rules
 ome doctor
 ```
 
@@ -62,6 +63,15 @@ ome agents install --all    # 非交互全量安装
 ome agents doctor
 ```
 
+这会把同一套 `ome-*` 工作流安装到 Claude Code、Codex、Cursor、Trae、Windsurf、Qoder、OpenCode 和 Antigravity，包括 `ome-init-rules` 与 `ome-superpowers`。
+
+Superpowers 桥接入口：
+
+```bash
+ome superpowers install all
+ome superpowers doctor all
+```
+
 旧的 GitHub skills 安装器仍保留，仅用于 deprecated 的 `/oh-my-engine-*` 兼容入口：
 
 ```bash
@@ -82,11 +92,13 @@ curl -fsSL https://raw.githubusercontent.com/oh-my-engine/oh-my-engine/main/quic
 
 ```bash
 ome init
+ome init-rules
 ome doctor
 ```
 
 这会创建一个 `.ome/` 目录，包含：
-- `config.json` - 工作流配置
+- `context/project-scan.json` - 本地项目代码扫描结果
+- `context/rules-generation-prompt.md` - 给 Agent 个性化 rules 的提示
 - `rules/` - 项目特定规则
 - `memory/` - 执行历史和学习内容（git 忽略）
 
@@ -98,11 +110,11 @@ ome doctor
 
 ### 可用命令
 
-- 终端：`ome`、`ome-init`、`ome-bug`、`ome-ui`、`ome-comp`、`ome-api`、`ome-spec`、`ome-memory`、`ome-evolve`
-- Claude Code：`/ome-init`、`/ome-bug`、`/ome-ui`、`/ome-comp`、`/ome-api`、`/ome-spec`、`/ome-memory`、`/ome-evolve`
-- Codex 技能名：`ome-init`、`ome-bug`、`ome-ui`、`ome-comp`、`ome-api`、`ome-spec`、`ome-memory`、`ome-evolve`
-- Cursor / Windsurf / Qoder / OpenCode / Antigravity：`ome agents install --project` 可生成项目级 command/workflow 入口
-- Trae / Cursor / Windsurf / OpenCode / Qoder / Antigravity：`ome init` 会生成项目 rules
+- 终端：`ome`、`ome-init`、`ome-init-rules`、`ome-bug`、`ome-ui`、`ome-comp`、`ome-api`、`ome-spec`、`ome-memory`、`ome-evolve`
+- Claude Code：`/ome-init`、`/ome-init-rules`、`/ome-bug`、`/ome-ui`、`/ome-comp`、`/ome-api`、`/ome-spec`、`/ome-memory`、`/ome-evolve`、`/ome-superpowers`
+- Codex 技能名：`ome-init`、`ome-init-rules`、`ome-bug`、`ome-ui`、`ome-comp`、`ome-api`、`ome-spec`、`ome-memory`、`ome-evolve`、`ome-superpowers`
+- Cursor / Trae / Windsurf / Qoder / OpenCode / Antigravity：`ome agents install --all` 可安装同一套任务入口
+- `ome init` 会生成项目 rules；`ome init-rules` 刷新扫描上下文和 rules 草稿，供 Agent 继续个性化
 
 ### Spec 工作流
 

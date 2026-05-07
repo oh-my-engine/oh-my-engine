@@ -5,14 +5,14 @@ const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 
-const { OME_BIN } = require('./helpers');
+const { OME_BIN, omeArgs } = require('./helpers');
 
 function createWorkspace(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'oh-my-engine-spec-ts-'));
 }
 
 function runOme(args: string[], cwd: string): string {
-  return execFileSync(OME_BIN, args, {
+  return execFileSync(OME_BIN, omeArgs(args), {
     cwd,
     encoding: 'utf8'
   });

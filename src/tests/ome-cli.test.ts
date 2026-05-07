@@ -2,10 +2,10 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { execFileSync, spawnSync } = require('node:child_process');
 
-const { OME_BIN, REPO_ROOT } = require('./helpers');
+const { OME_BIN, REPO_ROOT, omeArgs } = require('./helpers');
 
 function runOme(args: string[]): string {
-  return execFileSync(OME_BIN, args, {
+  return execFileSync(OME_BIN, omeArgs(args), {
     cwd: REPO_ROOT,
     encoding: 'utf8'
   });
@@ -55,7 +55,7 @@ test('ome bug renders project workflow guidance', () => {
 });
 
 test('ome unknown command exits non-zero with a clear error', () => {
-  const result = spawnSync(OME_BIN, ['missing-command'], {
+  const result = spawnSync(OME_BIN, omeArgs(['missing-command']), {
     cwd: REPO_ROOT,
     encoding: 'utf8'
   });
