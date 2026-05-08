@@ -488,6 +488,13 @@ npm version patch
 npm publish
 ```
 
+For the official npm registry:
+
+```bash
+npm version patch
+npm publish --registry https://registry.npmjs.org/
+```
+
 Or publish an explicit version:
 
 ```bash
@@ -502,6 +509,15 @@ cmd.exe /c npm.cmd run verify
 cmd.exe /c npm.cmd pack --dry-run
 cmd.exe /c npm.cmd version patch
 cmd.exe /c npm.cmd publish
+```
+
+To force the official npm registry on Windows PowerShell:
+
+```powershell
+cmd.exe /c npm.cmd run verify
+cmd.exe /c npm.cmd pack --dry-run
+cmd.exe /c npm.cmd version patch
+cmd.exe /c npm.cmd publish --registry https://registry.npmjs.org/
 ```
 
 This publishes the `ome` CLI and all shipped command bins, including `ome-mcp`.

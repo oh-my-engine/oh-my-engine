@@ -11,6 +11,17 @@ npm version patch
 npm publish
 ```
 
+## Publish to the Official npm Registry
+
+If your machine also uses a private registry, publish explicitly to the official npm registry:
+
+```bash
+npm run verify
+npm pack --dry-run
+npm version patch
+npm publish --registry https://registry.npmjs.org/
+```
+
 ## Set an Explicit Version
 
 If you need to publish an exact version instead of `patch`:
@@ -20,6 +31,15 @@ npm run verify
 npm pack --dry-run
 npm version 0.4.3
 npm publish
+```
+
+With the official npm registry forced:
+
+```bash
+npm run verify
+npm pack --dry-run
+npm version 0.4.3
+npm publish --registry https://registry.npmjs.org/
 ```
 
 ## Common Version Bumps
@@ -67,9 +87,19 @@ cmd.exe /c npm.cmd version patch
 cmd.exe /c npm.cmd publish
 ```
 
+If you need to force the official npm registry on Windows:
+
+```powershell
+cmd.exe /c npm.cmd run verify
+cmd.exe /c npm.cmd pack --dry-run
+cmd.exe /c npm.cmd version patch
+cmd.exe /c npm.cmd publish --registry https://registry.npmjs.org/
+```
+
 ## Notes
 
 - `npm version ...` updates `package.json`, creates a git commit, and creates a git tag by default.
 - `npm publish` uses the current package contents and the current version in `package.json`.
+- `npm publish --registry https://registry.npmjs.org/` forces publish to the official npm registry.
 - Run release commands from the repository root.
 - If you need to publish a pre-release, use `npm version prerelease --preid beta` or an explicit semver.
