@@ -1082,6 +1082,174 @@ ome evolve stats
 
 更多详细信息，请参考 [Evolution System 文档](evolution.md)。
 
+## Choosing Between ome-plan and ome-spec
+
+### Quick Comparison
+
+| Dimension | `ome-plan` | `ome-spec` |
+|-----------|-----------|-----------|
+| **Purpose** | Quick implementation plan | Long-term spec management |
+| **Output** | In-memory guidance | Persistent documentation |
+| **Lifecycle** | Single task | Multiple tasks/PRs |
+| **Complexity** | Simple to medium | Medium to complex |
+| **Collaboration** | Individual development | Team collaboration |
+| **Documentation** | Minimal | Complete |
+| **Time Investment** | 5-15 minutes | 30-60+ minutes |
+
+### When to Use `ome-plan`
+
+✅ **Use `ome-plan` for:**
+
+1. **Small features with clear requirements**
+   ```bash
+   /ome-plan "add remember me checkbox to login"
+   /ome-plan "optimize list loading performance"
+   /ome-plan "fix login button styling"
+   ```
+
+2. **Individual development without team review**
+   ```bash
+   /ome-plan "refactor user state management"
+   → Get plan, approve it yourself, proceed to /ome-build
+   ```
+
+3. **Single PR changes**
+   ```bash
+   /ome-plan "add rate limiting to login API"
+   → Implement in one PR
+   ```
+
+4. **Temporary or experimental changes**
+   ```bash
+   /ome-plan "temporarily disable third-party login"
+   → Quick solution, no long-term maintenance needed
+   ```
+
+**Output Example:**
+```markdown
+Implementation approach:
+- Modify src/auth/login.ts
+- Add src/components/LoginForm.tsx
+
+API changes:
+- POST /api/login returns { token, expiresIn }
+
+Test plan:
+- Unit tests for validation logic
+- Integration tests for API flow
+
+Assumptions:
+- Using JWT instead of sessions
+```
+
+### When to Use `ome-spec`
+
+✅ **Use `ome-spec` for:**
+
+1. **Complex features requiring multiple stages**
+   ```bash
+   ome spec import user-authentication --source-file prd.md
+   ome spec propose user-authentication
+   → Creates proposal.md, design.md, tasks.md
+   ```
+
+2. **Team collaboration with review requirements**
+   ```bash
+   ome spec propose payment-integration
+   → Team reviews proposal.md and design.md
+   → Discuss and approve before implementation
+   ```
+
+3. **Long-term capabilities requiring documentation**
+   ```bash
+   ome spec propose payment-integration
+   → After implementation, archive to openspec/specs/
+   → Future enhancements reference this spec
+   ```
+
+4. **Changes spanning multiple PRs**
+   ```bash
+   ome spec propose database-migration
+   ome spec apply database-migration --task "migrate users table"
+   → PR #1
+   ome spec apply database-migration --task "migrate orders table"
+   → PR #2
+   ome spec verify database-migration
+   → All tasks complete
+   ```
+
+5. **Decisions requiring traceability**
+   ```bash
+   # Why did we choose JWT over sessions?
+   → Check openspec/specs/user-authentication/design.md
+   → Complete rationale documented
+   ```
+
+**Output Structure:**
+```
+openspec/
+├── changes/user-authentication/
+│   ├── proposal.md      # Problem, goals, risks
+│   ├── design.md        # Architecture, interfaces, security
+│   ├── tasks.md         # Task breakdown
+│   └── specs/
+│       └── user-authentication/
+│           └── spec.md  # Requirements and scenarios
+└── specs/               # Archived long-term specs
+```
+
+### Decision Tree
+
+```
+New Task
+    │
+    ├─ Needs team review?
+    │   └─ Yes → ome-spec
+    │
+    ├─ Needs long-term documentation?
+    │   └─ Yes → ome-spec
+    │
+    ├─ Spans multiple PRs?
+    │   └─ Yes → ome-spec
+    │
+    ├─ Involves architectural decisions?
+    │   └─ Yes → ome-spec
+    │
+    ├─ Needs decision traceability?
+    │   └─ Yes → ome-spec
+    │
+    └─ None of the above
+        └─ ome-plan (quick solution)
+```
+
+### Hybrid Approach
+
+You can combine both:
+
+```bash
+# Use spec for overall feature management
+ome spec propose user-authentication
+
+# Use plan for implementation details
+ome spec apply user-authentication --task "implement login API"
+→ During implementation, discover need for rate limiting
+/ome-plan "add rate limiting to login API"
+→ Quick plan, implement immediately
+
+# Continue spec workflow
+ome spec verify user-authentication
+ome spec archive user-authentication
+```
+
+### Rule of Thumb
+
+- **Can finish in 1-2 hours** → `ome-plan`
+- **Needs 1+ days** → `ome-spec`
+- **Only you will see it** → `ome-plan`
+- **Team needs to see it** → `ome-spec`
+- **One-time change** → `ome-plan`
+- **Evolving capability** → `ome-spec`
+
 ## Best Practices
 
 ### 1. Start Simple
