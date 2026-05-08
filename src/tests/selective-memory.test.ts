@@ -655,6 +655,10 @@ test('skill candidates must be verified before adoption and preserve adopted sta
     ])
   );
 
+  if (verifyOutput.record.verification.state !== 'passed') {
+    console.error('Verification failed:', JSON.stringify(verifyOutput.record.verification, null, 2));
+  }
+
   assert.equal(verifyOutput.record.status, 'verified');
   assert.equal(verifyOutput.record.verification.state, 'passed');
 
@@ -721,6 +725,7 @@ Apply a focused project pattern safely.
 ## When to Use
 - Use when the current task matches verified evidence.
 - Do not use for unrelated scope.
+- Out of scope: unrelated cleanup or refactoring.
 
 ## Inputs
 - User task input.
@@ -737,7 +742,7 @@ Apply a focused project pattern safely.
 
 ## Red Flags
 - Requirement conflict with current code.
-- Security risk or unrequested dependency.
+- Security risk or unrequested dependencies.
 - Scope expands into unrelated cleanup.
 
 ## Common Rationalizations
