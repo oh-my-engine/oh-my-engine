@@ -127,6 +127,15 @@ evolution:
     adoptedPreferenceMinEvidence: 2
   evaluationInterval: daily
   optimizationThreshold: 85
+directories:
+  plans: .ome/plans
+  rules: .ome/rules
+  memory: .ome/memory
+  spec: .ome/spec
+  context: .ome/context
+  docs: .ome/docs
+  generatedSkills: .ome/generated-skills
+  workflows: .ome/workflows
 ---
 
 # Oh My Engine Configuration
