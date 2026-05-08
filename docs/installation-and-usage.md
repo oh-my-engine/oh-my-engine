@@ -488,6 +488,24 @@ npm version patch
 npm publish
 ```
 
+Or publish an explicit version:
+
+```bash
+npm version 0.4.3
+npm publish
+```
+
+On Windows PowerShell, use the shim path if plain `npm` is blocked:
+
+```powershell
+cmd.exe /c npm.cmd run verify
+cmd.exe /c npm.cmd pack --dry-run
+cmd.exe /c npm.cmd version patch
+cmd.exe /c npm.cmd publish
+```
+
+This publishes the `ome` CLI and all shipped command bins, including `ome-mcp`.
+
 For GitHub:
 
 ```bash

@@ -230,6 +230,17 @@ node --test dist\tests\*.test.js
 npm publish
 ```
 
+Recommended release flow:
+
+```bash
+npm run verify
+npm pack --dry-run
+npm version patch
+npm publish
+```
+
+This publishes the `ome` CLI and all packaged command bins, including `ome-mcp`.
+
 ### Framework API
 
 The package also exposes a typed CommonJS API for tools that embed Oh My Engine instead of shelling out to the CLI:

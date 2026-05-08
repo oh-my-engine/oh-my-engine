@@ -21,6 +21,7 @@ test('npm bin points directly to the compiled executable', () => {
     'ome-review': 'dist/bin/ome-review.js',
     'ome-ship': 'dist/bin/ome-ship.js',
     'ome-spec': 'dist/bin/ome-spec.js',
+    'ome-mcp': 'dist/bin/ome-mcp.js',
     'ome-memory': 'dist/bin/ome-memory.js',
     'ome-evolve': 'dist/bin/ome-evolve.js'
   };
