@@ -3,6 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { getErrorMessage } = require('../../../core/errors');
+const { getSpecPaths } = require('../../../core/spec-config');
 
 const {
   collectWorkflowGuidance,
@@ -139,11 +140,10 @@ export function buildEngineMemoryContext(argv: string[] = process.argv.slice(2))
   const options = parseArgs(argv);
   const projectRoot = path.resolve(options.projectRoot);
   const guidance = collectWorkflowGuidance(projectRoot, options.workflow);
+  const specPaths = getSpecPaths(projectRoot);
 
   const filePath = path.join(
-    projectRoot,
-    'openspec',
-    'changes',
+    specPaths.changes,
     options.changeSlug,
     'context',
     'engine-memory.md'

@@ -103,6 +103,20 @@ export {
   renderWorkflowCommand
 } from './core/workflows';
 
+export {
+  doctorMcp,
+  initMcp,
+  parseMcpArgs,
+  previewMcp
+} from './core/mcp';
+
+export type {
+  McpOptions,
+  McpProviderId,
+  McpTargetResult,
+  McpTargetStatus
+} from './core/mcp';
+
 export type {
   WorkflowName
 } from './core/workflows';
@@ -121,3 +135,12 @@ export {
   assessSkillMarkdown,
   verifySkillCandidate
 } from './skills/oh-my-engine/lib/skill-candidate-verifier';
+
+export {
+  generateAgentGuidanceFile,
+  generateAllAgentGuidanceFiles
+} from './core/agents';
+
+export type {
+  AgentGuidanceResult
+} from './core/agents';

@@ -46,7 +46,7 @@ flowchart TD
     A[PRD Sources<br/>MCP / URL / Local doc / Inline text / Images] --> B[Import Layer]
     B --> C[Normalized Change Context<br/>source.md / prompt.md / analysis.md / references.json / assets]
     C --> D[Decompose Layer<br/>agent reasoning + rules + memory]
-    D --> E[OpenSpec Change Artifacts<br/>proposal.md / design.md / tasks.md / specs/*/spec.md]
+    D --> E[Spec Change Artifacts<br/>proposal.md / design.md / tasks.md / specs/*/spec.md]
     E --> F[plan]
     F --> G[apply]
     G --> H[verify]
@@ -115,7 +115,7 @@ This layer should continue to reason about structured text artifacts, not raw im
 Recommended active change layout:
 
 ```text
-openspec/
+.ome/spec/
 └── changes/
     └── <change-id>/
         ├── context/

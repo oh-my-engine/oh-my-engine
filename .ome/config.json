@@ -33,6 +33,24 @@
       "skills": ["ome-api"],
       "rules": ["code-style"],
       "options": {}
+    },
+    "spec": {
+      "enabled": true,
+      "description": "基于规范驱动的开发工作流",
+      "skills": ["ome-spec"],
+      "rules": ["code-style", "documentation", "testing"],
+      "options": {
+        "specRoot": ".ome/spec",
+        "changesDir": ".ome/spec/changes",
+        "specsDir": ".ome/spec/specs",
+        "archiveDir": ".ome/spec/archive",
+        "memoryDir": ".ome/memory/specs",
+        "defaultFlow": "import-decompose-plan-apply-verify-archive",
+        "manualFlow": "propose-plan-apply-verify-archive",
+        "contextDirName": "context",
+        "assetsDirName": "assets",
+        "verifyCommands": ["npm test"]
+      }
     }
   },
   "rules": {

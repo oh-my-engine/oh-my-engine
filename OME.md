@@ -1,98 +1,108 @@
 ---
-version: 1.0.0
 project:
-  name: Oh My Engine
-  type: workflow-engine
-  framework: node
+  name: oh-my-engine
+  template: default
+  type: cli
+  framework: Node.js
+  frameworks:
+    - Node.js
+  language: TypeScript
+  packageManager: npm
+  tooling:
+    - build-script
+    - check-script
+    - test-script
+    - typescript
+  sourceDirectories:
+    - src
+    - docs
+    - schemas
+    - skills
+    - examples
+    - bin
+  testFramework: node:test
+  testFrameworks:
+    - node:test
+  buildTools:
+    - typescript
+  filesScanned: 186
+  detectedPatterns:
+    - automated-tests
+    - build-script
+    - build-tooling
+    - commonjs-exports
+    - commonjs-require
+    - console-logging
+    - data-access
+    - deployment-config
+    - environment-variables
+    - esm-exports
+    - esm-imports
+    - http-routing
+    - koa-context
+    - npm-package-manager
+    - src-directory
+    - structured-content-parsing
+    - try-catch-error-handling
+    - typecheck-script
+    - typed-source
+version: 1.0.0
 workflows:
   ui-restore:
-    enabled: true
-    description: 从设计稿还原 UI 组件
-    skills:
-      - ome-ui
-    rules:
-      - domain-ui-theme
-      - domain-i18n
-      - domain-ui-design-tokens
-    options: {}
+    enabled: false
+    rules: []
   bug-analysis:
     enabled: true
-    description: 分析和修复 Bug
-    skills:
-      - ome-bug
     rules:
-      - universal-code-style
-    options: {}
+      - project-overview
+      - code-style
+      - architecture
+      - testing
+      - tooling
+      - security
+      - logging-error-handling
   component-gen:
     enabled: true
-    description: 生成可复用组件
-    skills:
-      - ome-comp
     rules:
-      - domain-ui-theme
-      - domain-i18n
-      - domain-ui-design-tokens
-    options: {}
+      - code-style
+      - architecture
+      - tooling
   api-integration:
     enabled: true
-    description: 集成 API 接口
-    skills:
-      - ome-api
     rules:
-      - universal-code-style
-    options: {}
-  perf-optimization:
+      - routing-middleware
+      - data-access
+      - configuration-env
+      - security
+      - logging-error-handling
+  rules-personalization:
     enabled: true
-    description: 性能分析和优化
-    skills:
-      - ome-perf
     rules:
-      - universal-performance
-      - perf-web-vitals
-      - perf-bundle-optimization
-    options: {}
-  security-audit:
+      - architecture
+      - code-style
+      - configuration-env
+      - data-access
+      - deployment
+      - logging-error-handling
+      - project-overview
+      - routing-middleware
+      - security
+      - testing
+      - tooling
+  spec:
     enabled: true
-    description: 安全漏洞扫描和修复
-    skills:
-      - ome-security
-    rules:
-      - universal-security
-      - universal-error-handling
-    options: {}
-  test-generation:
-    enabled: true
-    description: 自动生成测试用例
-    skills:
-      - ome-test
-    rules:
-      - universal-testing
-      - test-unit-jest
-      - test-e2e-playwright
-    options: {}
-  code-review:
-    enabled: true
-    description: 代码审查和质量检查
-    skills:
-      - ome-review
-    rules:
-      - universal-code-style
-      - universal-documentation
-      - universal-error-handling
-    options: {}
-rules:
-  theme:
-    description: 主题系统规则
-    required: true
-  i18n:
-    description: 多语言规则
-    required: true
-  design_tokens:
-    description: 设计令牌规则
-    required: true
-  code_style:
-    description: 代码风格规则
-    required: true
+    format: openspec-compatible
+    options:
+      specRoot: .ome/spec
+      changesDir: .ome/spec/changes
+      specsDir: .ome/spec/specs
+      archiveDir: .ome/spec/archive
+      memoryDir: .ome/memory/specs
+      defaultFlow: import-decompose-plan-apply-verify-archive
+      manualFlow: propose-plan-apply-verify-archive
+      contextDirName: context
+      assetsDirName: assets
+      verifyCommands: []
 memory:
   enabled: true
   captureMode: selective
@@ -104,7 +114,8 @@ memory:
     preferencePromotion: 0.8
     knowledgePromotion: 0.85
     skillCandidatePromotion: 0.9
-  retention_days: 90
+  retention: 90d
+  maxExecutions: 1000
 evolution:
   enabled: true
   autoApply: false
@@ -114,233 +125,57 @@ evolution:
     learningCandidateMinEvidence: 3
     skillCandidateMinEvidence: 3
     adoptedPreferenceMinEvidence: 2
-platforms:
-  enabled:
-    - claude-code
-    - cursor
-    - trae
-    - antigravity
-    - codex
-    - opencode
-    - windsurf
-    - qoder
-  platforms:
-    claude-code:
-      name: Claude Code
-      description: Anthropic 官方 CLI/Desktop/Web
-      type: single-file
-      file: CLAUDE.md
-      format: markdown-index
-      autoSync: true
-    cursor:
-      name: Cursor IDE
-      description: AI-first IDE
-      type: multi-file
-      directory: .cursor/rules
-      format: mdc
-      extension: .mdc
-      frontmatter:
-        glob: '**/*'
-        alwaysApply: true
-      autoSync: true
-    trae:
-      name: Trae
-      description: Trae AI Agent
-      type: multi-file
-      directory: .trae/rules
-      format: markdown
-      extension: .md
-      autoSync: true
-    antigravity:
-      name: Antigravity
-      description: Antigravity AI Agent
-      type: multi-file
-      directory: .agents/rules
-      format: markdown
-      extension: .md
-      numberedPrefix: true
-      autoSync: true
-    codex:
-      name: Codex
-      description: Codex AI Agent
-      type: single-file
-      file: AGENTS.md
-      format: markdown-index
-      autoSync: true
-    opencode:
-      name: OpenCode
-      description: OpenCode AI Agent
-      type: single-file
-      file: AGENTS.md
-      format: markdown-index
-      autoSync: true
-    windsurf:
-      name: Windsurf
-      description: Windsurf IDE by Codeium
-      type: single-file
-      file: .windsurfrules
-      format: markdown-index
-      autoSync: true
-    qoder:
-      name: Qoder
-      description: Qoder AI Agent
-      type: multi-file
-      directory: .qoder/rules
-      format: markdown
-      extension: .md
-      autoSync: true
-  ruleMapping:
-    _comment: 规则文件名映射：源文件名 -> 各平台的文件名
-    i18n:
-      cursor: i18n-localization
-      trae: i18n-localization
-      agents: i18n
-      default: i18n
-    theme:
-      cursor: theme-system-enforcement
-      trae: theme-system-enforcement
-      agents: theme-and-styling
-      default: theme
-    design-tokens:
-      cursor: design-tokens
-      trae: design-tokens
-      agents: design-tokens
-      default: design-tokens
-    code-style:
-      cursor: typescript-react-native
-      trae: typescript-react-native
-      agents: typescript-react-native
-      default: code-style
-  customPlatforms:
-    _comment: 在这里添加自定义平台
-    _example:
-      name: My Custom Agent
-      type: single-file
-      file: .myagent/rules.md
-      format: markdown-index
-      autoSync: true
+  evaluationInterval: daily
+  optimizationThreshold: 85
 ---
 
-# Oh My Engine 配置文档
+# Oh My Engine Configuration
 
-## 项目信息
+## Project Information
 
-- **项目名称**: Oh My Engine
-- **项目类型**: workflow-engine
-- **框架**: node
+- **Project Name**: oh-my-engine
+- **Template**: default
+- **Project Type**: cli
+- **Frameworks**: Node.js
+- **Language**: TypeScript
+- **Package Manager**: npm
+- **Version**: 1.0.0
 
+## Project Scan
 
-## Workflows 说明
+- **Files Scanned**: 186
+- **Source Directories**: src, docs, schemas, skills, examples, bin
+- **Entrypoints**: dist/index.d.ts, dist/index.js, src/index.ts
+- **Test Frameworks**: node:test
+- **Tooling**: build-script, check-script, test-script, typescript
+- **Build Tools**: typescript
+- **Detected Patterns**: automated-tests, build-script, build-tooling, commonjs-exports, commonjs-require, console-logging, data-access, deployment-config, environment-variables, esm-exports, esm-imports, http-routing, koa-context, npm-package-manager, src-directory, structured-content-parsing, try-catch-error-handling, typecheck-script, typed-source
 
-### ui-restore
+## Workflows
 
-从设计稿还原 UI 组件
+This project has the following workflows enabled:
 
-**Skills**: ome-ui
+- **ui-restore**: disabled because no UI framework was detected
+- **bug-analysis**: Bug analysis workflow with project-specific code, architecture, and tooling rules
+- **component-gen**: Component generation workflow
+- **api-integration**: API integration workflow
+- **spec**: OpenSpec workflow for structured change management
 
-**应用规则**:
-- theme
-- i18n
-- design-tokens
+## Memory System
 
-### bug-analysis
+The memory system is enabled with selective capture mode. It records:
+- Workflow command executions
+- Explicit remember requests
+- Post-run promotions
 
-分析和修复 Bug
+## Evolution System
 
-**Skills**: ome-bug
+The evolution system analyzes patterns and suggests improvements. It requires verification before adopting changes.
 
-**应用规则**:
-- code-style
+## Agent Personalization
 
-### component-gen
+For deeper AI-assisted personalization, ask your agent editor to follow `.ome/context/rules-generation-prompt.md`.
 
-生成可复用组件
+## Getting Started
 
-**Skills**: ome-comp
-
-**应用规则**:
-- theme
-- i18n
-- design-tokens
-
-### api-integration
-
-集成 API 接口
-
-**Skills**: ome-api
-
-**应用规则**:
-- code-style
-
-## 记忆系统
-
-记忆系统采用 **selective** 捕获模式，保留 **90** 天。
-
-**阈值配置**:
-- 偏好提升: 0.8
-- 知识提升: 0.85
-- Skill 候选提升: 0.9
-
-## 进化系统
-
-进化系统**已启用**。
-
-- **自动应用**: 否
-- **需要验证**: 是
-
-**阈值配置**:
-- 学习候选最小证据: 3
-- Skill 候选最小证据: 3
-
-## 平台集成
-
-当前启用了 **8** 个 AI 平台的集成，规则会自动同步到各平台。
-
-**启用的平台**: claude-code, cursor, trae, antigravity, codex, opencode, windsurf, qoder
-
-### Claude Code
-
-- **类型**: single-file
-- **文件**: CLAUDE.md
-- **格式**: markdown-index
-- **自动同步**: 是
-
-### Cursor IDE
-
-- **类型**: multi-file
-- **目录**: .cursor/rules
-- **格式**: mdc
-- **自动同步**: 是
-
-### Windsurf
-
-- **类型**: single-file
-- **文件**: .windsurfrules
-- **格式**: markdown-index
-- **自动同步**: 是
-
-## 自定义配置
-
-你可以在此添加自定义配置说明和项目特定的文档。
-
-### 如何修改配置
-
-1. 直接编辑 OME.md 文件的 YAML frontmatter 部分
-2. 运行 `ome config validate` 验证配置格式
-3. 运行 `ome rules sync` 同步规则到各平台
-
-### 如何添加新规则
-
-1. 在 `.ome/rules/` 目录下创建新的 `.md` 文件
-2. 使用命名前缀分类（universal-*, framework-*, domain-*, toolchain-*）
-3. 添加 YAML frontmatter 元数据
-4. 运行 `ome rules sync` 同步到各平台
-
-### 相关命令
-
-```bash
-ome rules list              # 列出所有规则
-ome rules sync              # 同步规则到各平台
-ome config validate         # 验证配置文件
-ome doctor                  # 检查项目健康状态
-```
+Run `ome help` to see available commands.

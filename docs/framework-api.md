@@ -5,8 +5,13 @@ Oh My Engine can be used as both a CLI and a CommonJS library. The package entry
 ```js
 const {
   countOpenCheckboxes,
+  doctorMcp,
+  initMcp,
+  parseMcpArgs,
+  previewMcp,
   writeTextFile,
   initializeProject,
+  generateAgentGuidanceFile,
   listAdapters,
   listAdapterManifests,
   previewAdapterSync,
@@ -38,6 +43,65 @@ initializeProject({
   repoRoot: require('node:path').resolve(__dirname, '..')
 });
 ```
+
+This automatically generates:
+- `OME.md` configuration file
+- `.ome/` directory structure
+- `CLAUDE.md` and `AGENTS.md` with auto-detection rules
+- Project-specific rules in `.ome/rules/`
+
+## MCP Configuration
+
+Use the MCP helpers when another tool wants to manage one source config and sync it to editor-specific targets.
+
+```js
+const { initMcp, doctorMcp, previewMcp } = require('oh-my-engine');
+
+initMcp({
+  all: true,
+  projectRoot: process.cwd(),
+  home: process.env.HOME
+});
+
+const preview = previewMcp({
+  all: true,
+  projectRoot: process.cwd(),
+  home: process.env.HOME
+});
+
+const doctor = doctorMcp({
+  all: true,
+  projectRoot: process.cwd(),
+  home: process.env.HOME
+});
+```
+
+`initMcp(...)` creates `.ome/mcp/source.json` and `.ome/mcp/README.md`. `previewMcp(...)` shows the editor-specific config that would be generated. `doctorMcp(...)` reports file presence and token environment status.
+
+## Agent Guidance Generation
+
+Use `generateAgentGuidanceFile` to create or update agent integration files (CLAUDE.md, AGENTS.md) with auto-detection rules.
+
+```js
+const { generateAgentGuidanceFile } = require('oh-my-engine');
+const { scanProject } = require('oh-my-engine/dist/core/project-scanner');
+
+const scan = scanProject(process.cwd());
+const result = generateAgentGuidanceFile(
+  process.cwd(),
+  { id: 'claude-code', projectRules: 'CLAUDE.md', commandStyle: 'slash' },
+  scan
+);
+
+console.log(result.created ? 'Created' : 'Updated', result.path);
+```
+
+The guidance file includes:
+- Auto-detection rules for when to use `/ome-bug`, `/ome-ui`, `/ome-api`, etc.
+- Lifecycle stage detection (define/plan/build/test/review/ship)
+- Command priority guidelines
+- Project context references
+- Rule index (within `<!-- OME:START -->` markers)
 
 ## Platform Adapters
 

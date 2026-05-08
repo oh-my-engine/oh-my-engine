@@ -10,8 +10,9 @@
 6. [Rules System](#rules-system)
 7. [Memory System](#memory-system)
 8. [Evolution System](#evolution-system)
-9. [Best Practices](#best-practices)
-10. [Troubleshooting](#troubleshooting)
+9. [Migration Guide](#migration-guide)
+10. [Best Practices](#best-practices)
+11. [Troubleshooting](#troubleshooting)
 
 ## Installation
 
@@ -125,6 +126,24 @@ Edit `.ome/config.json`:
   }
 }
 ```
+
+### 2.1 Configure Design MCP
+
+Use one project-local source file and sync it to each editor:
+
+```bash
+ome mcp init --all
+ome mcp sync
+ome mcp doctor
+```
+
+This creates:
+
+- `.ome/mcp/source.json` as the single source of truth
+- `.ome/mcp/README.md` with setup notes
+- editor-specific MCP config files after `ome mcp sync`
+
+Do not put real tokens into project files. Use environment variables such as `FIGMA_API_KEY` and `MG_MCP_TOKEN`.
 
 ### 3. Add Project Rules
 
@@ -422,6 +441,14 @@ ome superpowers doctor all
 
 Restore UI from design files (Figma, Sketch, etc.).
 
+Before using this workflow with Figma or MasterGo sources, initialize and sync MCP first:
+
+```bash
+ome mcp init --all
+ome mcp sync
+ome mcp doctor
+```
+
 **What it does**:
 - Analyzes design file
 - Generates component code
@@ -630,7 +657,50 @@ Analyze patterns and suggest improvements.
 
 ### Project Configuration
 
-**config.json** structure:
+Oh My Engine supports two configuration formats:
+
+1. **OME.md** (推荐) - Markdown with YAML frontmatter
+2. **config.json** (legacy) - JSON configuration file
+
+Configuration priority: `OME.md` > `.ome/config.json` > defaults
+
+**OME.md** structure (recommended):
+
+```yaml
+---
+version: 1.0.0
+project:
+  name: My Project
+  type: react-native
+  framework: expo
+workflows:
+  spec-driven:
+    enabled: true
+    description: 基于规范驱动的开发工作流
+    skills:
+      - ome-spec
+    rules:
+      - universal-code-style
+      - universal-documentation
+    options:
+      specRoot: .ome/spec
+      changesDir: .ome/spec/changes
+      specsDir: .ome/spec/specs
+      archiveDir: .ome/spec/archive
+memory:
+  enabled: true
+  captureMode: selective
+evolution:
+  enabled: true
+  autoApply: false
+---
+
+# Project Documentation
+
+Your project documentation here...
+```
+
+**config.json** structure (legacy):
 
 ```json
 {
@@ -1249,6 +1319,32 @@ ome spec archive user-authentication
 - **Team needs to see it** → `ome-spec`
 - **One-time change** → `ome-plan`
 - **Evolving capability** → `ome-spec`
+
+## Migration Guide
+
+### Spec Workspace Migration (v0.4.1+)
+
+从 v0.4.1 开始，spec 工作区已从 `openspec/` 迁移到 `.ome/spec/`。
+
+**快速迁移：**
+
+```bash
+# 如果你有现有的 openspec/ 目录
+mv openspec .ome/spec
+
+# 更新配置
+ome config migrate
+
+# 验证
+ome doctor
+```
+
+**详细迁移指南：** 参见 [Spec 工作区迁移指南](../.ome/docs/spec-migration-guide.md)
+
+**主要变更：**
+- 目录位置：`openspec/` → `.ome/spec/`
+- 配置方式：推荐使用 `OME.md` 而不是 `config.json`
+- 向后兼容：旧配置仍然支持
 
 ## Best Practices
 

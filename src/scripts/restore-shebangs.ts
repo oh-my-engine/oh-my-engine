@@ -8,6 +8,7 @@ const executableFiles = [
   'dist/bin/ome-ui.js',
   'dist/bin/ome-comp.js',
   'dist/bin/ome-api.js',
+  'dist/bin/ome-mcp.js',
   'dist/bin/ome-spec.js',
   'dist/bin/ome-memory.js',
   'dist/bin/ome-evolve.js',

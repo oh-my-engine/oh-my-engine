@@ -29,6 +29,7 @@ export interface InitResult {
   syncedTargets: string[];
   projectAgentTargets: string[];
   installedAgentTargets: string[];
+  agentGuidanceFiles: string[];
   scanSummary: string;
   contextFilesUpdated: number;
 }
@@ -53,9 +54,9 @@ const ENGINE_DIRECTORIES = [
   `${ENGINE_DIR}/memory/preferences`,
   `${ENGINE_DIR}/memory/skill-candidates`,
   `${ENGINE_DIR}/memory/specs`,
-  'openspec/changes',
-  'openspec/specs',
-  'openspec/archive'
+  '.ome/spec/changes',
+  '.ome/spec/specs',
+  '.ome/spec/archive'
 ];
 
 function ensureDirectory(directoryPath: string): void {
@@ -183,10 +184,10 @@ function buildDefaultConfig(scan: ProjectScanSummary, template: string): any {
         enabled: true,
         format: 'openspec-compatible',
         options: {
-          specRoot: 'openspec',
-          changesDir: 'openspec/changes',
-          specsDir: 'openspec/specs',
-          archiveDir: 'openspec/archive',
+          specRoot: '.ome/spec',
+          changesDir: '.ome/spec/changes',
+          specsDir: '.ome/spec/specs',
+          archiveDir: '.ome/spec/archive',
           memoryDir: `${ENGINE_DIR}/memory/specs`,
           defaultFlow: 'import-decompose-plan-apply-verify-archive',
           manualFlow: 'propose-plan-apply-verify-archive',
@@ -840,7 +841,7 @@ export function initializeProject(options: InitOptions): InitResult {
 
   const projectCreated = copyFileIfNeeded(
     path.join(options.repoRoot, 'skills', 'oh-my-engine-spec', 'templates', 'project.md'),
-    path.join(options.projectRoot, 'openspec', 'project.md'),
+    path.join(options.projectRoot, '.ome', 'spec', 'project.md'),
     options.force
   );
 
@@ -856,6 +857,13 @@ export function initializeProject(options: InitOptions): InitResult {
   const contextFilesUpdated = writeProjectContext(options.projectRoot, scan, options.force);
 
   appendGitignoreOnce(options.projectRoot, `${ENGINE_DIR}/memory/`);
+
+  // 生成所有平台的 Agent 指导文件
+  const { generateAllAgentGuidanceFiles } = require('./agents');
+  const agentGuidanceResults = generateAllAgentGuidanceFiles(options.projectRoot, scan);
+  const agentGuidanceFiles = agentGuidanceResults
+    .filter((r: any) => r.action !== 'skipped')
+    .map((r: any) => `${r.platform}: ${r.path}`);
 
   const syncedTargets = options.sync !== false
     ? syncRules([], options.projectRoot).map((result: Record<string, any>) => `${result.platform}: ${result.target}`)
@@ -885,6 +893,7 @@ export function initializeProject(options: InitOptions): InitResult {
     syncedTargets,
     projectAgentTargets,
     installedAgentTargets,
+    agentGuidanceFiles,
     scanSummary: renderScanSummary(scan),
     contextFilesUpdated
   };
@@ -932,9 +941,11 @@ export function renderInitResult(result: InitResult): string {
     `Legacy .oh-my-engine migration: ${result.migratedLegacy ? 'migrated to .ome' : 'not needed'}`,
     `Project scan: ${result.scanSummary}`,
     `Config: ${result.configCreated ? 'created' : 'preserved'}`,
-    `openspec/project.md: ${result.projectCreated ? 'created' : 'preserved'}`,
+    `.ome/spec/project.md: ${result.projectCreated ? 'created' : 'preserved'}`,
     `Rule files updated: ${result.rulesUpdated}`,
     `Agent context files updated: ${result.contextFilesUpdated}`,
+    `Agent guidance files generated: ${result.agentGuidanceFiles.length}`,
+    ...result.agentGuidanceFiles.map(file => `  - ${file}`),
     `Integration targets synced: ${result.syncedTargets.length}`,
     ...result.syncedTargets.map(target => `  - ${target}`),
     `Project agent commands installed: ${result.projectAgentTargets.length}`,
@@ -943,10 +954,11 @@ export function renderInitResult(result: InitResult): string {
     ...result.installedAgentTargets.map(target => `  - ${target}`),
     'Created directories:',
     `  - ${ENGINE_DIR}/`,
-    '  - openspec/',
+    '  - .ome/spec/',
     'Next steps:',
     `  - Run \`ome init-rules\` after major code changes to refresh the dynamic rule set`,
     `  - Review ${ENGINE_DIR}/rules/ for the local scan-based rule drafts`,
-    `  - In any Agent editor, run \`ome-init-rules\` or load ${ENGINE_DIR}/context/rules-generation-prompt.md to personalize rules from the latest source code`
+    `  - In any Agent editor, run \`ome-init-rules\` or load ${ENGINE_DIR}/context/rules-generation-prompt.md to personalize rules from the latest source code`,
+    `  - All ${result.agentGuidanceFiles.length} Agent platforms now have auto-detection rules for automatic OME command usage`
   ].join('\n') + '\n';
 }

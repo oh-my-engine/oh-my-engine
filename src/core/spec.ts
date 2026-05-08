@@ -5,6 +5,7 @@ const { initializeProject, parseInitArgs } = require('./init');
 const { ENGINE_DIR, enginePath } = require('./paths');
 const { ensureDirectory, writeJsonFile, writeTextFile } = require('./file-system');
 const { countDoneCheckboxes, countOpenCheckboxes, renderTemplate, slugify, utcIso, utcStamp } = require('./spec-utils');
+const { loadSpecConfig, getSpecPaths } = require('./spec-config');
 
 
 const SPEC_COMMANDS = ['init', 'import', 'decompose', 'propose', 'plan', 'apply', 'status', 'verify', 'archive'];
@@ -78,10 +79,11 @@ export function listSpecCommands(): string[] {
 
 export function runSpecInit(args: string[]): void {
   const result = initializeProject(parseInitArgs(args));
+  const paths = getSpecPaths(result.projectRoot);
   process.stdout.write(`Initialized Oh My Engine project in ${result.projectRoot}\n`);
   process.stdout.write(`Template: ${result.template}\n`);
   process.stdout.write(`Config: ${result.configCreated ? 'created' : 'preserved'}\n`);
-  process.stdout.write(`openspec/project.md: ${result.projectCreated ? 'created' : 'preserved'}\n`);
+  process.stdout.write(`${paths.config.specRoot}/project.md: ${result.projectCreated ? 'created' : 'preserved'}\n`);
   process.stdout.write(`Rule files updated: ${result.rulesUpdated}\n`);
 }
 
@@ -100,9 +102,10 @@ export function runSpecPropose(args: string[]): void {
     repoRoot: options.repoRoot
   });
 
-  const changeDirectory = path.join(options.projectRoot, 'openspec', 'changes', changeSlug);
-  const changeSpecDirectory = path.join(changeDirectory, 'specs', capabilitySlug);
-  const memoryFile = enginePath(options.projectRoot, 'memory', 'specs', `${changeSlug}.json`);
+  const paths = getSpecPaths(options.projectRoot);
+  const changeDirectory = paths.changeDir(changeSlug);
+  const changeSpecDirectory = paths.changeSpecDir(changeSlug, capabilitySlug);
+  const memoryFile = paths.memoryFile(changeSlug);
 
   if (fs.existsSync(changeDirectory) && !options.force) {
     const hasExistingChange = ['proposal.md', 'design.md', 'tasks.md'].some(name => fs.existsSync(path.join(changeDirectory, name))) || fs.existsSync(path.join(changeDirectory, 'specs'));
@@ -154,6 +157,7 @@ export function runSpecPropose(args: string[]): void {
   };
   writeFile(memoryFile, JSON.stringify(memory, null, 2));
 
+  const relativeChangeDir = path.relative(options.projectRoot, changeDirectory);
   recordSpecExecutionMemory(options.projectRoot, {
     source: 'workflow_command',
     workflow: 'spec',
@@ -170,10 +174,10 @@ export function runSpecPropose(args: string[]): void {
     status: 'proposed',
     summary: 'Scaffolded a spec change and initialized project memory.',
     filesTouched: [
-      `openspec/changes/${changeSlug}/proposal.md`,
-      `openspec/changes/${changeSlug}/design.md`,
-      `openspec/changes/${changeSlug}/tasks.md`,
-      `openspec/changes/${changeSlug}/specs/${capabilitySlug}/spec.md`,
+      `${relativeChangeDir}/proposal.md`,
+      `${relativeChangeDir}/design.md`,
+      `${relativeChangeDir}/tasks.md`,
+      `${relativeChangeDir}/specs/${capabilitySlug}/spec.md`,
       `${ENGINE_DIR}/memory/specs/${changeSlug}.json`
     ],
     testsRun: [],
@@ -182,10 +186,10 @@ export function runSpecPropose(args: string[]): void {
   });
 
   process.stdout.write('Created change scaffold:\n');
-  process.stdout.write(`  - openspec/changes/${changeSlug}/proposal.md\n`);
-  process.stdout.write(`  - openspec/changes/${changeSlug}/design.md\n`);
-  process.stdout.write(`  - openspec/changes/${changeSlug}/tasks.md\n`);
-  process.stdout.write(`  - openspec/changes/${changeSlug}/specs/${capabilitySlug}/spec.md\n`);
+  process.stdout.write(`  - ${relativeChangeDir}/proposal.md\n`);
+  process.stdout.write(`  - ${relativeChangeDir}/design.md\n`);
+  process.stdout.write(`  - ${relativeChangeDir}/tasks.md\n`);
+  process.stdout.write(`  - ${relativeChangeDir}/specs/${capabilitySlug}/spec.md\n`);
   process.stdout.write(`  - ${ENGINE_DIR}/memory/specs/${changeSlug}.json\n`);
 }
 
@@ -198,11 +202,12 @@ function writeJson(filePath: string, payload: Record<string, any>): void {
   writeJsonFile(filePath, payload);
 }
 
-function ensureChangeContext(changeInput: string): { changeSlug: string; projectRoot: string; changeDirectory: string; memoryFile: string; memory: Record<string, any> } {
+function ensureChangeContext(changeInput: string): { changeSlug: string; projectRoot: string; changeDirectory: string; memoryFile: string; memory: Record<string, any>; paths: any } {
   const changeSlug = slugify(changeInput);
   const projectRoot = process.cwd();
-  const changeDirectory = path.join(projectRoot, 'openspec', 'changes', changeSlug);
-  const memoryFile = enginePath(projectRoot, 'memory', 'specs', `${changeSlug}.json`);
+  const paths = getSpecPaths(projectRoot);
+  const changeDirectory = paths.changeDir(changeSlug);
+  const memoryFile = paths.memoryFile(changeSlug);
 
   if (!fs.existsSync(changeDirectory)) {
     throw new Error(`Change does not exist: ${changeInput}`);
@@ -212,7 +217,7 @@ function ensureChangeContext(changeInput: string): { changeSlug: string; project
     throw new Error(`Missing memory file for change: ${changeInput}`);
   }
 
-  return { changeSlug, projectRoot, changeDirectory, memoryFile, memory: readJson(memoryFile) };
+  return { changeSlug, projectRoot, changeDirectory, memoryFile, memory: readJson(memoryFile), paths };
 }
 
 function updateMemoryState(memoryFile: string, memory: Record<string, any>, status: string, phase: string, changeDirectory: string): Record<string, any> {
@@ -261,16 +266,19 @@ function appendNoteToTasks(tasksPath: string, note: string): void {
 function refreshEngineMemoryContext(projectRoot: string, changeSlug: string, capability: string, workflow: string): void {
   const { collectWorkflowGuidance, renderWorkflowGuidanceText } = require('../skills/oh-my-engine/lib/workflow-guidance');
   const report = collectWorkflowGuidance(projectRoot, workflow);
-  const contextPath = path.join(projectRoot, 'openspec', 'changes', changeSlug, 'context', 'engine-memory.md');
+  const paths = getSpecPaths(projectRoot);
+  const contextPath = path.join(paths.contextDir(changeSlug), 'engine-memory.md');
   ensureDirectory(path.dirname(contextPath));
   writeFile(contextPath, renderWorkflowGuidanceText(report, `change=${changeSlug} capability=${capability}`));
 }
 
-function printExistingReviewFiles(changeDirectory: string, changeSlug: string): void {
+function printExistingReviewFiles(changeDirectory: string, changeSlug: string, projectRoot: string): void {
+  const paths = getSpecPaths(projectRoot);
+  const relativeChangeDir = path.relative(projectRoot, changeDirectory);
   const optional = ['source.md', 'prompt.md', 'analysis.md', 'engine-memory.md'];
   for (const fileName of optional) {
     if (fs.existsSync(path.join(changeDirectory, 'context', fileName))) {
-      process.stdout.write(`  - openspec/changes/${changeSlug}/context/${fileName}\n`);
+      process.stdout.write(`  - ${relativeChangeDir}/context/${fileName}\n`);
     }
   }
 }
@@ -312,6 +320,10 @@ function countEngineDirectives(changeDirectory: string): number {
 }
 
 function recordLifecycleMemory(projectRoot: string, memory: Record<string, any>, phase: string, status: string, summary: string): void {
+  const paths = getSpecPaths(projectRoot);
+  const changeDir = paths.changeDir(memory.changeSlug);
+  const relativeChangeDir = path.relative(projectRoot, changeDir);
+
   recordSpecExecutionMemory(projectRoot, {
     source: 'workflow_command',
     workflow: 'spec',
@@ -328,9 +340,9 @@ function recordLifecycleMemory(projectRoot: string, memory: Record<string, any>,
     status,
     summary,
     filesTouched: [
-      `openspec/changes/${memory.changeSlug}/proposal.md`,
-      `openspec/changes/${memory.changeSlug}/design.md`,
-      `openspec/changes/${memory.changeSlug}/tasks.md`,
+      `${relativeChangeDir}/proposal.md`,
+      `${relativeChangeDir}/design.md`,
+      `${relativeChangeDir}/tasks.md`,
       `${ENGINE_DIR}/memory/specs/${memory.changeSlug}.json`
     ],
     testsRun: [],
@@ -341,21 +353,24 @@ function recordLifecycleMemory(projectRoot: string, memory: Record<string, any>,
 
 export function runSpecPlan(args: string[]): void {
   if (args.length < 1) throw new Error('Usage: ome spec plan <change-id>');
-  const { changeSlug, projectRoot, changeDirectory, memoryFile, memory } = ensureChangeContext(args[0]);
+  const { changeSlug, projectRoot, changeDirectory, memoryFile, memory, paths } = ensureChangeContext(args[0]);
 
   appendPlanningNotes(path.join(changeDirectory, 'design.md'));
   refreshEngineMemoryContext(projectRoot, changeSlug, memory.capability, 'spec');
   const updated = updateMemoryState(memoryFile, memory, 'planned', 'plan', changeDirectory);
   recordLifecycleMemory(projectRoot, updated, 'plan', 'planned', 'Refined the spec change plan and updated lifecycle state.');
 
+  const relativeChangeDir = path.relative(projectRoot, changeDirectory);
+  const promotedSpec = paths.longTermSpecFile(memory.capability);
+
   process.stdout.write(`Planned change: ${args[0]}\n`);
   process.stdout.write('Review:\n');
-  printExistingReviewFiles(changeDirectory, changeSlug);
-  process.stdout.write(`  - openspec/changes/${changeSlug}/proposal.md\n`);
-  process.stdout.write(`  - openspec/changes/${changeSlug}/design.md\n`);
-  process.stdout.write(`  - openspec/changes/${changeSlug}/tasks.md\n`);
-  const promotedSpec = path.join(projectRoot, 'openspec', 'specs', memory.capability, 'spec.md');
-  process.stdout.write(`  - openspec/specs/${memory.capability}/spec.md${fs.existsSync(promotedSpec) ? '' : ' (not promoted yet)'}\n`);
+  printExistingReviewFiles(changeDirectory, changeSlug, projectRoot);
+  process.stdout.write(`  - ${relativeChangeDir}/proposal.md\n`);
+  process.stdout.write(`  - ${relativeChangeDir}/design.md\n`);
+  process.stdout.write(`  - ${relativeChangeDir}/tasks.md\n`);
+  const relativePromotedSpec = path.relative(projectRoot, promotedSpec);
+  process.stdout.write(`  - ${relativePromotedSpec}${fs.existsSync(promotedSpec) ? '' : ' (not promoted yet)'}\n`);
   printEngineDirectives(changeDirectory);
 }
 
@@ -382,7 +397,7 @@ function parseApplyArgs(args: string[]): Record<string, any> {
 
 export function runSpecApply(args: string[]): void {
   const options = parseApplyArgs(args);
-  const { changeSlug, projectRoot, changeDirectory, memoryFile, memory } = ensureChangeContext(options.changeId);
+  const { changeSlug, projectRoot, changeDirectory, memoryFile, memory, paths } = ensureChangeContext(options.changeId);
   const tasksPath = path.join(changeDirectory, 'tasks.md');
   const proposalPath = path.join(changeDirectory, 'proposal.md');
 
@@ -407,16 +422,20 @@ export function runSpecApply(args: string[]): void {
   const updated = updateMemoryState(memoryFile, memory, 'in_progress', 'apply', changeDirectory);
   recordLifecycleMemory(projectRoot, updated, 'apply', 'in_progress', 'Updated spec implementation progress and lifecycle state.');
 
+  const relativeChangeDir = path.relative(projectRoot, changeDirectory);
+  const promotedSpec = paths.longTermSpecFile(memory.capability);
+  const relativePromotedSpec = path.relative(projectRoot, promotedSpec);
+  const relativeProjectMd = path.relative(projectRoot, paths.projectMd());
+
   process.stdout.write(`Apply context for change: ${options.changeId}\n`);
   process.stdout.write('Load these files before implementing:\n');
   process.stdout.write(`  - ${ENGINE_DIR}/config.json\n`);
-  process.stdout.write('  - openspec/project.md\n');
-  printExistingReviewFiles(changeDirectory, changeSlug);
-  process.stdout.write(`  - openspec/changes/${changeSlug}/proposal.md\n`);
-  process.stdout.write(`  - openspec/changes/${changeSlug}/design.md\n`);
-  process.stdout.write(`  - openspec/changes/${changeSlug}/tasks.md\n`);
-  const promotedSpec = path.join(projectRoot, 'openspec', 'specs', memory.capability, 'spec.md');
-  process.stdout.write(`  - openspec/specs/${memory.capability}/spec.md${fs.existsSync(promotedSpec) ? '' : ' (not promoted yet)'}\n`);
+  process.stdout.write(`  - ${relativeProjectMd}\n`);
+  printExistingReviewFiles(changeDirectory, changeSlug, projectRoot);
+  process.stdout.write(`  - ${relativeChangeDir}/proposal.md\n`);
+  process.stdout.write(`  - ${relativeChangeDir}/design.md\n`);
+  process.stdout.write(`  - ${relativeChangeDir}/tasks.md\n`);
+  process.stdout.write(`  - ${relativePromotedSpec}${fs.existsSync(promotedSpec) ? '' : ' (not promoted yet)'}\n`);
   printEngineDirectives(changeDirectory);
   process.stdout.write(`Pending tasks: ${updated.openTasks}\n`);
   process.stdout.write(`Completed tasks: ${updated.completedTasks}\n`);
@@ -431,14 +450,17 @@ export function runSpecStatus(args: string[]): void {
   const changeInput = args[0];
   const changeSlug = slugify(changeInput);
   const projectRoot = process.cwd();
-  const changeDirectory = path.join(projectRoot, 'openspec', 'changes', changeSlug);
-  const memoryFile = enginePath(projectRoot, 'memory', 'specs', `${changeSlug}.json`);
+  const paths = getSpecPaths(projectRoot);
+  const changeDirectory = paths.changeDir(changeSlug);
+  const memoryFile = paths.memoryFile(changeSlug);
 
   if (!fs.existsSync(memoryFile)) {
     throw new Error(`Missing memory file for change: ${changeInput}`);
   }
 
   const memory = JSON.parse(fs.readFileSync(memoryFile, 'utf8'));
+  const relativeChangeDir = path.relative(projectRoot, changeDirectory);
+
   process.stdout.write(`Change: ${memory.changeId || ''}\n`);
   process.stdout.write(`Slug: ${memory.changeSlug || ''}\n`);
   process.stdout.write(`Capability: ${memory.capability || ''}\n`);
@@ -452,7 +474,7 @@ export function runSpecStatus(args: string[]): void {
     if (fs.existsSync(path.join(changeDirectory, 'context'))) {
       process.stdout.write('Intake context: present\n');
       if (fs.existsSync(path.join(changeDirectory, 'context', 'engine-memory.md'))) {
-        process.stdout.write(`Engine memory: openspec/changes/${changeSlug}/context/engine-memory.md\n`);
+        process.stdout.write(`Engine memory: ${relativeChangeDir}/context/engine-memory.md\n`);
         process.stdout.write(`Execution directives: ${countEngineDirectives(changeDirectory)}\n`);
       }
     }
@@ -480,13 +502,15 @@ function extractRequirementsBody(deltaContent: string): string {
 }
 
 function buildCapabilitySpec(projectRoot: string, repoRoot: string, capability: string, changeId: string, deltaPath: string): void {
-  const targetPath = path.join(projectRoot, 'openspec', 'specs', capability, 'spec.md');
+  const paths = getSpecPaths(projectRoot);
+  const targetPath = paths.longTermSpecFile(capability);
+
   if (!fs.existsSync(targetPath)) {
     ensureDirectory(path.dirname(targetPath));
     fs.copyFileSync(path.join(repoRoot, 'skills', 'oh-my-engine-spec', 'templates', 'capability-spec.md'), targetPath);
   }
 
-  const proposalPath = path.join(projectRoot, 'openspec', 'changes', slugify(changeId), 'proposal.md');
+  const proposalPath = path.join(paths.changeDir(slugify(changeId)), 'proposal.md');
   const proposalContent = fs.existsSync(proposalPath) ? fs.readFileSync(proposalPath, 'utf8') : '';
   const deltaContent = fs.readFileSync(deltaPath, 'utf8');
   const summary = firstNonemptySectionLine(proposalContent, ['## Summary', '## Bug Summary']) || `Accepted behavior for capability \`${capability}\`.`;
@@ -508,13 +532,13 @@ export function runSpecArchive(args: string[]): void {
   if (args.length < 1) throw new Error('Usage: ome spec archive <change-id>');
   const projectRoot = process.cwd();
   const repoRoot = process.env.OME_REPO_ROOT || path.resolve(__dirname, '..', '..');
-  const { changeSlug, changeDirectory, memoryFile, memory } = ensureChangeContext(args[0]);
+  const { changeSlug, changeDirectory, memoryFile, memory, paths } = ensureChangeContext(args[0]);
 
   runSpecVerify([args[0], '--skip-execution-memory']);
   if (process.exitCode) return;
 
   const archiveName = `${utcStamp()}-${changeSlug}`;
-  const archiveTarget = path.join(projectRoot, 'openspec', 'archive', archiveName);
+  const archiveTarget = paths.archiveDir(archiveName);
 
   const specsDirectory = path.join(changeDirectory, 'specs');
   for (const capability of fs.readdirSync(specsDirectory)) {
@@ -525,7 +549,7 @@ export function runSpecArchive(args: string[]): void {
   ensureDirectory(path.dirname(archiveTarget));
   fs.renameSync(changeDirectory, archiveTarget);
 
-  const archivedPath = `openspec/archive/${archiveName}`;
+  const archivedPath = path.relative(projectRoot, archiveTarget);
   const updated = {
     changeId: memory.changeId,
     changeSlug: memory.changeSlug,
@@ -625,11 +649,13 @@ export function runSpecImport(args: string[]): void {
 
   initializeProject({ force: false, template: 'default', projectRoot, repoRoot });
 
-  const contextDirectory = path.join(projectRoot, 'openspec', 'changes', changeSlug, 'context');
-  const assetDirectory = path.join(contextDirectory, 'assets');
+  const paths = getSpecPaths(projectRoot);
+  const contextDirectory = paths.contextDir(changeSlug);
+  const assetDirectory = paths.assetsDir(changeSlug);
+
   if (options.force) fs.rmSync(contextDirectory, { recursive: true, force: true });
   ensureDirectory(assetDirectory);
-  ensureDirectory(enginePath(projectRoot, 'memory', 'specs'));
+  ensureDirectory(path.dirname(paths.memoryFile(changeSlug)));
 
   const importedAt = utcIso();
   const templateRoot = path.join(repoRoot, 'skills', 'oh-my-engine-spec', 'templates');
@@ -648,14 +674,15 @@ export function runSpecImport(args: string[]): void {
   const references = { changeId: options.changeId, changeSlug, importedAt, sourceType: options.sourceType, sourceReference, promptReference, attachments };
   writeJson(path.join(contextDirectory, 'references.json'), references);
 
-  const memoryFile = enginePath(projectRoot, 'memory', 'specs', `${changeSlug}.json`);
+  const memoryFile = paths.memoryFile(changeSlug);
   writeJson(memoryFile, { changeId: options.changeId, changeSlug, capability: changeSlug, mode: 'import', status: 'imported', phase: 'import', updatedAt: importedAt, openTasks: 0, completedTasks: 0, openAcceptanceCriteria: 0, archivedPath: '' });
 
+  const relativeContextDir = path.relative(projectRoot, contextDirectory);
   recordLifecycleMemory(projectRoot, readJson(memoryFile), 'import', 'imported', 'Imported source context for spec decomposition.');
   process.stdout.write(`Imported context for change: ${options.changeId}\n`);
-  process.stdout.write(`  - openspec/changes/${changeSlug}/context/source.md\n`);
-  process.stdout.write(`  - openspec/changes/${changeSlug}/context/prompt.md\n`);
-  process.stdout.write(`  - openspec/changes/${changeSlug}/context/references.json\n`);
+  process.stdout.write(`  - ${relativeContextDir}/source.md\n`);
+  process.stdout.write(`  - ${relativeContextDir}/prompt.md\n`);
+  process.stdout.write(`  - ${relativeContextDir}/references.json\n`);
   if (attachments.length > 0) process.stdout.write(`Assets copied: ${attachments.length}\n`);
 }
 
@@ -670,8 +697,10 @@ export function runSpecDecompose(args: string[]): void {
   const repoRoot = process.env.OME_REPO_ROOT || path.resolve(__dirname, '..', '..');
   const changeSlug = slugify(options.changeId);
   const capabilitySlug = slugify(options.capability || changeSlug);
-  const contextDirectory = path.join(projectRoot, 'openspec', 'changes', changeSlug, 'context');
+  const paths = getSpecPaths(projectRoot);
+  const contextDirectory = paths.contextDir(changeSlug);
   const sourcePath = path.join(contextDirectory, 'source.md');
+
   if (!fs.existsSync(sourcePath)) throw new Error(`Missing intake source for change: ${options.changeId}`);
 
   runSpecPropose([options.changeId, '--capability', capabilitySlug, '--force', ...(options.mode === 'bugfix' ? ['--bugfix'] : []), ...(options.mode === 'design-first' ? ['--design-first'] : [])]);
@@ -680,7 +709,7 @@ export function runSpecDecompose(args: string[]): void {
   const analysisContent = renderTemplate(path.join(templateRoot, 'analysis.md'), { '<change-id>': options.changeId, '<change-slug>': changeSlug, '<capability>': capabilitySlug });
   writeFile(path.join(contextDirectory, 'analysis.md'), analysisContent);
 
-  const memoryFile = enginePath(projectRoot, 'memory', 'specs', `${changeSlug}.json`);
+  const memoryFile = paths.memoryFile(changeSlug);
   const memory = readJson(memoryFile);
   memory.status = 'decomposed';
   memory.phase = 'decompose';
@@ -688,11 +717,13 @@ export function runSpecDecompose(args: string[]): void {
   writeJson(memoryFile, memory);
   recordLifecycleMemory(projectRoot, memory, 'decompose', 'decomposed', 'Decomposed imported context into proposal, design, tasks, and spec delta scaffolds.');
 
+  const relativeContextDir = path.relative(projectRoot, contextDirectory);
+  const relativeChangeDir = path.relative(projectRoot, paths.changeDir(changeSlug));
   process.stdout.write(`Decomposed change: ${options.changeId}\n`);
-  process.stdout.write(`  - openspec/changes/${changeSlug}/context/analysis.md\n`);
-  process.stdout.write(`  - openspec/changes/${changeSlug}/proposal.md\n`);
-  process.stdout.write(`  - openspec/changes/${changeSlug}/design.md\n`);
-  process.stdout.write(`  - openspec/changes/${changeSlug}/tasks.md\n`);
+  process.stdout.write(`  - ${relativeContextDir}/analysis.md\n`);
+  process.stdout.write(`  - ${relativeChangeDir}/proposal.md\n`);
+  process.stdout.write(`  - ${relativeChangeDir}/design.md\n`);
+  process.stdout.write(`  - ${relativeChangeDir}/tasks.md\n`);
 }
 
 function findUnresolvedPlaceholders(filePath: string): string[] {
@@ -716,11 +747,8 @@ function hasConcreteScenario(deltaPath: string): boolean {
 }
 
 function getVerifyCommands(projectRoot: string): string[] {
-  const configPath = enginePath(projectRoot, 'config.json');
-  if (!fs.existsSync(configPath)) return [];
-  const config = readJson(configPath);
-  const commands = config.workflows?.spec?.options?.verifyCommands || config.spec?.verifyCommands || [];
-  return Array.isArray(commands) ? commands : [];
+  const config = loadSpecConfig(projectRoot);
+  return config.verifyCommands || [];
 }
 
 export function runSpecVerify(args: string[]): void {

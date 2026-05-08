@@ -35,7 +35,18 @@ ome agents install
 
 `ome init` and `ome init-rules` scan the current repository before writing rules. The generated `.ome/rules/*.md` set is intentionally dynamic: a Koa/Gulp app can get server, routing, build, static asset, and configuration rules, while a React app can get UI/theme rules, and a backend without UI signals will not receive React Native or design-token rules.
 
-`ome init` also writes project-local Agent workflow entry files so the rules are reachable from the repository itself, not only from global installs. That includes paths such as `.claude/commands/`, `.cursor/commands/`, `.qoder/commands/`, `.opencode/command/`, `.windsurf/workflows/`, and `.agent/workflows/`.
+`ome init` also:
+- Writes project-local Agent workflow entry files (`.claude/commands/`, `.cursor/commands/`, etc.)
+- **Generates auto-detection guidance files for all 8 platforms**:
+  - Single-file: `CLAUDE.md`, `AGENTS.md`, `.windsurfrules`, `GEMINI.md`
+  - Multi-file: `.cursor/rules/00-ome-auto-detection.mdc`, `.trae/rules/00-ome-auto-detection.md`, etc.
+- These files teach AI agents when to automatically use `/ome-bug`, `/ome-ui`, `/ome-api`, and other commands
+- Creates `.ome/` directory structure and OME.md configuration
+
+**Key Feature**: After running `ome init`, **all supported Agent editors** (Claude Code, Codex, Cursor, Trae, Windsurf, Qoder, OpenCode, Antigravity) will automatically recognize task types and invoke the appropriate OME commands without manual prompting. For example:
+- User: "登录按钮点击没反应" → Agent automatically uses `/ome-bug` or `ome-bug`
+- User: "还原这个设计稿 [URL]" → Agent automatically uses `/ome-ui` or `ome-ui`
+- Command syntax adapts to each platform's style (slash commands, skills, or workflows)
 
 ### From GitHub
 
@@ -64,6 +75,27 @@ Install Superpowers wrappers:
 ome superpowers install all
 ome superpowers doctor all
 ```
+
+Initialize and sync design MCP from one project-local source:
+
+```bash
+ome mcp init --all
+ome mcp sync
+ome mcp doctor
+```
+
+`ome mcp init` creates `.ome/mcp/source.json` and `.ome/mcp/README.md`. Edit that source file when you need to enable or disable providers, then run `ome mcp sync` to write editor-specific MCP files.
+
+Current sync targets:
+
+- Claude Code: `.mcp.json`
+- Cursor: `.cursor/mcp.json`
+- OpenCode: `opencode.json` or `opencode.jsonc`
+- Codex: `~/.codex/config.toml`
+- Windsurf: `~/.codeium/windsurf/mcp_config.json`
+- Qoder / Trae / Antigravity: `.ome/mcp/*.json` import material
+
+Do not write real secrets into project files. Use environment variables such as `FIGMA_API_KEY` and `MG_MCP_TOKEN`.
 
 Legacy one-line skill installation from GitHub remains available only for deprecated `/oh-my-engine-*` compatibility:
 
@@ -128,6 +160,9 @@ ome guidance bug-analysis --input "Login button click does nothing"
 ome guidance ui-restore --input "https://mastergo.com/goto/demo"
 ome guidance component-gen --input "UserCard"
 ome guidance api-integration --input "./specs/user-api.yaml"
+ome mcp init --all
+ome mcp sync
+ome mcp doctor
 ```
 
 ### Framework API
@@ -179,6 +214,19 @@ Run this in the project to generate/update `CLAUDE.md`:
 ome rules sync claude-code
 ```
 
+Claude Code MCP config is generated separately through:
+
+```bash
+ome mcp init --all
+ome mcp sync
+```
+
+Generated target:
+
+```text
+.mcp.json
+```
+
 ### Codex
 
 Install global skills:
@@ -201,6 +249,20 @@ Run this in the project to generate/update `AGENTS.md`:
 
 ```bash
 ome rules sync codex
+```
+
+Codex MCP config is generated from `.ome/mcp/source.json` into:
+
+```text
+~/.codex/config.toml
+```
+
+Use:
+
+```bash
+ome mcp init --all
+ome mcp sync
+ome mcp doctor
 ```
 
 ### Trae
@@ -240,6 +302,12 @@ Generated rules target:
 .cursor/rules/*.mdc
 ```
 
+Generated MCP target:
+
+```text
+.cursor/mcp.json
+```
+
 ### OpenCode
 
 ```bash
@@ -253,6 +321,12 @@ Generated rules target:
 
 ```text
 AGENTS.md
+```
+
+Generated MCP target:
+
+```text
+opencode.json or opencode.jsonc
 ```
 
 ### Windsurf
@@ -270,6 +344,12 @@ Generated rules target:
 .windsurfrules
 ```
 
+Generated MCP target:
+
+```text
+~/.codeium/windsurf/mcp_config.json
+```
+
 ### Qoder
 
 ```bash
@@ -283,6 +363,12 @@ Generated rules target:
 
 ```text
 .qoder/rules/*.md
+```
+
+MCP is currently generated as manual import material:
+
+```text
+.ome/mcp/qoder.json
 ```
 
 ### Antigravity
@@ -321,6 +407,12 @@ Generated rules target:
 
 ```text
 .agent/rules/*.md
+```
+
+MCP is currently generated as manual import material:
+
+```text
+.ome/mcp/antigravity.json
 ```
 
 Project command/workflow files such as `.cursor/commands/*.md`, `.windsurf/workflows/*.md`, `.qoder/commands/*.md`, `.opencode/command/*.md`, and `.agent/workflows/*.md` are generated only when you run:

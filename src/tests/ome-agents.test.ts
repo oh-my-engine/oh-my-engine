@@ -39,11 +39,13 @@ test('ome agents install writes global short command entries', () => {
   assert.equal(fs.existsSync(path.join(home, '.claude', 'commands', 'ome-ship.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.claude', 'commands', 'ome-init-rules.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.claude', 'commands', 'ome-superpowers.md')), true);
+  assert.equal(fs.existsSync(path.join(home, '.claude', 'commands', 'ome-mcp.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.codex', 'skills', 'ome-bug', 'SKILL.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.codex', 'skills', 'ome-define', 'SKILL.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.codex', 'skills', 'ome-review', 'SKILL.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.codex', 'skills', 'ome-init-rules', 'SKILL.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.codex', 'skills', 'ome-superpowers', 'SKILL.md')), true);
+  assert.equal(fs.existsSync(path.join(home, '.codex', 'skills', 'ome-mcp', 'SKILL.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.cursor', 'commands', 'ome-init-rules.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.trae', 'commands', 'ome-init-rules.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.qoder', 'commands', 'ome-bug.md')), true);
@@ -67,6 +69,7 @@ test('ome agents install writes global short command entries', () => {
   assert.match(initRulesCommand, /do not force the project into a fixed four-rule template/);
   assert.match(initRulesCommand, /server-koa/);
   assert.match(initRulesCommand, /Run `ome rules sync` after editing rules/);
+  assert.match(fs.readFileSync(path.join(home, '.codex', 'skills', 'ome-mcp', 'SKILL.md'), 'utf8'), /Read `\.ome\/mcp\/README\.md`/);
   assert.match(codexSkill, /^---\nname: ome-bug\n/);
   assert.match(codexSkill, /\ntags: \[ome, bug, workflow\]\n---\n/);
   assert.match(antigravityWorkflow, /^---\ndescription: Analyze, diagnose, and plan a bug fix using project rules\.\n---\n/);

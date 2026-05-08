@@ -44,7 +44,7 @@ export function loadConfig(root: string = process.cwd()): Record<string, any> {
  */
 function loadMarkdownConfig(filePath: string, root: string): Record<string, any> {
   const content = fs.readFileSync(filePath, 'utf8');
-  const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+  const frontmatterMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
 
   if (!frontmatterMatch) {
     throw new Error('OME.md must contain YAML frontmatter (---\\n...\\n---)');

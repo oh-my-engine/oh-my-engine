@@ -34,10 +34,11 @@ test('ome init initializes project directories and defaults from TypeScript CLI'
   assert.match(output, /Initialized Oh My Engine project/);
   assert.equal(fs.existsSync(path.join(workspace, 'OME.md')), true);
   assert.equal(fs.existsSync(path.join(workspace, '.ome', 'rules', 'code-style.md')), true);
-  assert.equal(fs.existsSync(path.join(workspace, 'openspec', 'project.md')), true);
+  assert.equal(fs.existsSync(path.join(workspace, '.ome', 'spec', 'project.md')), true);
   assert.equal(fs.existsSync(path.join(workspace, 'CLAUDE.md')), true);
   assert.equal(fs.existsSync(path.join(workspace, 'AGENTS.md')), true);
   assert.equal(fs.existsSync(path.join(workspace, '.claude', 'commands', 'ome-init-rules.md')), true);
+  assert.equal(fs.existsSync(path.join(workspace, '.claude', 'commands', 'ome-mcp.md')), true);
   assert.equal(fs.existsSync(path.join(workspace, '.cursor', 'commands', 'ome-init-rules.md')), true);
   assert.equal(fs.existsSync(path.join(workspace, '.agent', 'workflows', 'ome-init-rules.md')), true);
 

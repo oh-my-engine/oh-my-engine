@@ -87,7 +87,7 @@ ome spec propose <change-id> --bugfix
 ### Spec 工作区
 
 ```text
-openspec/
+.ome/spec/
 ├── project.md
 ├── changes/
 │   └── <change-id>/
@@ -119,17 +119,17 @@ openspec/
         └── <change-id>.json
 ```
 
-`openspec/` 保存长期规范和当前变更，`.ome/` 保存执行记忆和学习结果。两者职责分离，不混存。
+`.ome/spec/` 保存长期规范和当前变更，`.ome/memory/` 保存执行记忆和学习结果。两者职责分离，不混存。
 
 ## 生命周期
 
 ### 1. init
 
 创建 OpenSpec-compatible 工作区：
-- `openspec/project.md`
-- `openspec/changes/`
-- `openspec/specs/`
-- `openspec/archive/`
+- `.ome/spec/project.md`
+- `.ome/spec/changes/`
+- `.ome/spec/specs/`
+- `.ome/spec/archive/`
 - `.ome/memory/specs/`
 
 ### 2. propose
@@ -178,10 +178,10 @@ openspec/
 
 执行实现时应加载：
 1. `.ome/config.json`
-2. `openspec/project.md`
+2. `.ome/spec/project.md`
 3. 当前 change 的 `context/source.md`、`context/prompt.md`、`context/analysis.md`、`context/engine-memory.md`（如果存在）
 4. 当前 change 的 `proposal.md`、`design.md`、`tasks.md`
-5. 相关 capability 的长期 `openspec/specs/<capability>/spec.md`（如果该 capability 已经被接受过）
+5. 相关 capability 的长期 `.ome/spec/specs/<capability>/spec.md`（如果该 capability 已经被接受过）
 6. `.ome/rules/`
 7. `.ome/memory/`
 
@@ -198,13 +198,42 @@ openspec/
 ### 6. archive
 
 完成后：
-1. 将 change 下的 spec delta 提升到 `openspec/specs/`（必要时创建 capability spec，并重建 canonical sections）
-2. 将 change 移入 `openspec/archive/`
+1. 将 change 下的 spec delta 提升到 `.ome/spec/specs/`（必要时创建 capability spec，并重建 canonical sections）
+2. 将 change 移入 `.ome/spec/archive/`
 3. 将执行摘要写入 `.ome/memory/specs/<change-id>.json`
 
 ## 配置
 
-### 项目配置（.ome/config.json）
+### 项目配置（OME.md 或 .ome/config.json）
+
+**推荐使用 OME.md**（在 frontmatter 中配置）：
+
+```yaml
+workflows:
+  spec-driven:
+    enabled: true
+    description: 基于规范驱动的开发工作流
+    skills:
+      - ome-spec
+    rules:
+      - universal-code-style
+      - universal-documentation
+      - universal-testing
+    options:
+      specRoot: .ome/spec
+      changesDir: .ome/spec/changes
+      specsDir: .ome/spec/specs
+      archiveDir: .ome/spec/archive
+      memoryDir: .ome/memory/specs
+      defaultFlow: import-decompose-plan-apply-verify-archive
+      manualFlow: propose-plan-apply-verify-archive
+      contextDirName: context
+      assetsDirName: assets
+      verifyCommands:
+        - npm test
+```
+
+**或使用 .ome/config.json**（向后兼容）：
 
 ```json
 {
@@ -213,10 +242,10 @@ openspec/
       "enabled": true,
       "format": "openspec-compatible",
       "options": {
-        "specRoot": "openspec",
-        "changesDir": "openspec/changes",
-        "specsDir": "openspec/specs",
-        "archiveDir": "openspec/archive",
+        "specRoot": ".ome/spec",
+        "changesDir": ".ome/spec/changes",
+        "specsDir": ".ome/spec/specs",
+        "archiveDir": ".ome/spec/archive",
         "memoryDir": ".ome/memory/specs",
         "defaultFlow": "import-decompose-plan-apply-verify-archive",
         "manualFlow": "propose-plan-apply-verify-archive",
@@ -244,7 +273,7 @@ openspec/
 - `design.md`：架构、接口、数据、风险
 - `tasks.md`：可执行任务和验证项
 - `spec-delta.md`：change 目录下 `spec.md` 的变更模板
-- `capability-spec.md`：`openspec/specs/<capability>/spec.md` 的长期规范模板
+- `capability-spec.md`：`.ome/spec/specs/<capability>/spec.md` 的长期规范模板
 
 ## 输出示例
 
@@ -252,13 +281,13 @@ openspec/
 ✅ Spec workspace updated
 
 Created:
-  - openspec/changes/user-authentication/context/source.md
-  - openspec/changes/user-authentication/context/prompt.md
-  - openspec/changes/user-authentication/context/analysis.md
-  - openspec/changes/user-authentication/proposal.md
-  - openspec/changes/user-authentication/design.md
-  - openspec/changes/user-authentication/tasks.md
-  - openspec/changes/user-authentication/specs/auth/spec.md
+  - .ome/spec/changes/user-authentication/context/source.md
+  - .ome/spec/changes/user-authentication/context/prompt.md
+  - .ome/spec/changes/user-authentication/context/analysis.md
+  - .ome/spec/changes/user-authentication/proposal.md
+  - .ome/spec/changes/user-authentication/design.md
+  - .ome/spec/changes/user-authentication/tasks.md
+  - .ome/spec/changes/user-authentication/specs/auth/spec.md
 
 Next:
   1. Replace TBD markers using context/source.md and context/prompt.md
@@ -274,4 +303,4 @@ Next:
 
 ---
 
-**提示**：优先把 `openspec/specs/` 视为长期事实来源，把 `openspec/changes/` 视为当前变更上下文。
+**提示**：优先把 `.ome/spec/specs/` 视为长期事实来源，把 `.ome/spec/changes/` 视为当前变更上下文。

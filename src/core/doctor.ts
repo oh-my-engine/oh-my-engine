@@ -7,6 +7,7 @@ const { validateRules } = require('./rules');
 const { schemaPath, validateJsonFile } = require('./schema/validator');
 const { isUsingMarkdownConfig, isUsingJsonConfig } = require('./config-loader');
 const { validateMarkdownConfig } = require('./config-migrator');
+const { getSpecPaths } = require('./spec-config');
 
 export interface DoctorLine {
   name: string;
@@ -32,13 +33,14 @@ export function runDoctorReport(projectRoot: string = process.cwd()): DoctorRepo
   const issues: string[] = [];
   const usingMarkdown = isUsingMarkdownConfig(projectRoot);
   const usingJson = isUsingJsonConfig(projectRoot);
+  const specPaths = getSpecPaths(projectRoot);
 
   const checks: DoctorLine[] = [
     { name: 'Node', value: process.version },
     { name: 'Config format', value: usingMarkdown ? 'OME.md' : (usingJson ? 'config.json (legacy)' : 'missing') },
     { name: 'Rules directory', value: directoryExists(enginePath(projectRoot, 'rules')) ? 'found' : 'missing' },
     { name: 'Memory directory', value: directoryExists(enginePath(projectRoot, 'memory')) ? 'found' : 'missing' },
-    { name: 'OpenSpec workspace', value: directoryExists(projectPath('openspec')) ? 'found' : 'missing' }
+    { name: 'Spec workspace', value: directoryExists(specPaths.root) ? 'found' : 'missing' }
   ];
 
   checks.push({ name: 'Engine directory', value: ENGINE_DIR });

@@ -49,6 +49,7 @@ const WORKFLOWS: WorkflowDefinition[] = [
   { id: 'memory', command: 'ome-memory', title: 'Memory Viewer', usage: 'ome-memory [options]', description: 'Inspect local Oh My Engine memory and adopted learnings.' },
   { id: 'evolve', command: 'ome-evolve', title: 'Evolution Analyzer', usage: 'ome-evolve [options]', description: 'Analyze local memory for learning and skill candidates.' },
   { id: 'superpowers', command: 'ome-superpowers', title: 'Superpowers Bridge', usage: 'ome superpowers <install|update|doctor>', description: 'Install, update, or inspect Superpowers bridge entries for supported Agent editors.' },
+  { id: 'mcp', command: 'ome-mcp', title: 'MCP Setup', usage: 'ome mcp <init|sync|preview|doctor> [figma|mastergo|all]', description: 'Initialize, sync, preview, or inspect Figma and MasterGo MCP configuration for Agent editors.' },
   { id: 'define', command: 'ome-define', title: 'Define Workflow', usage: 'ome define "<task or requirement>"', description: 'Clarify goal, scope, success criteria, and assumptions before implementation.' },
   { id: 'plan', command: 'ome-plan', title: 'Plan Workflow', usage: 'ome plan "<task or requirement>"', description: 'Create implementation guidance with interfaces, edge cases, and test strategy.' },
   { id: 'build', command: 'ome-build', title: 'Build Workflow', usage: 'ome build "<task or plan>"', description: 'Implement scoped changes in small verified slices using project rules.' },
@@ -196,6 +197,18 @@ function workflowSpecificInstructions(workflow: WorkflowDefinition): string[] {
       '- Use `ome superpowers install all` when the user asks to install across Agent editors.',
       '- For editors without native Superpowers support, use the generated Oh My Engine wrapper workflow.',
       '- Do not copy third-party Superpowers sources into project rules.'
+    ];
+  }
+
+  if (workflow.id === 'mcp') {
+    return [
+      '- Run or guide `ome mcp doctor` first to inspect current MCP support and token environment status.',
+      '- Use `ome mcp init --all` to create `.ome/mcp/source.json` and the initial setup notes.',
+      '- Use `ome mcp sync` after editing `.ome/mcp/source.json` so editor-specific MCP config files stay in sync.',
+      '- Read `.ome/mcp/README.md` and `.ome/mcp/source.json` before using design MCP tools.',
+      '- Do not write real Figma or MasterGo tokens into repository files, rules, commands, or prompts.',
+      '- Configure tokens through environment variables such as `FIGMA_API_KEY` and `MG_MCP_TOKEN`.',
+      '- Use generated `.ome/mcp/*.json` files only as manual import material for editors without a stable project-level MCP config path.'
     ];
   }
 
@@ -374,4 +387,302 @@ export function runAgentsCommand(args: string[]): void {
 
 export function workflowCommands(): string[] {
   return WORKFLOWS.map(workflow => workflow.command);
+}
+
+// ============================================================================
+// Agent Guidance File Generation
+// ============================================================================
+
+export interface AgentGuidanceResult {
+  platform: string;
+  path: string;
+  action: 'created' | 'updated' | 'skipped';
+}
+
+/**
+ * 判断平台是单文件还是多文件类型
+ */
+function isSingleFilePlatform(platform: AgentDefinition): boolean {
+  // 单文件平台使用根目录的单个文件
+  const singleFilePatterns = ['CLAUDE.md', 'AGENTS.md', '.windsurfrules', 'GEMINI.md'];
+  return singleFilePatterns.some(pattern => platform.projectRules.includes(pattern) && !platform.projectRules.includes('*'));
+}
+
+/**
+ * 获取文件扩展名
+ */
+function getFileExtension(platform: AgentDefinition): string {
+  if (platform.id === 'cursor') return '.mdc';
+  return '.md';
+}
+
+/**
+ * 获取平台的自动检测规则文件路径
+ */
+function getAutoDetectionFilePath(projectRoot: string, platform: AgentDefinition): string {
+  // 单文件平台
+  if (isSingleFilePlatform(platform)) {
+    if (platform.id === 'claude-code') return path.join(projectRoot, 'CLAUDE.md');
+    if (platform.id === 'codex' || platform.id === 'opencode') return path.join(projectRoot, 'AGENTS.md');
+    if (platform.id === 'windsurf') return path.join(projectRoot, '.windsurfrules');
+    if (platform.id === 'antigravity') return path.join(projectRoot, 'GEMINI.md');
+  }
+
+  // 多文件平台
+  if (platform.id === 'cursor') return path.join(projectRoot, '.cursor', 'rules', '00-ome-auto-detection.mdc');
+  if (platform.id === 'trae') return path.join(projectRoot, '.trae', 'rules', '00-ome-auto-detection.md');
+  if (platform.id === 'qoder') return path.join(projectRoot, '.qoder', 'rules', '00-ome-auto-detection.md');
+  if (platform.id === 'antigravity') return path.join(projectRoot, '.agent', 'rules', '00-ome-auto-detection.md');
+
+  return path.join(projectRoot, 'AGENTS.md'); // fallback
+}
+
+/**
+ * 构建命令示例（根据平台风格）
+ */
+function buildCommandExample(platform: AgentDefinition, command: string): string {
+  if (platform.commandStyle === 'skill') return command;
+  return `/${command}`;
+}
+
+/**
+ * 构建自动检测规则内容
+ */
+function buildAgentGuidanceContent(platform: AgentDefinition, scan: any): string {
+  const cmdBug = buildCommandExample(platform, 'ome-bug');
+  const cmdUi = buildCommandExample(platform, 'ome-ui');
+  const cmdApi = buildCommandExample(platform, 'ome-api');
+  const cmdComp = buildCommandExample(platform, 'ome-comp');
+  const cmdDefine = buildCommandExample(platform, 'ome-define');
+  const cmdPlan = buildCommandExample(platform, 'ome-plan');
+  const cmdBuild = buildCommandExample(platform, 'ome-build');
+  const cmdTest = buildCommandExample(platform, 'ome-test');
+  const cmdReview = buildCommandExample(platform, 'ome-review');
+  const cmdShip = buildCommandExample(platform, 'ome-ship');
+
+  const hasUi = scan.hasUi || (scan.uiFrameworks && scan.uiFrameworks.length > 0);
+
+  const lines: string[] = [];
+
+  // MDC frontmatter for Cursor
+  if (platform.id === 'cursor') {
+    lines.push('---');
+    lines.push('glob: "**/*"');
+    lines.push('alwaysApply: true');
+    lines.push('---');
+    lines.push('');
+  }
+
+  lines.push(`# Oh My Engine - ${platform.name} Integration`);
+  lines.push('');
+  lines.push('## 项目信息');
+  lines.push('');
+  lines.push(`- **项目名称**: ${scan.projectName || 'Unknown'}`);
+  lines.push(`- **项目类型**: ${scan.projectType || 'Unknown'}`);
+  lines.push(`- **框架**: ${scan.framework || 'Unknown'}`);
+  lines.push('- **配置文件**: OME.md');
+  lines.push('- **规则目录**: .ome/rules/');
+  lines.push('');
+  lines.push('## 🤖 自动命令检测');
+  lines.push('');
+  lines.push('当用户提出以下类型的任务时，**自动使用对应的 OME 命令**，无需用户明确指定：');
+  lines.push('');
+
+  // Bug 分析
+  lines.push('### Bug 分析和修复');
+  lines.push('**触发条件**:');
+  lines.push('- 用户描述 bug 或错误现象');
+  lines.push('- 用户说"这个功能不工作"、"报错了"、"有问题"');
+  lines.push('- 用户提供错误日志或堆栈跟踪');
+  lines.push('');
+  lines.push(`**自动使用**: \`${cmdBug} "<issue description>"\``);
+  lines.push('');
+  lines.push('**示例**:');
+  lines.push(`- "登录按钮点击没反应" → \`${cmdBug} "登录按钮点击没反应"\``);
+  lines.push(`- "API 返回 500 错误" → \`${cmdBug} "API 返回 500 错误"\``);
+  lines.push('');
+
+  // UI 还原（仅当项目有 UI 时）
+  if (hasUi) {
+    lines.push('### UI 还原');
+    lines.push('**触发条件**:');
+    lines.push('- 用户提供设计稿 URL 或截图');
+    lines.push('- 用户说"还原这个界面"、"实现这个 UI"');
+    lines.push('- 用户描述 UI 组件的视觉需求');
+    lines.push('');
+    lines.push(`**自动使用**: \`${cmdUi} <design-url-or-description>\``);
+    lines.push('');
+    lines.push('**示例**:');
+    lines.push(`- "还原这个登录页面 [URL]" → \`${cmdUi} [URL]\``);
+    lines.push(`- "实现一个卡片组件，圆角、阴影" → \`${cmdUi} "卡片组件，圆角、阴影"\``);
+    lines.push('');
+  }
+
+  // API 集成
+  lines.push('### API 集成');
+  lines.push('**触发条件**:');
+  lines.push('- 用户说"集成 XX API"、"调用 XX 接口"');
+  lines.push('- 用户提供 API 文档或 OpenAPI spec');
+  lines.push('- 用户描述需要对接的后端服务');
+  lines.push('');
+  lines.push(`**自动使用**: \`${cmdApi} <api-spec-or-description>\``);
+  lines.push('');
+  lines.push('**示例**:');
+  lines.push(`- "集成用户登录 API" → \`${cmdApi} "用户登录 API"\``);
+  lines.push(`- "对接支付接口" → \`${cmdApi} "支付接口"\``);
+  lines.push('');
+
+  // 组件生成（仅当项目有 UI 时）
+  if (hasUi) {
+    lines.push('### 组件生成');
+    lines.push('**触发条件**:');
+    lines.push('- 用户说"生成一个 XX 组件"');
+    lines.push('- 用户描述可复用组件的需求');
+    lines.push('- 用户要求创建通用 UI 元素');
+    lines.push('');
+    lines.push(`**自动使用**: \`${cmdComp} <component-name>\``);
+    lines.push('');
+    lines.push('**示例**:');
+    lines.push(`- "生成一个按钮组件" → \`${cmdComp} "Button"\``);
+    lines.push(`- "创建一个表单输入组件" → \`${cmdComp} "FormInput"\``);
+    lines.push('');
+  }
+
+  // 生命周期阶段检测
+  lines.push('### 生命周期阶段检测');
+  lines.push('');
+  lines.push('当用户的任务不明确属于哪个阶段时，**自动判断并使用对应的生命周期命令**：');
+  lines.push('');
+  lines.push(`- **需求不清晰** → \`${cmdDefine} "<task>"\``);
+  lines.push(`- **需要设计方案** → \`${cmdPlan} "<task>"\``);
+  lines.push(`- **开始编码实现** → \`${cmdBuild} "<task>"\``);
+  lines.push(`- **测试或调试** → \`${cmdTest} "<target>"\``);
+  lines.push(`- **代码审查** → \`${cmdReview} "<target>"\``);
+  lines.push(`- **准备提交** → \`${cmdShip} "<change>"\``);
+  lines.push('');
+
+  // 命令使用优先级
+  lines.push('## 📋 命令使用优先级');
+  lines.push('');
+  lines.push('1. **优先使用任务特定命令**: 如果任务明确是 bug、UI、API、组件，使用对应的命令');
+  lines.push('2. **其次使用生命周期命令**: 如果任务不属于特定类型，根据阶段使用 define/plan/build 等');
+  lines.push('3. **最后直接实现**: 只有在任务非常简单（单行修改、明显的小改动）时才直接实现，不使用 OME 命令');
+  lines.push('');
+
+  // 项目上下文
+  lines.push('## 📖 项目上下文');
+  lines.push('');
+  lines.push('在执行任何 OME 命令前，确保：');
+  lines.push('1. 读取 `OME.md` 了解项目配置');
+  lines.push('2. 根据任务类型读取 `.ome/rules/` 中的相关规则');
+  lines.push('3. 遵循项目特定的代码风格和架构约定');
+  lines.push('');
+
+  // 工作流程
+  lines.push('## 🔄 工作流程');
+  lines.push('');
+  lines.push('```');
+  lines.push('用户任务 → 判断任务类型 → 选择对应 OME 命令 → 读取项目规则 → 执行工作流 → 验证结果');
+  lines.push('```');
+  lines.push('');
+
+  // 单文件平台：添加 OME 标记块
+  if (isSingleFilePlatform(platform)) {
+    lines.push('---');
+    lines.push('');
+    lines.push('<!-- OME:START -->');
+    lines.push('# Claude Code Rules');
+    lines.push('');
+    lines.push('> 本文件由 .ome/rules/ 自动生成，请勿手动编辑 OME 标记块');
+    lines.push('> 运行 `ome rules sync` 更新');
+    lines.push('');
+    lines.push('## 规则索引');
+    lines.push('');
+    lines.push('规则索引将由 `ome rules sync` 自动生成。');
+    lines.push('<!-- OME:END -->');
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * 为单个平台生成自动检测规则文件
+ */
+export function generateAgentGuidanceFile(
+  projectRoot: string,
+  platform: AgentDefinition,
+  scan: any
+): AgentGuidanceResult {
+  const filePath = getAutoDetectionFilePath(projectRoot, platform);
+
+  // 检查文件是否已存在
+  const fileExists = fs.existsSync(filePath);
+
+  // 如果是共享文件（AGENTS.md），检查是否已被其他平台创建
+  if (fileExists && (platform.id === 'opencode' || platform.id === 'antigravity')) {
+    const basename = path.basename(filePath);
+    if (basename === 'AGENTS.md') {
+      return { platform: platform.id, path: filePath, action: 'skipped' };
+    }
+  }
+
+  // 构建指导内容
+  const content = buildAgentGuidanceContent(platform, scan);
+
+  // 单文件平台：检查是否有 OME 标记块
+  if (isSingleFilePlatform(platform) && fileExists) {
+    const existing = fs.readFileSync(filePath, 'utf8');
+    const omeStartMarker = '<!-- OME:START -->';
+    const omeEndMarker = '<!-- OME:END -->';
+
+    if (existing.includes(omeStartMarker) && existing.includes(omeEndMarker)) {
+      // 保留标记块外的用户内容，只更新自动检测规则部分
+      const markerStart = existing.indexOf(omeStartMarker);
+      const userContent = existing.substring(0, markerStart).trim();
+
+      // 如果用户内容存在，保留它
+      if (userContent) {
+        return { platform: platform.id, path: filePath, action: 'skipped' };
+      }
+    }
+  }
+
+  // 写入文件
+  writeFile(filePath, content);
+
+  return {
+    platform: platform.id,
+    path: filePath,
+    action: fileExists ? 'updated' : 'created'
+  };
+}
+
+/**
+ * 为所有平台生成自动检测规则文件
+ */
+export function generateAllAgentGuidanceFiles(
+  projectRoot: string,
+  scan: any
+): AgentGuidanceResult[] {
+  const results: AgentGuidanceResult[] = [];
+  const createdFiles = new Set<string>();
+
+  for (const platform of AGENTS) {
+    const filePath = getAutoDetectionFilePath(projectRoot, platform);
+
+    // 跳过已创建的共享文件
+    if (createdFiles.has(filePath)) {
+      results.push({ platform: platform.id, path: filePath, action: 'skipped' });
+      continue;
+    }
+
+    const result = generateAgentGuidanceFile(projectRoot, platform, scan);
+    results.push(result);
+
+    if (result.action !== 'skipped') {
+      createdFiles.add(filePath);
+    }
+  }
+
+  return results;
 }

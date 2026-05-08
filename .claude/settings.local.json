@@ -36,7 +36,9 @@
       "Bash(xargs -I {} sh -c 'echo \"=== {} ===\" && head -20 {}')",
       "Bash(cat)",
       "Read(//tmp/**)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(find skills/oh-my-engine* -name \"*plan*\" -o -name \"*output*\" -o -name \"*contract*\")",
+      "Bash(./dist/bin/ome.js agents *)"
     ]
   }
 }

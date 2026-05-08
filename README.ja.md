@@ -106,8 +106,8 @@ ome-init
 
 ### 利用可能なコマンド
 
-- Claude Code: `/ome-init`、`/ome-ui`、`/ome-bug`、`/ome-comp`、`/ome-api`、`/ome-spec`、`/ome-memory`、`/ome-evolve`
-- Codex のスキル名: `ome-init`、`ome-ui`、`ome-bug`、`ome-comp`、`ome-api`、`ome-spec`、`ome-memory`、`ome-evolve`
+- Claude Code: `/ome-init`、`/ome-init-rules`、`/ome-ui`、`/ome-bug`、`/ome-comp`、`/ome-api`、`/ome-spec`、`/ome-memory`、`/ome-evolve`、`/ome-superpowers`、`/ome-mcp`
+- Codex のスキル名: `ome-init`、`ome-init-rules`、`ome-ui`、`ome-bug`、`ome-comp`、`ome-api`、`ome-spec`、`ome-memory`、`ome-evolve`、`ome-superpowers`、`ome-mcp`
 
 ### Spec ワークフロー
 
@@ -236,3 +236,14 @@ Anthropic の [Claude Code](https://claude.ai/code) と [Codex](https://codex.de
 ---
 
 **注意**：Oh My Engine を使用するには Claude Code または Codex が必要です。このフレームワークを使用する前に、少なくとも一方がインストールされ、設定されていることを確認してください。
+## MCP Setup
+
+Use one project-local MCP source and sync it to each editor:
+
+```bash
+ome mcp init --all
+ome mcp sync
+ome mcp doctor
+```
+
+`ome mcp init` creates `.ome/mcp/source.json` and `.ome/mcp/README.md`. Edit the source file, then run `ome mcp sync` to write editor-specific MCP config files. Keep real tokens in environment variables such as `FIGMA_API_KEY` and `MG_MCP_TOKEN`.

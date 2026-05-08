@@ -72,6 +72,16 @@ ome superpowers install all
 ome superpowers doctor all
 ```
 
+从项目内单一源配置初始化并同步设计 MCP：
+
+```bash
+ome mcp init --all
+ome mcp sync
+ome mcp doctor
+```
+
+`ome mcp init` 会生成 `.ome/mcp/source.json` 和 `.ome/mcp/README.md`；后续统一编辑这份源配置，再通过 `ome mcp sync` 同步到各编辑器自己的 MCP 配置文件。真实 token 不写入仓库文件，只通过 `FIGMA_API_KEY`、`MG_MCP_TOKEN` 等环境变量提供。
+
 旧的 GitHub skills 安装器仍保留，仅用于 deprecated 的 `/oh-my-engine-*` 兼容入口：
 
 ```bash
@@ -110,9 +120,9 @@ ome doctor
 
 ### 可用命令
 
-- 终端：`ome`、`ome-init`、`ome-init-rules`、`ome-bug`、`ome-ui`、`ome-comp`、`ome-api`、`ome-spec`、`ome-memory`、`ome-evolve`
-- Claude Code：`/ome-init`、`/ome-init-rules`、`/ome-bug`、`/ome-ui`、`/ome-comp`、`/ome-api`、`/ome-spec`、`/ome-memory`、`/ome-evolve`、`/ome-superpowers`
-- Codex 技能名：`ome-init`、`ome-init-rules`、`ome-bug`、`ome-ui`、`ome-comp`、`ome-api`、`ome-spec`、`ome-memory`、`ome-evolve`、`ome-superpowers`
+- 终端：`ome`、`ome-init`、`ome-init-rules`、`ome-bug`、`ome-ui`、`ome-comp`、`ome-api`、`ome-spec`、`ome-memory`、`ome-evolve`、`ome-superpowers`、`ome-mcp`
+- Claude Code：`/ome-init`、`/ome-init-rules`、`/ome-bug`、`/ome-ui`、`/ome-comp`、`/ome-api`、`/ome-spec`、`/ome-memory`、`/ome-evolve`、`/ome-superpowers`、`/ome-mcp`
+- Codex 技能名：`ome-init`、`ome-init-rules`、`ome-bug`、`ome-ui`、`ome-comp`、`ome-api`、`ome-spec`、`ome-memory`、`ome-evolve`、`ome-superpowers`、`ome-mcp`
 - Cursor / Trae / Windsurf / Qoder / OpenCode / Antigravity：`ome agents install --all` 可安装同一套任务入口
 - `ome init` 会生成项目 rules；`ome init-rules` 刷新扫描上下文和 rules 草稿，供 Agent 继续个性化
 

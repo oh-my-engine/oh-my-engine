@@ -12,6 +12,7 @@ Oh My Engine is a powerful framework that transforms Claude Code and Codex into 
 
 - **🧠 Memory System**: Remembers execution history, learnings, and user preferences in human-readable Markdown format
 - **🔄 Self-Evolution**: Automatically learns from patterns, generates rules and skills, and intelligently decides when to apply improvements
+- **🤖 Auto-Detection**: AI agents automatically recognize task types and invoke the right OME commands without manual prompting
 - **⚙️ Project Configuration**: Per-project workflow customization with `.ome/`
 - **📋 Rich Workflows**: Pre-built workflows for UI restoration, bug analysis, component generation, and API integration
 - **📝 Spec Mode**: OpenSpec-compatible proposal, planning, apply, verify, and archive workflow
@@ -77,6 +78,16 @@ ome superpowers install all
 ome superpowers doctor all
 ```
 
+Initialize and sync design-tool MCP configuration from a single project source:
+
+```bash
+ome mcp init --all
+ome mcp sync
+ome mcp doctor
+```
+
+`ome mcp init` creates `.ome/mcp/source.json` and `.ome/mcp/README.md`. `ome mcp sync` expands that source into editor-specific MCP config files such as `.mcp.json`, `.cursor/mcp.json`, `opencode.json`, `~/.codex/config.toml`, and Windsurf `mcp_config.json`. Tokens stay in environment variables like `FIGMA_API_KEY` and `MG_MCP_TOKEN`.
+
 Legacy GitHub skill installers still exist for deprecated `/oh-my-engine-*` compatibility:
 
 ```bash
@@ -110,6 +121,17 @@ This creates a `.ome/` directory with:
 - `context/rules-generation-prompt.md` - Agent instructions for personalizing rules from current source code
 - `rules/` - Project-specific rules (single source of truth, auto-syncs to all platforms)
 - `memory/` - Execution history and learnings in Markdown format (git-ignored, human-readable)
+
+It also generates **agent integration files** at the project root:
+- **Single-file platforms**: `CLAUDE.md`, `AGENTS.md`, `.windsurfrules`, `GEMINI.md`
+- **Multi-file platforms**: `.cursor/rules/00-ome-auto-detection.mdc`, `.trae/rules/00-ome-auto-detection.md`, etc.
+
+**🎯 Auto-Detection Feature**: These files teach **all 8 supported AI agents** when to automatically use OME commands:
+- User: "登录按钮点击没反应" → Agent automatically uses `/ome-bug` or `ome-bug`
+- User: "还原这个设计稿 [URL]" → Agent automatically uses `/ome-ui` or `ome-ui`
+- User: "集成用户登录 API" → Agent automatically uses `/ome-api` or `ome-api`
+
+No need to manually type `/ome-bug` or `/ome-ui` — **every supported agent** (Claude Code, Codex, Cursor, Trae, Windsurf, Qoder, OpenCode, Antigravity) recognizes task types and invokes the right workflow automatically. Command syntax adapts to each platform's style.
 
 The generated rule set is dynamic. `ome init-rules` scans the repository and creates rule files that match detected code, frameworks, build tools, routes, templates, styles, configs, tests, and deployment signals instead of forcing a fixed four-file template.
 
@@ -157,6 +179,11 @@ ome rules sync
 # Install Superpowers bridge wrappers
 ome superpowers install all
 ome superpowers doctor all
+
+# Initialize and sync MCP config from .ome/mcp/source.json
+ome mcp init --all
+ome mcp sync
+ome mcp doctor
 ```
 
 Rules sync is implemented in `src/core/rules.ts`; use `ome rules sync` instead of removed compatibility entrypoints.
@@ -238,9 +265,9 @@ See [docs/lifecycle-workflows.md](docs/lifecycle-workflows.md) and [docs/skill-a
 
 #### All Commands
 
-- Terminal: `ome`, `ome-init`, `ome-init-rules`, `ome-bug`, `ome-ui`, `ome-comp`, `ome-api`, `ome-spec`, `ome-memory`, `ome-evolve`, `ome-define`, `ome-plan`, `ome-build`, `ome-test`, `ome-review`, `ome-ship`
-- Claude Code: `/ome-init`, `/ome-init-rules`, `/ome-bug`, `/ome-ui`, `/ome-comp`, `/ome-api`, `/ome-spec`, `/ome-memory`, `/ome-evolve`, `/ome-superpowers`, `/ome-define`, `/ome-plan`, `/ome-build`, `/ome-test`, `/ome-review`, `/ome-ship`
-- Codex skill names: `ome-init`, `ome-init-rules`, `ome-bug`, `ome-ui`, `ome-comp`, `ome-api`, `ome-spec`, `ome-memory`, `ome-evolve`, `ome-superpowers`, `ome-define`, `ome-plan`, `ome-build`, `ome-test`, `ome-review`, `ome-ship`
+- Terminal: `ome`, `ome-init`, `ome-init-rules`, `ome-bug`, `ome-ui`, `ome-comp`, `ome-api`, `ome-spec`, `ome-memory`, `ome-evolve`, `ome-superpowers`, `ome-mcp`, `ome-define`, `ome-plan`, `ome-build`, `ome-test`, `ome-review`, `ome-ship`
+- Claude Code: `/ome-init`, `/ome-init-rules`, `/ome-bug`, `/ome-ui`, `/ome-comp`, `/ome-api`, `/ome-spec`, `/ome-memory`, `/ome-evolve`, `/ome-superpowers`, `/ome-mcp`, `/ome-define`, `/ome-plan`, `/ome-build`, `/ome-test`, `/ome-review`, `/ome-ship`
+- Codex skill names: `ome-init`, `ome-init-rules`, `ome-bug`, `ome-ui`, `ome-comp`, `ome-api`, `ome-spec`, `ome-memory`, `ome-evolve`, `ome-superpowers`, `ome-mcp`, `ome-define`, `ome-plan`, `ome-build`, `ome-test`, `ome-review`, `ome-ship`
 - Cursor, Trae, Windsurf, Qoder, OpenCode, and Antigravity receive the same workflow set through `ome agents install --all`.
 - `ome init` generates project rules for each tool, and `ome init-rules` refreshes scan context plus local rule drafts before an Agent editor rewrites `.ome/rules/*.md`.
 
