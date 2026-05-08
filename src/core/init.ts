@@ -27,7 +27,8 @@ export interface InitResult {
   directories: string[];
   migratedLegacy: boolean;
   syncedTargets: string[];
-  projectAgentTargets: string[];
+  projectSkillTargets: string[];
+  projectPlatformTargets: string[];
   installedAgentTargets: string[];
   agentGuidanceFiles: string[];
   scanSummary: string;
@@ -47,6 +48,7 @@ const ENGINE_DIRECTORIES = [
   `${ENGINE_DIR}/workflows`,
   `${ENGINE_DIR}/rules`,
   `${ENGINE_DIR}/context`,
+  `${ENGINE_DIR}/skills`,
   `${ENGINE_DIR}/generated-skills`,
   `${ENGINE_DIR}/memory/executions`,
   `${ENGINE_DIR}/memory/learnings/candidates`,
@@ -858,24 +860,23 @@ export function initializeProject(options: InitOptions): InitResult {
 
   appendGitignoreOnce(options.projectRoot, `${ENGINE_DIR}/memory/`);
 
-  // 生成所有平台的 Agent 指导文件
-  const { generateAllAgentGuidanceFiles } = require('./agents');
-  const agentGuidanceResults = generateAllAgentGuidanceFiles(options.projectRoot, scan);
-  const agentGuidanceFiles = agentGuidanceResults
-    .filter((r: any) => r.action !== 'skipped')
-    .map((r: any) => `${r.platform}: ${r.path}`);
+  // 生成所有平台的 skill 源和平台入口
+  const { generateAllAgentGuidanceFiles, initializeProjectSkillSources, installAgents } = require('./agents');
+  const skillSourceResults = initializeProjectSkillSources(options.projectRoot, options.force);
+  const projectSkillTargets = skillSourceResults
+    .filter((result: Record<string, any>) => result.action !== 'skipped')
+    .map((result: Record<string, any>) => `${result.workflow}: ${result.path}`);
 
   const syncedTargets = options.sync !== false
     ? syncRules([], options.projectRoot).map((result: Record<string, any>) => `${result.platform}: ${result.target}`)
     : [];
 
-  const { installAgents } = require('./agents');
-  const projectAgentTargets = installAgents({
-    platforms: [],
-    all: true,
-    project: true,
-    projectRoot: options.projectRoot
-  }).map((result: Record<string, any>) => `${result.platform}: ${result.target}`);
+  const agentGuidanceResults = generateAllAgentGuidanceFiles(options.projectRoot, scan);
+  const agentGuidanceFiles = agentGuidanceResults
+    .filter((r: any) => r.action !== 'skipped')
+    .map((r: any) => `${r.platform}: ${r.path}`);
+
+  const projectPlatformTargets: string[] = [];
 
   let installedAgentTargets: string[] = [];
   if (options.installAgents === true) {
@@ -891,7 +892,8 @@ export function initializeProject(options: InitOptions): InitResult {
     directories: createdDirectories,
     migratedLegacy: Boolean(migration.migrated),
     syncedTargets,
-    projectAgentTargets,
+    projectSkillTargets,
+    projectPlatformTargets,
     installedAgentTargets,
     agentGuidanceFiles,
     scanSummary: renderScanSummary(scan),
@@ -946,11 +948,13 @@ export function renderInitResult(result: InitResult): string {
     `Agent context files updated: ${result.contextFilesUpdated}`,
     `Agent guidance files generated: ${result.agentGuidanceFiles.length}`,
     ...result.agentGuidanceFiles.map(file => `  - ${file}`),
+    `Project skills installed: ${result.projectSkillTargets.length}`,
+    ...result.projectSkillTargets.map(target => `  - ${target}`),
     `Integration targets synced: ${result.syncedTargets.length}`,
     ...result.syncedTargets.map(target => `  - ${target}`),
-    `Project agent commands installed: ${result.projectAgentTargets.length}`,
-    ...result.projectAgentTargets.map(target => `  - ${target}`),
-    `Agent commands installed: ${result.installedAgentTargets.length}`,
+    `Project command entries synced: ${result.projectPlatformTargets.length}`,
+    ...result.projectPlatformTargets.map(target => `  - ${target}`),
+    `Global skills installed: ${result.installedAgentTargets.length}`,
     ...result.installedAgentTargets.map(target => `  - ${target}`),
     'Created directories:',
     `  - ${ENGINE_DIR}/`,

@@ -243,27 +243,70 @@ function generatePlatformFooter(platform: string, platformConfig: Record<string,
   return footer;
 }
 
+function generateRulesEntryContent(platform: string, platformConfig: Record<string, any>, config: Record<string, any>, rules: Record<string, string>): string {
+  const project = config.project || {};
+  const ruleNames = Object.keys(rules).sort();
+  const lines: string[] = [];
+
+  if (platformConfig.format === 'mdc') {
+    lines.push('---');
+    lines.push('glob: "**/*"');
+    lines.push('alwaysApply: true');
+    lines.push('description: "Oh My Engine project rule entry"');
+    lines.push('---');
+    lines.push('');
+  }
+
+  lines.push(`# ${platformConfig.name} OME Rules Entry`);
+  lines.push('');
+  lines.push('This file is a generated entry point. It does not contain the full rules.');
+  lines.push('');
+  lines.push('## Project');
+  lines.push('');
+  lines.push(`- Project name: ${project.name || ''}`);
+  lines.push(`- Project type: ${project.type || ''}`);
+  lines.push(`- Framework: ${project.framework || ''}`);
+  lines.push('- Config: `OME.md`');
+  lines.push('- Rule source: `.ome/rules/`');
+  lines.push('');
+  lines.push('## Required Behavior');
+  lines.push('');
+  lines.push('- Before editing, read `OME.md` and the relevant files under `.ome/rules/`.');
+  lines.push('- Select rule files by task domain instead of loading unrelated rules.');
+  lines.push('- Treat `.ome/rules/` as the canonical source; platform files are generated views only.');
+  lines.push('- Run `ome rules sync` after changing rule source files.');
+  lines.push('');
+  lines.push('## Available Rules');
+  lines.push('');
+  if (ruleNames.length === 0) {
+    lines.push('- No rule files found under `.ome/rules/`.');
+  } else {
+    for (const ruleName of ruleNames) lines.push(`- \`.ome/rules/${ruleName}.md\``);
+  }
+  lines.push('');
+  lines.push(`## Platform`);
+  lines.push('');
+  lines.push(`- Platform id: ${platform}`);
+  lines.push(`- Platform name: ${platformConfig.name}`);
+
+  return lines.join('\n');
+}
+
 function processSingleFilePlatform(platform: string, platformConfig: Record<string, any>, config: Record<string, any>, rules: Record<string, string>, root: string): RulesSyncResult {
   const filePath = path.join(root, platformConfig.file);
-  const content = generatePlatformHeader(platformConfig) + generateIndexContent(config, rules) + generatePlatformFooter(platform, platformConfig);
+  const content = generateRulesEntryContent(platform, platformConfig, config, rules);
   writeManagedFileBlock(filePath, content);
   return { platform, target: path.relative(root, filePath) };
 }
 
 function processMultiFilePlatform(platform: string, platformConfig: Record<string, any>, config: Record<string, any>, rules: Record<string, string>, platformsConfig: Record<string, any>, root: string): RulesSyncResult {
   const directory = path.join(root, platformConfig.directory);
-  const files: string[] = [];
-  let index = 1;
-  for (const [ruleName, ruleContent] of Object.entries(rules)) {
-    const mappedName = getMappedFilename(ruleName, platform, platformsConfig);
-    const prefix = platformConfig.numberedPrefix ? `${String(index++).padStart(2, '0')}-` : '';
-    const fileName = `${prefix}${mappedName}${platformConfig.extension || '.md'}`;
-    const content = platformConfig.format === 'mdc' ? generateMDC(ruleName, ruleContent, platformConfig, config) : ruleContent;
-    writeFile(path.join(directory, fileName), content);
-    files.push(fileName);
-  }
+  const extension = platformConfig.extension || '.md';
+  const fileName = `00-ome-rules${extension}`;
+  const content = generateRulesEntryContent(platform, platformConfig, config, rules);
+  writeFile(path.join(directory, fileName), content);
 
-  return { platform, target: `${path.relative(root, directory)}/`, files };
+  return { platform, target: `${path.relative(root, directory)}/${fileName}`, files: [fileName] };
 }
 
 export function validateRules(): RulesValidationReport {
@@ -296,11 +339,8 @@ export function previewRulesSync(platformFilter?: string): RulesPreviewTarget[] 
     if (!platform) return [];
     if (platform.type === 'single-file') return [{ platform: platformId, target: platform.file, action: fs.existsSync(path.join(root, platform.file)) ? 'update' : 'create' }];
     if (platform.type === 'multi-file') {
-      return Object.keys(rules).map((ruleName: string) => {
-        const mapped = getMappedFilename(ruleName, platformId, platformsConfig);
-        const target = path.join(platform.directory, `${mapped}${platform.extension || '.md'}`);
-        return { platform: platformId, target, action: fs.existsSync(path.join(root, target)) ? 'update' : 'create' };
-      });
+      const target = path.join(platform.directory, `00-ome-rules${platform.extension || '.md'}`);
+      return [{ platform: platformId, target, action: fs.existsSync(path.join(root, target)) ? 'update' : 'create' }];
     }
     return [];
   });

@@ -35,12 +35,13 @@ test('ome init initializes project directories and defaults from TypeScript CLI'
   assert.equal(fs.existsSync(path.join(workspace, 'OME.md')), true);
   assert.equal(fs.existsSync(path.join(workspace, '.ome', 'rules', 'code-style.md')), true);
   assert.equal(fs.existsSync(path.join(workspace, '.ome', 'spec', 'project.md')), true);
+  assert.equal(fs.existsSync(path.join(workspace, '.ome', 'skills', 'ome-bug', 'SKILL.md')), true);
   assert.equal(fs.existsSync(path.join(workspace, 'CLAUDE.md')), true);
   assert.equal(fs.existsSync(path.join(workspace, 'AGENTS.md')), true);
-  assert.equal(fs.existsSync(path.join(workspace, '.claude', 'commands', 'ome-init-rules.md')), true);
-  assert.equal(fs.existsSync(path.join(workspace, '.claude', 'commands', 'ome-mcp.md')), true);
-  assert.equal(fs.existsSync(path.join(workspace, '.cursor', 'commands', 'ome-init-rules.md')), true);
-  assert.equal(fs.existsSync(path.join(workspace, '.agent', 'workflows', 'ome-init-rules.md')), true);
+  assert.equal(fs.existsSync(path.join(workspace, '.claude', 'commands', 'ome-init-rules.md')), false);
+  assert.equal(fs.existsSync(path.join(workspace, '.cursor', 'commands', 'ome-init-rules.md')), false);
+  assert.equal(fs.existsSync(path.join(workspace, '.agents', 'skills', 'ome-bug', 'SKILL.md')), false);
+  assert.equal(fs.existsSync(path.join(workspace, '.agent', 'workflows', 'ome-init-rules.md')), false);
 
   const config = parseOMEConfig(workspace);
   assert.equal(config.project.name, path.basename(workspace));
@@ -76,7 +77,8 @@ test('ome init scans TypeScript Node projects and writes agent personalization c
   const output = runOme(['init'], workspace);
 
   assert.match(output, /Project scan: application \/ Node\.js \/ TypeScript/);
-  assert.match(output, /Project agent commands installed:/);
+  assert.match(output, /Project skills installed:/);
+  assert.match(output, /Project command entries synced: 0/);
 
   const config = parseOMEConfig(workspace);
   assert.equal(config.project.name, 'scan-target');
@@ -107,6 +109,15 @@ test('ome init scans TypeScript Node projects and writes agent personalization c
   assert.match(codeStyle, /Project Profile/);
   assert.match(codeStyle, /Primary framework: Node\.js/);
   assert.match(codeStyle, /Language: TypeScript/);
+
+  const bugSkill = fs.readFileSync(path.join(workspace, '.ome', 'skills', 'ome-bug', 'SKILL.md'), 'utf8');
+  assert.match(bugSkill, /## Purpose/);
+  assert.match(bugSkill, /## When to Use/);
+  assert.match(bugSkill, /## Process/);
+  assert.match(bugSkill, /## Red Flags/);
+  assert.match(bugSkill, /## Common Rationalizations/);
+  assert.match(bugSkill, /## Verification/);
+  assert.match(bugSkill, /## Output Contract/);
 
   assert.equal(fs.existsSync(path.join(workspace, '.ome', 'rules', 'theme.md')), false);
   assert.equal(fs.existsSync(path.join(workspace, '.ome', 'rules', 'design-tokens.md')), false);
@@ -232,10 +243,11 @@ test('ome init scans Koa Gulp apps and generates project-specific rule files', (
   assert.match(serverRule, /Koa Server/);
   assert.match(serverRule, /src\/routes\/home\.js/);
 
-  const cursorRule = path.join(workspace, '.cursor', 'rules', 'code-style.mdc');
+  const cursorRule = path.join(workspace, '.cursor', 'rules', '00-ome-rules.mdc');
   assert.equal(fs.existsSync(cursorRule), true);
+  assert.equal(fs.existsSync(path.join(workspace, '.cursor', 'rules', 'code-style.mdc')), false);
   assert.equal(fs.existsSync(path.join(workspace, '.cursor', 'rules', 'typescript-react-native.mdc')), false);
-  assert.equal(fs.existsSync(path.join(workspace, '.agent', 'workflows', 'ome-init-rules.md')), true);
+  assert.equal(fs.existsSync(path.join(workspace, '.agent', 'workflows', 'ome-init-rules.md')), false);
 });
 
 test('ome init-rules refreshes scan context and local rule drafts', () => {

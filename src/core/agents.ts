@@ -1,11 +1,17 @@
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const {
+  initializeWorkflowSkillSources,
+  resolveWorkflowSkillSource,
+  renderPlatformSkillEntry
+} = require('./skills');
 
 export interface AgentInstallOptions {
   platforms: string[];
   all?: boolean;
   project?: boolean;
+  entries?: boolean;
   home?: string;
   projectRoot?: string;
 }
@@ -28,6 +34,11 @@ interface AgentDefinition {
 
 interface ReadError {
   code?: string;
+}
+
+interface InteractiveSelectionState {
+  cursor: number;
+  selected: boolean[];
 }
 
 interface WorkflowDefinition {
@@ -60,7 +71,7 @@ const WORKFLOWS: WorkflowDefinition[] = [
 
 const AGENTS: AgentDefinition[] = [
   { id: 'claude-code', name: 'Claude Code', globalCommandDirectory: '.claude/commands', projectCommandDirectory: '.claude/commands', projectRules: 'CLAUDE.md', commandStyle: 'slash' },
-  { id: 'codex', name: 'Codex', globalCommandDirectory: '.codex/skills', projectRules: 'AGENTS.md', commandStyle: 'skill' },
+  { id: 'codex', name: 'Codex', globalCommandDirectory: '.agents/skills', projectCommandDirectory: '.agents/skills', projectRules: 'AGENTS.md', commandStyle: 'skill' },
   { id: 'cursor', name: 'Cursor', globalCommandDirectory: '.cursor/commands', projectCommandDirectory: '.cursor/commands', projectRules: '.cursor/rules/*.mdc', commandStyle: 'slash' },
   { id: 'trae', name: 'Trae', globalCommandDirectory: '.trae/commands', projectCommandDirectory: '.trae/commands', projectRules: '.trae/rules/*.md', commandStyle: 'slash' },
   { id: 'windsurf', name: 'Windsurf', globalCommandDirectory: '.codeium/windsurf/global_workflows', projectCommandDirectory: '.windsurf/workflows', projectRules: '.windsurf/rules/*.md / .windsurfrules', commandStyle: 'workflow' },
@@ -78,6 +89,24 @@ function writeFile(filePath: string, content: string): void {
   fs.writeFileSync(filePath, content.endsWith('\n') ? content : `${content}\n`, 'utf8');
 }
 
+function writeManagedFileBlock(filePath: string, content: string): void {
+  const start = '<!-- OME:START -->';
+  const end = '<!-- OME:END -->';
+  const block = `${start}\n${content.trimEnd()}\n${end}\n`;
+
+  if (!fs.existsSync(filePath)) {
+    writeFile(filePath, block);
+    return;
+  }
+
+  const current = fs.readFileSync(filePath, 'utf8');
+  const pattern = new RegExp(`${start.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?${end.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\n?`);
+  const next = pattern.test(current)
+    ? current.replace(pattern, block)
+    : `${current.trimEnd()}\n\n${block}`;
+  writeFile(filePath, next);
+}
+
 function normalizeHome(home?: string): string {
   return home ? path.resolve(home) : os.homedir();
 }
@@ -88,139 +117,9 @@ function selectedAgents(platforms: string[], all?: boolean): AgentDefinition[] {
   return AGENTS.filter(agent => wanted.has(agent.id));
 }
 
-function renderCommandPrompt(agent: AgentDefinition, workflow: WorkflowDefinition): string {
-  const trigger = agent.commandStyle === 'skill' ? workflow.command : `/${workflow.command}`;
-  const body = [
-    `# ${workflow.command}`,
-    '',
-    `Use ${workflow.title} for the current project.`,
-    '',
-    `Trigger: \`${trigger}\``,
-    `Terminal equivalent: \`${workflow.usage}\``,
-    '',
-    'Before making changes:',
-    '- Read `OME.md` if present.',
-    '- Read relevant files under `.ome/rules/`.',
-    '- Treat `.ome/` as the project-local source of truth.',
-    '- If `.ome/` is missing, ask the user to run `ome init` in the project root.',
-    '',
-    'Skill anatomy discipline:',
-    '- Start by deciding whether the task is define, plan, build, test, review, or ship work.',
-    '- Name assumptions before relying on them.',
-    '- Stop and surface concrete conflicts when requirements, code, tests, or rules disagree.',
-    '- Prefer the smallest project-consistent implementation and avoid unrelated cleanup.',
-    '- Reject shortcuts such as skipping tests, testing later, or treating no error output as proof.',
-    '',
-    'Task:',
-    `- ${workflow.description}`,
-    ...workflowSpecificInstructions(workflow),
-    '- Use the user arguments as the workflow input.',
-    '- Keep generated project rules in the project; do not write project rules to the global Agent directory.',
-    '',
-    'Arguments:',
-    '- Claude/Cursor/Qoder/OpenCode style commands receive the user text after the command.',
-    '- Codex skill clients should pass the same arguments after the skill name.',
-    '',
-    'If shell execution is available, prefer running the equivalent `ome-*` command and then continue from its guidance.'
-  ];
-
-  if (agent.commandStyle === 'skill') {
-    return [
-      '---',
-      `name: ${workflow.command}`,
-      'version: 1.0.0',
-      `description: ${workflow.description}`,
-      'author: oh-my-engine',
-      `tags: [ome, ${workflow.id}, workflow]`,
-      '---',
-      '',
-      ...body
-    ].join('\n');
-  }
-
-  if (agent.id === 'antigravity') {
-    return [
-      '---',
-      `description: ${workflow.description}`,
-      '---',
-      '',
-      ...body,
-      '',
-      'Antigravity workflow notes:',
-      `- Use this workflow from Antigravity as \`/${workflow.command}\` when workflow commands are available.`,
-      '- If it does not appear immediately, reload the Antigravity window after installing workflows.'
-    ].join('\n');
-  }
-
-  // Claude Code and other slash-command platforms: add frontmatter for description
-  if (agent.commandStyle === 'slash') {
-    return [
-      '---',
-      `description: ${workflow.description}`,
-      '---',
-      '',
-      ...body
-    ].join('\n');
-  }
-
-  return body.join('\n');
-}
-
-function workflowSpecificInstructions(workflow: WorkflowDefinition): string[] {
-  if (workflow.id === 'init') {
-    return [
-      '- Run or guide the equivalent `ome init` command first.',
-      '- After initialization, continue with the `ome-init-rules` workflow in the same project.',
-      '- Do not stop after summarizing initialization; personalize `.ome/rules/*.md` from the current source code.',
-      '- Finish by running `ome rules sync` so all Agent editor files receive the updated rules.'
-    ];
-  }
-
-  if (workflow.id === 'init-rules') {
-    return [
-      '- Run or guide `ome init-rules` to refresh `.ome/context/project-scan.json` and `.ome/context/rules-generation-prompt.md`.',
-      '- If `ome init-rules` is unavailable, do not stop; read the existing `.ome/context/rules-generation-prompt.md` and continue manually.',
-      '- Read `OME.md`, `.ome/context/project-scan.json`, and `.ome/context/rules-generation-prompt.md`.',
-      '- Inspect representative current source files, tests, scripts, and existing conventions before editing rules.',
-      '- Rewrite `.ome/rules/*.md` so they are specific to this repository, not generic framework advice.',
-      '- Add, rename, or remove rule files as needed; do not force the project into a fixed four-rule template.',
-      '- Use project-specific rule names when the scan supports them, such as `server-koa`, `routing-middleware`, `build-gulp`, `views-static-assets`, `data-access`, or `deployment`.',
-      '- Do not create React Native, theme, design-token, or i18n rules unless current source/dependencies show those signals.',
-      '- Run `ome rules sync` after editing rules.',
-      '- Report which rule files changed and which verification commands were run.'
-    ];
-  }
-
-  if (workflow.id === 'superpowers') {
-    return [
-      '- Run or guide `ome superpowers doctor` first to inspect support status.',
-      '- Use `ome superpowers install all` when the user asks to install across Agent editors.',
-      '- For editors without native Superpowers support, use the generated Oh My Engine wrapper workflow.',
-      '- Do not copy third-party Superpowers sources into project rules.'
-    ];
-  }
-
-  if (workflow.id === 'mcp') {
-    return [
-      '- Run or guide `ome mcp doctor` first to inspect current MCP support and token environment status.',
-      '- Use `ome mcp init --all` to create `.ome/mcp/source.json` and the initial setup notes.',
-      '- Use `ome mcp sync` after editing `.ome/mcp/source.json` so editor-specific MCP config files stay in sync.',
-      '- Read `.ome/mcp/README.md` and `.ome/mcp/source.json` before using design MCP tools.',
-      '- Do not write real Figma or MasterGo tokens into repository files, rules, commands, or prompts.',
-      '- Configure tokens through environment variables such as `FIGMA_API_KEY` and `MG_MCP_TOKEN`.',
-      '- Use generated `.ome/mcp/*.json` files only as manual import material for editors without a stable project-level MCP config path.'
-    ];
-  }
-
-  if (['define', 'plan', 'build', 'test', 'review', 'ship'].includes(workflow.id)) {
-    return [
-      '- Use the lifecycle output contract named by this workflow; do not substitute a vague summary.',
-      '- Load relevant references from `skills/oh-my-engine/references/` when available.',
-      '- Finish with verification evidence or a clear statement of what could not be verified.'
-    ];
-  }
-
-  return [];
+function renderCommandPrompt(agent: AgentDefinition, workflow: WorkflowDefinition, projectRoot: string): string {
+  const sourceContent = resolveWorkflowSkillSource(projectRoot, workflow);
+  return renderPlatformSkillEntry({ style: agent.commandStyle, platformId: agent.id }, workflow, sourceContent);
 }
 
 function targetPath(baseDirectory: string, agent: AgentDefinition, workflow: WorkflowDefinition): string {
@@ -239,7 +138,7 @@ function installForAgent(agent: AgentDefinition, options: AgentInstallOptions): 
 
   return WORKFLOWS.map(workflow => {
     const filePath = targetPath(base, agent, workflow);
-    writeFile(filePath, renderCommandPrompt(agent, workflow));
+    writeFile(filePath, renderCommandPrompt(agent, workflow, options.projectRoot || process.cwd()));
     return {
       platform: agent.id,
       target: filePath,
@@ -261,6 +160,10 @@ function parseInstallArgs(args: string[]): AgentInstallOptions {
     }
     if (argument === '--project') {
       options.project = true;
+      continue;
+    }
+    if (argument === '--entries') {
+      options.entries = true;
       continue;
     }
     if (argument === '--home') {
@@ -298,10 +201,117 @@ function readLineSync(prompt: string): string {
   return buffer.toString('utf8', 0, bytesRead).trim();
 }
 
+function parseSelectionAnswer(answer: string): string[] {
+  const tokens = answer.split(',').map((token: string) => token.trim()).filter(Boolean);
+  const excluded = new Set(tokens.filter((token: string) => token.startsWith('-')).map((token: string) => token.slice(1)));
+  if (excluded.size > 0) {
+    return AGENTS.map(agent => agent.id).filter(id => !excluded.has(id));
+  }
+
+  return tokens.map((token: string) => {
+    const numeric = Number(token);
+    if (Number.isInteger(numeric) && numeric >= 1 && numeric <= AGENTS.length) return AGENTS[numeric - 1].id;
+    return token;
+  });
+}
+
+function renderInteractiveSelection(state: InteractiveSelectionState): void {
+  const lines = [
+    'Select Agent/editor commands to install:',
+    'Use ↑/↓ to move, Space to toggle, number keys to toggle directly, a to toggle all, Enter to confirm.',
+    ''
+  ];
+
+  AGENTS.forEach((agent, index) => {
+    const pointer = state.cursor === index ? '>' : ' ';
+    const marker = state.selected[index] ? '[x]' : '[ ]';
+    lines.push(`${pointer} ${index + 1}) ${marker} ${agent.id} - ${agent.name}`);
+  });
+
+  lines.push('');
+  lines.push('Default is all selected. Press Ctrl+C to cancel.');
+  process.stdout.write(`\x1b[2J\x1b[H${lines.join('\n')}`);
+}
+
+function readInteractiveSelection(): string[] | undefined {
+  if (typeof process.stdin.setRawMode !== 'function') return undefined;
+
+  const state: InteractiveSelectionState = {
+    cursor: 0,
+    selected: AGENTS.map(() => true)
+  };
+  const buffer = Buffer.alloc(8);
+  const wasRaw = process.stdin.isRaw;
+
+  process.stdin.setRawMode(true);
+  process.stdin.resume();
+  process.stdout.write('\x1b[?25l');
+
+  try {
+    renderInteractiveSelection(state);
+    while (true) {
+      let bytesRead = 0;
+      try {
+        bytesRead = fs.readSync(0, buffer, 0, buffer.length, null);
+      } catch (error) {
+        const code = error && typeof error === 'object' && 'code' in error ? (error as ReadError).code : undefined;
+        if (code === 'EAGAIN' || code === 'EWOULDBLOCK' || code === 'EOF') {
+          process.stdout.write('\nNo interactive input was available; using default selection: all.\n');
+          return AGENTS.map(agent => agent.id);
+        }
+        throw error;
+      }
+
+      const input = buffer.toString('utf8', 0, bytesRead);
+      if (input === '\u0003') throw new Error('Agent install selection cancelled.');
+      if (input === '\r' || input === '\n') {
+        const selected = AGENTS.filter((_, index) => state.selected[index]).map(agent => agent.id);
+        return selected.length > 0 ? selected : AGENTS.map(agent => agent.id);
+      }
+      if (input === '\u001b[A') {
+        state.cursor = (state.cursor + AGENTS.length - 1) % AGENTS.length;
+        renderInteractiveSelection(state);
+        continue;
+      }
+      if (input === '\u001b[B') {
+        state.cursor = (state.cursor + 1) % AGENTS.length;
+        renderInteractiveSelection(state);
+        continue;
+      }
+      if (input === ' ') {
+        state.selected[state.cursor] = !state.selected[state.cursor];
+        renderInteractiveSelection(state);
+        continue;
+      }
+      if (input.toLowerCase() === 'a') {
+        const shouldSelectAll = state.selected.some(selected => !selected);
+        state.selected = AGENTS.map(() => shouldSelectAll);
+        renderInteractiveSelection(state);
+        continue;
+      }
+
+      const numeric = Number(input);
+      if (Number.isInteger(numeric) && numeric >= 1 && numeric <= AGENTS.length) {
+        const index = numeric - 1;
+        state.cursor = index;
+        state.selected[index] = !state.selected[index];
+        renderInteractiveSelection(state);
+      }
+    }
+  } finally {
+    process.stdout.write('\x1b[?25h\n');
+    process.stdin.setRawMode(Boolean(wasRaw));
+    process.stdin.pause();
+  }
+}
+
 function applyInteractiveSelection(options: AgentInstallOptions): AgentInstallOptions {
   if (options.all || options.platforms.length > 0 || !process.stdin.isTTY) {
     return options.platforms.length === 0 ? { ...options, all: true } : options;
   }
+
+  const selected = readInteractiveSelection();
+  if (selected) return { ...options, platforms: selected };
 
   process.stdout.write('Select Agent/editor commands to install (default: all):\n');
   AGENTS.forEach((agent, index) => {
@@ -310,21 +320,7 @@ function applyInteractiveSelection(options: AgentInstallOptions): AgentInstallOp
   process.stdout.write('Enter comma-separated ids/numbers, or exclusions like -cursor,-trae. Press Enter for all.\n');
   const answer = readLineSync('Selection: ');
   if (!answer) return { ...options, all: true };
-
-  const tokens = answer.split(',').map((token: string) => token.trim()).filter(Boolean);
-  const excluded = new Set(tokens.filter((token: string) => token.startsWith('-')).map((token: string) => token.slice(1)));
-  if (excluded.size > 0) {
-    return { ...options, platforms: AGENTS.map(agent => agent.id).filter(id => !excluded.has(id)) };
-  }
-
-  return {
-    ...options,
-    platforms: tokens.map((token: string) => {
-      const numeric = Number(token);
-      if (Number.isInteger(numeric) && numeric >= 1 && numeric <= AGENTS.length) return AGENTS[numeric - 1].id;
-      return token;
-    })
-  };
+  return { ...options, platforms: parseSelectionAnswer(answer) };
 }
 
 export function installAgents(options: AgentInstallOptions): AgentInstallResult[] {
@@ -387,6 +383,10 @@ export function runAgentsCommand(args: string[]): void {
 
 export function workflowCommands(): string[] {
   return WORKFLOWS.map(workflow => workflow.command);
+}
+
+export function initializeProjectSkillSources(projectRoot: string, force: boolean = false): { workflow: string; path: string; action: 'created' | 'updated' | 'skipped' }[] {
+  return initializeWorkflowSkillSources(projectRoot, WORKFLOWS, force);
 }
 
 // ============================================================================
@@ -460,11 +460,8 @@ function buildAgentGuidanceContent(platform: AgentDefinition, scan: any): string
   const cmdReview = buildCommandExample(platform, 'ome-review');
   const cmdShip = buildCommandExample(platform, 'ome-ship');
 
-  const hasUi = scan.hasUi || (scan.uiFrameworks && scan.uiFrameworks.length > 0);
-
   const lines: string[] = [];
 
-  // MDC frontmatter for Cursor
   if (platform.id === 'cursor') {
     lines.push('---');
     lines.push('glob: "**/*"');
@@ -475,191 +472,67 @@ function buildAgentGuidanceContent(platform: AgentDefinition, scan: any): string
 
   lines.push(`# Oh My Engine - ${platform.name} Integration`);
   lines.push('');
-  lines.push('## 项目信息');
+  lines.push('## Project Context');
   lines.push('');
-  lines.push(`- **项目名称**: ${scan.projectName || 'Unknown'}`);
-  lines.push(`- **项目类型**: ${scan.projectType || 'Unknown'}`);
-  lines.push(`- **框架**: ${scan.framework || 'Unknown'}`);
-  lines.push('- **配置文件**: OME.md');
-  lines.push('- **规则目录**: .ome/rules/');
+  lines.push(`- Project name: ${scan.projectName || 'Unknown'}`);
+  lines.push(`- Project type: ${scan.projectType || 'Unknown'}`);
+  lines.push(`- Framework: ${scan.framework || 'Unknown'}`);
+  lines.push('- Project config: `OME.md`');
+  lines.push('- Rule source: `.ome/rules/`');
+  lines.push('- Skill source: `.ome/skills/`');
   lines.push('');
-  lines.push('## 🤖 自动命令检测');
+  lines.push('## Operating Contract');
   lines.push('');
-  lines.push('当用户提出以下类型的任务时，**自动使用对应的 OME 命令**，无需用户明确指定：');
+  lines.push('- Keep this file as a platform entry point only.');
+  lines.push('- Before executing a task, read `OME.md`, the relevant `.ome/rules/*.md` files, and the matching `.ome/skills/ome-*/SKILL.md` file.');
+  lines.push('- Treat `.ome/rules/` and `.ome/skills/` as the project-local source of truth.');
+  lines.push('- Do not copy full rule or skill content into platform files; regenerate platform views from `.ome` instead.');
   lines.push('');
-
-  // Bug 分析
-  lines.push('### Bug 分析和修复');
-  lines.push('**触发条件**:');
-  lines.push('- 用户描述 bug 或错误现象');
-  lines.push('- 用户说"这个功能不工作"、"报错了"、"有问题"');
-  lines.push('- 用户提供错误日志或堆栈跟踪');
+  lines.push('## Workflow Routing');
   lines.push('');
-  lines.push(`**自动使用**: \`${cmdBug} "<issue description>"\``);
+  lines.push(`- Bug investigation or fix planning: \`${cmdBug} "<issue description>"\` -> read \`.ome/skills/ome-bug/SKILL.md\``);
+  lines.push(`- API client, service, or contract work: \`${cmdApi} "<api or contract>"\` -> read \`.ome/skills/ome-api/SKILL.md\``);
+  lines.push(`- UI restoration from a design source: \`${cmdUi} "<design source>"\` -> read \`.ome/skills/ome-ui/SKILL.md\``);
+  lines.push(`- Reusable component work: \`${cmdComp} "<component>"\` -> read \`.ome/skills/ome-comp/SKILL.md\``);
+  lines.push(`- Clarify scope and success criteria: \`${cmdDefine} "<task>"\` -> read \`.ome/skills/ome-define/SKILL.md\``);
+  lines.push(`- Plan implementation and tests: \`${cmdPlan} "<task>"\` -> read \`.ome/skills/ome-plan/SKILL.md\``);
+  lines.push(`- Implement a scoped change: \`${cmdBuild} "<task>"\` -> read \`.ome/skills/ome-build/SKILL.md\``);
+  lines.push(`- Design or run tests: \`${cmdTest} "<target>"\` -> read \`.ome/skills/ome-test/SKILL.md\``);
+  lines.push(`- Review code or a diff: \`${cmdReview} "<target>"\` -> read \`.ome/skills/ome-review/SKILL.md\``);
+  lines.push(`- Prepare final handoff or release checks: \`${cmdShip} "<change>"\` -> read \`.ome/skills/ome-ship/SKILL.md\``);
   lines.push('');
-  lines.push('**示例**:');
-  lines.push(`- "登录按钮点击没反应" → \`${cmdBug} "登录按钮点击没反应"\``);
-  lines.push(`- "API 返回 500 错误" → \`${cmdBug} "API 返回 500 错误"\``);
+  lines.push('## Rule Loading');
   lines.push('');
-
-  // UI 还原（仅当项目有 UI 时）
-  if (hasUi) {
-    lines.push('### UI 还原');
-    lines.push('**触发条件**:');
-    lines.push('- 用户提供设计稿 URL 或截图');
-    lines.push('- 用户说"还原这个界面"、"实现这个 UI"');
-    lines.push('- 用户描述 UI 组件的视觉需求');
-    lines.push('');
-    lines.push(`**自动使用**: \`${cmdUi} <design-url-or-description>\``);
-    lines.push('');
-    lines.push('**示例**:');
-    lines.push(`- "还原这个登录页面 [URL]" → \`${cmdUi} [URL]\``);
-    lines.push(`- "实现一个卡片组件，圆角、阴影" → \`${cmdUi} "卡片组件，圆角、阴影"\``);
-    lines.push('');
-  }
-
-  // API 集成
-  lines.push('### API 集成');
-  lines.push('**触发条件**:');
-  lines.push('- 用户说"集成 XX API"、"调用 XX 接口"');
-  lines.push('- 用户提供 API 文档或 OpenAPI spec');
-  lines.push('- 用户描述需要对接的后端服务');
-  lines.push('');
-  lines.push(`**自动使用**: \`${cmdApi} <api-spec-or-description>\``);
-  lines.push('');
-  lines.push('**示例**:');
-  lines.push(`- "集成用户登录 API" → \`${cmdApi} "用户登录 API"\``);
-  lines.push(`- "对接支付接口" → \`${cmdApi} "支付接口"\``);
-  lines.push('');
-
-  // 组件生成（仅当项目有 UI 时）
-  if (hasUi) {
-    lines.push('### 组件生成');
-    lines.push('**触发条件**:');
-    lines.push('- 用户说"生成一个 XX 组件"');
-    lines.push('- 用户描述可复用组件的需求');
-    lines.push('- 用户要求创建通用 UI 元素');
-    lines.push('');
-    lines.push(`**自动使用**: \`${cmdComp} <component-name>\``);
-    lines.push('');
-    lines.push('**示例**:');
-    lines.push(`- "生成一个按钮组件" → \`${cmdComp} "Button"\``);
-    lines.push(`- "创建一个表单输入组件" → \`${cmdComp} "FormInput"\``);
-    lines.push('');
-  }
-
-  // 生命周期阶段检测
-  lines.push('### 生命周期阶段检测');
-  lines.push('');
-  lines.push('当用户的任务不明确属于哪个阶段时，**自动判断并使用对应的生命周期命令**：');
-  lines.push('');
-  lines.push(`- **需求不清晰** → \`${cmdDefine} "<task>"\``);
-  lines.push(`- **需要设计方案** → \`${cmdPlan} "<task>"\``);
-  lines.push(`- **开始编码实现** → \`${cmdBuild} "<task>"\``);
-  lines.push(`- **测试或调试** → \`${cmdTest} "<target>"\``);
-  lines.push(`- **代码审查** → \`${cmdReview} "<target>"\``);
-  lines.push(`- **准备提交** → \`${cmdShip} "<change>"\``);
-  lines.push('');
-
-  // 命令使用优先级
-  lines.push('## 📋 命令使用优先级');
-  lines.push('');
-  lines.push('1. **优先使用任务特定命令**: 如果任务明确是 bug、UI、API、组件，使用对应的命令');
-  lines.push('2. **其次使用生命周期命令**: 如果任务不属于特定类型，根据阶段使用 define/plan/build 等');
-  lines.push('3. **最后直接实现**: 只有在任务非常简单（单行修改、明显的小改动）时才直接实现，不使用 OME 命令');
-  lines.push('');
-
-  // 项目上下文
-  lines.push('## 📖 项目上下文');
-  lines.push('');
-  lines.push('在执行任何 OME 命令前，确保：');
-  lines.push('1. 读取 `OME.md` 了解项目配置');
-  lines.push('2. 根据任务类型读取 `.ome/rules/` 中的相关规则');
-  lines.push('3. 遵循项目特定的代码风格和架构约定');
-  lines.push('');
-
-  // 工作流程
-  lines.push('## 🔄 工作流程');
-  lines.push('');
-  lines.push('```');
-  lines.push('用户任务 → 判断任务类型 → 选择对应 OME 命令 → 读取项目规则 → 执行工作流 → 验证结果');
-  lines.push('```');
-  lines.push('');
-
-  // 单文件平台：添加 OME 标记块
-  if (isSingleFilePlatform(platform)) {
-    lines.push('---');
-    lines.push('');
-    lines.push('<!-- OME:START -->');
-    lines.push('# Claude Code Rules');
-    lines.push('');
-    lines.push('> 本文件由 .ome/rules/ 自动生成，请勿手动编辑 OME 标记块');
-    lines.push('> 运行 `ome rules sync` 更新');
-    lines.push('');
-    lines.push('## 规则索引');
-    lines.push('');
-    lines.push('规则索引将由 `ome rules sync` 自动生成。');
-    lines.push('<!-- OME:END -->');
-  }
+  lines.push('- Load general rules from `.ome/rules/project-overview.md`, `.ome/rules/code-style.md`, `.ome/rules/architecture.md`, `.ome/rules/testing.md`, and `.ome/rules/tooling.md` when they exist.');
+  lines.push('- Load domain rules only when the task touches that domain, such as security, API routing, data access, deployment, UI, accessibility, performance, or i18n.');
+  lines.push('- If a needed rule or skill file is missing, continue with the nearest available `.ome` guidance and report the gap.');
 
   return lines.join('\n');
+
 }
 
-/**
- * 为单个平台生成自动检测规则文件
- */
+
 export function generateAgentGuidanceFile(
   projectRoot: string,
   platform: AgentDefinition,
   scan: any
 ): AgentGuidanceResult {
-  const filePath = getAutoDetectionFilePath(projectRoot, platform);
-
-  // 检查文件是否已存在
-  const fileExists = fs.existsSync(filePath);
-
-  // 如果是共享文件（AGENTS.md），检查是否已被其他平台创建
-  if (fileExists && (platform.id === 'opencode' || platform.id === 'antigravity')) {
-    const basename = path.basename(filePath);
-    if (basename === 'AGENTS.md') {
-      return { platform: platform.id, path: filePath, action: 'skipped' };
-    }
+  const managedFilePath = getAutoDetectionFilePath(projectRoot, platform);
+  const managedFileExists = fs.existsSync(managedFilePath);
+  const managedContent = buildAgentGuidanceContent(platform, scan);
+  if (isSingleFilePlatform(platform)) {
+    writeManagedFileBlock(managedFilePath, managedContent);
+  } else {
+    writeFile(managedFilePath, managedContent);
   }
-
-  // 构建指导内容
-  const content = buildAgentGuidanceContent(platform, scan);
-
-  // 单文件平台：检查是否有 OME 标记块
-  if (isSingleFilePlatform(platform) && fileExists) {
-    const existing = fs.readFileSync(filePath, 'utf8');
-    const omeStartMarker = '<!-- OME:START -->';
-    const omeEndMarker = '<!-- OME:END -->';
-
-    if (existing.includes(omeStartMarker) && existing.includes(omeEndMarker)) {
-      // 保留标记块外的用户内容，只更新自动检测规则部分
-      const markerStart = existing.indexOf(omeStartMarker);
-      const userContent = existing.substring(0, markerStart).trim();
-
-      // 如果用户内容存在，保留它
-      if (userContent) {
-        return { platform: platform.id, path: filePath, action: 'skipped' };
-      }
-    }
-  }
-
-  // 写入文件
-  writeFile(filePath, content);
-
   return {
     platform: platform.id,
-    path: filePath,
-    action: fileExists ? 'updated' : 'created'
+    path: managedFilePath,
+    action: managedFileExists ? 'updated' : 'created'
   };
 }
 
-/**
- * 为所有平台生成自动检测规则文件
- */
+
 export function generateAllAgentGuidanceFiles(
   projectRoot: string,
   scan: any

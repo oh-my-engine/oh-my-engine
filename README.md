@@ -86,7 +86,7 @@ ome mcp sync
 ome mcp doctor
 ```
 
-`ome mcp init` creates `.ome/mcp/source.json` and `.ome/mcp/README.md`. `ome mcp sync` expands that source into editor-specific MCP config files such as `.mcp.json`, `.cursor/mcp.json`, `opencode.json`, `~/.codex/config.toml`, and Windsurf `mcp_config.json`. Tokens stay in environment variables like `FIGMA_API_KEY` and `MG_MCP_TOKEN`.
+`ome mcp init` creates `.ome/mcp/source.json` and `.ome/mcp/README.md`. `ome mcp init --all` now prefers the official Figma remote MCP plus MasterGo by default. Enable `figma-framelink` only when you need the legacy Framelink compatibility path. `ome mcp sync` expands that source into editor-specific MCP config files such as `.mcp.json`, `.cursor/mcp.json`, `opencode.json`, `~/.codex/config.toml`, and Windsurf `mcp_config.json`. Tokens stay in environment variables like `FIGMA_API_KEY` and `MG_MCP_TOKEN`.
 
 Legacy GitHub skill installers still exist for deprecated `/oh-my-engine-*` compatibility:
 

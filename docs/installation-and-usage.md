@@ -84,7 +84,7 @@ ome mcp sync
 ome mcp doctor
 ```
 
-`ome mcp init` creates `.ome/mcp/source.json` and `.ome/mcp/README.md`. Edit that source file when you need to enable or disable providers, then run `ome mcp sync` to write editor-specific MCP files.
+`ome mcp init` creates `.ome/mcp/source.json` and `.ome/mcp/README.md`. `ome mcp init --all` now enables the official Figma remote MCP plus MasterGo by default. If you still need the legacy Framelink compatibility path, enable it explicitly with `ome mcp init figma-framelink`, then run `ome mcp sync` to write editor-specific MCP files.
 
 Current sync targets:
 

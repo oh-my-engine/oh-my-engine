@@ -119,7 +119,7 @@ function normalizeProjectRoot(projectRoot?: string): string {
 }
 
 function resolveProviders(options: McpOptions): McpProviderId[] {
-  if (options.all || options.providers.length === 0) return ['figma', 'figma-framelink', 'mastergo'];
+  if (options.all || options.providers.length === 0) return ['figma', 'mastergo'];
   return options.providers;
 }
 
@@ -272,6 +272,9 @@ function buildReadme(projectRoot: string, source: McpSourceConfig): McpTargetRes
     '',
     'This directory is the source of truth for MCP setup.',
     '',
+    'Default initialization prefers the official Figma remote MCP plus MasterGo.',
+    'Enable `figma-framelink` explicitly only when you need the legacy Framelink compatibility path.',
+    '',
     '## Providers',
     '',
     ...serverLines,
@@ -282,6 +285,8 @@ function buildReadme(projectRoot: string, source: McpSourceConfig): McpTargetRes
     '',
     '## Commands',
     '',
+    '- `ome mcp init --all` enables official `figma` plus `mastergo` by default.',
+    '- `ome mcp init figma-framelink` adds the legacy Framelink compatibility preset when needed.',
     '- `ome mcp preview` shows the generated target configs.',
     '- `ome mcp sync` writes configs to editor-specific locations.',
     '- `ome mcp doctor` checks file presence and token env vars.'

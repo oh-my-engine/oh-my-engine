@@ -19,7 +19,7 @@ const SUPERPOWERS_REPO = 'https://github.com/obra/superpowers';
 
 const PLATFORMS: SuperpowersPlatform[] = [
   { id: 'claude-code', name: 'Claude Code', kind: 'slash', directory: '.claude/commands', nativeSupport: 'plugin' },
-  { id: 'codex', name: 'Codex', kind: 'skill', directory: '.codex/skills', nativeSupport: 'codex-link' },
+  { id: 'codex', name: 'Codex', kind: 'skill', directory: '.agents/skills', nativeSupport: 'codex-link' },
   { id: 'cursor', name: 'Cursor', kind: 'slash', directory: '.cursor/commands', nativeSupport: 'wrapper' },
   { id: 'trae', name: 'Trae', kind: 'slash', directory: '.trae/commands', nativeSupport: 'wrapper' },
   { id: 'windsurf', name: 'Windsurf', kind: 'workflow', directory: '.codeium/windsurf/global_workflows', nativeSupport: 'wrapper' },
@@ -230,4 +230,3 @@ export function runSuperpowersCommand(args: string[]): void {
 }
 
 export const SUPERPOWERS_PLATFORMS = PLATFORMS.map(platform => platform.id);
-

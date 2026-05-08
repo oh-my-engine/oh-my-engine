@@ -40,12 +40,12 @@ test('ome agents install writes global short command entries', () => {
   assert.equal(fs.existsSync(path.join(home, '.claude', 'commands', 'ome-init-rules.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.claude', 'commands', 'ome-superpowers.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.claude', 'commands', 'ome-mcp.md')), true);
-  assert.equal(fs.existsSync(path.join(home, '.codex', 'skills', 'ome-bug', 'SKILL.md')), true);
-  assert.equal(fs.existsSync(path.join(home, '.codex', 'skills', 'ome-define', 'SKILL.md')), true);
-  assert.equal(fs.existsSync(path.join(home, '.codex', 'skills', 'ome-review', 'SKILL.md')), true);
-  assert.equal(fs.existsSync(path.join(home, '.codex', 'skills', 'ome-init-rules', 'SKILL.md')), true);
-  assert.equal(fs.existsSync(path.join(home, '.codex', 'skills', 'ome-superpowers', 'SKILL.md')), true);
-  assert.equal(fs.existsSync(path.join(home, '.codex', 'skills', 'ome-mcp', 'SKILL.md')), true);
+  assert.equal(fs.existsSync(path.join(home, '.agents', 'skills', 'ome-bug', 'SKILL.md')), true);
+  assert.equal(fs.existsSync(path.join(home, '.agents', 'skills', 'ome-define', 'SKILL.md')), true);
+  assert.equal(fs.existsSync(path.join(home, '.agents', 'skills', 'ome-review', 'SKILL.md')), true);
+  assert.equal(fs.existsSync(path.join(home, '.agents', 'skills', 'ome-init-rules', 'SKILL.md')), true);
+  assert.equal(fs.existsSync(path.join(home, '.agents', 'skills', 'ome-superpowers', 'SKILL.md')), true);
+  assert.equal(fs.existsSync(path.join(home, '.agents', 'skills', 'ome-mcp', 'SKILL.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.cursor', 'commands', 'ome-init-rules.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.trae', 'commands', 'ome-init-rules.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.qoder', 'commands', 'ome-bug.md')), true);
@@ -58,20 +58,30 @@ test('ome agents install writes global short command entries', () => {
   const claudeCommand = fs.readFileSync(path.join(home, '.claude', 'commands', 'ome-bug.md'), 'utf8');
   const initCommand = fs.readFileSync(path.join(home, '.claude', 'commands', 'ome-init.md'), 'utf8');
   const initRulesCommand = fs.readFileSync(path.join(home, '.claude', 'commands', 'ome-init-rules.md'), 'utf8');
-  const codexSkill = fs.readFileSync(path.join(home, '.codex', 'skills', 'ome-bug', 'SKILL.md'), 'utf8');
+  const codexSkill = fs.readFileSync(path.join(home, '.agents', 'skills', 'ome-bug', 'SKILL.md'), 'utf8');
   const antigravityWorkflow = fs.readFileSync(path.join(home, '.gemini', 'antigravity', 'global_workflows', 'ome-bug.md'), 'utf8');
-  assert.match(claudeCommand, /Read `OME\.md`/);
-  assert.match(claudeCommand, /Skill anatomy discipline:/);
+  assert.match(claudeCommand, /## Purpose/);
+  assert.match(claudeCommand, /## When to Use/);
+  assert.match(claudeCommand, /## Process/);
+  assert.match(claudeCommand, /## Red Flags/);
+  assert.match(claudeCommand, /## Output Contract/);
   assert.match(claudeCommand, /ome-bug/);
-  assert.match(fs.readFileSync(path.join(home, '.codex', 'skills', 'ome-review', 'SKILL.md'), 'utf8'), /^---\nname: ome-review\n/);
-  assert.match(initCommand, /continue with the `ome-init-rules` workflow/);
-  assert.match(initRulesCommand, /Read `OME\.md`, `\.ome\/context\/project-scan\.json`, and `\.ome\/context\/rules-generation-prompt\.md`/);
-  assert.match(initRulesCommand, /do not force the project into a fixed four-rule template/);
-  assert.match(initRulesCommand, /server-koa/);
-  assert.match(initRulesCommand, /Run `ome rules sync` after editing rules/);
-  assert.match(fs.readFileSync(path.join(home, '.codex', 'skills', 'ome-mcp', 'SKILL.md'), 'utf8'), /Read `\.ome\/mcp\/README\.md`/);
+  assert.match(fs.readFileSync(path.join(home, '.agents', 'skills', 'ome-review', 'SKILL.md'), 'utf8'), /^---\nname: ome-review\n/);
+  assert.match(codexSkill, /## Purpose/);
+  assert.match(codexSkill, /## When to Use/);
+  assert.match(codexSkill, /## Process/);
+  assert.match(codexSkill, /## Red Flags/);
+  assert.match(codexSkill, /## Common Rationalizations/);
+  assert.match(codexSkill, /## Verification/);
+  assert.match(codexSkill, /## Output Contract/);
+  assert.match(initCommand, /## Purpose/);
+  assert.match(initRulesCommand, /## Purpose/);
+  assert.match(initRulesCommand, /\.ome\/context\/project-scan\.json/);
+  assert.match(initRulesCommand, /Do not create UI, mobile, or design-token rules unless the repository signals them/);
+  assert.match(initRulesCommand, /Sync platform rule files after editing the source rules/);
+  assert.match(fs.readFileSync(path.join(home, '.agents', 'skills', 'ome-mcp', 'SKILL.md'), 'utf8'), /## Purpose/);
   assert.match(codexSkill, /^---\nname: ome-bug\n/);
-  assert.match(codexSkill, /\ntags: \[ome, bug, workflow\]\n---\n/);
+  assert.match(codexSkill, /\ntags: \[ome, bug, debug, workflow\]\n---\n/);
   assert.match(antigravityWorkflow, /^---\ndescription: Analyze, diagnose, and plan a bug fix using project rules\.\n---\n/);
   assert.match(antigravityWorkflow, /Antigravity workflow notes:/);
 });
@@ -93,6 +103,32 @@ test('ome agents install --project writes project command entries', () => {
   assert.match(fs.readFileSync(path.join(workspace, '.agent', 'workflows', 'ome-bug.md'), 'utf8'), /^---\ndescription:/);
 });
 
+test('ome init preserves existing agent files and merges OME guidance blocks', () => {
+  const workspace = createWorkspace('ome-init-merge-');
+  const claudePath = path.join(workspace, 'CLAUDE.md');
+  const agentsPath = path.join(workspace, 'AGENTS.md');
+
+  fs.writeFileSync(claudePath, '# Team Claude Rules\n\nKeep the existing Claude contract.\n', 'utf8');
+  fs.writeFileSync(agentsPath, '# Team Agent Rules\n\nKeep the existing Codex/OpenCode contract.\n', 'utf8');
+
+  runOme(['init'], workspace);
+
+  const claude = fs.readFileSync(claudePath, 'utf8');
+  const agents = fs.readFileSync(agentsPath, 'utf8');
+  assert.match(claude, /Keep the existing Claude contract/);
+  assert.match(claude, /<!-- OME:START -->/);
+  assert.match(claude, /Rule source: `\.ome\/rules\/`/);
+  assert.match(claude, /Skill source: `\.ome\/skills\/`/);
+  assert.match(agents, /Keep the existing Codex\/OpenCode contract/);
+  assert.match(agents, /<!-- OME:START -->/);
+  assert.match(agents, /read `OME\.md`, the relevant `\.ome\/rules\/\*\.md` files/);
+
+  assert.equal(fs.existsSync(path.join(workspace, '.ome', 'skills', 'ome-bug', 'SKILL.md')), true);
+  assert.equal(fs.existsSync(path.join(workspace, '.claude', 'commands', 'ome-bug.md')), false);
+  assert.equal(fs.existsSync(path.join(workspace, '.windsurf', 'workflows', 'ome-bug.md')), false);
+  assert.equal(fs.existsSync(path.join(workspace, '.agents', 'skills', 'ome-bug', 'SKILL.md')), false);
+});
+
 test('ome agents install falls back to all when interactive read is unavailable', () => {
   const home = createWorkspace('ome-agents-eagain-home-');
   const { installAgents } = require('../core/agents');
@@ -110,7 +146,7 @@ test('ome agents install falls back to all when interactive read is unavailable'
     const results = installAgents({ platforms: [], home });
     assert.equal(results.length > 0, true);
   assert.equal(fs.existsSync(path.join(home, '.claude', 'commands', 'ome-bug.md')), true);
-  assert.equal(fs.existsSync(path.join(home, '.codex', 'skills', 'ome-bug', 'SKILL.md')), true);
+  assert.equal(fs.existsSync(path.join(home, '.agents', 'skills', 'ome-bug', 'SKILL.md')), true);
   } finally {
     fs.readSync = originalReadSync;
     Object.defineProperty(process.stdin, 'isTTY', { configurable: true, value: originalIsTTY });
@@ -136,7 +172,7 @@ test('ome superpowers install and doctor cover all agent editor wrappers', () =>
 
   assert.match(output, /Superpowers bridge install/);
   assert.equal(fs.existsSync(path.join(home, '.claude', 'commands', 'ome-superpowers.md')), true);
-  assert.equal(fs.existsSync(path.join(home, '.codex', 'skills', 'ome-superpowers', 'SKILL.md')), true);
+  assert.equal(fs.existsSync(path.join(home, '.agents', 'skills', 'ome-superpowers', 'SKILL.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.cursor', 'commands', 'ome-superpowers.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.trae', 'commands', 'ome-superpowers.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.qoder', 'commands', 'ome-superpowers.md')), true);
@@ -144,7 +180,7 @@ test('ome superpowers install and doctor cover all agent editor wrappers', () =>
   assert.equal(fs.existsSync(path.join(home, '.codeium', 'windsurf', 'global_workflows', 'ome-superpowers.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.gemini', 'antigravity', 'global_workflows', 'ome-superpowers.md')), true);
 
-  const codexWrapper = fs.readFileSync(path.join(home, '.codex', 'skills', 'ome-superpowers', 'SKILL.md'), 'utf8');
+  const codexWrapper = fs.readFileSync(path.join(home, '.agents', 'skills', 'ome-superpowers', 'SKILL.md'), 'utf8');
   assert.match(codexWrapper, /github\.com\/obra\/superpowers/);
   assert.match(codexWrapper, /~\/\.agents\/skills\/superpowers/);
 
@@ -161,10 +197,15 @@ test('ome init --install-agents initializes project rules and global commands', 
   const output = runOme(['init', '--install-agents', '--home', home], workspace);
 
   assert.match(output, /Integration targets synced:/);
-  assert.match(output, /Agent commands installed:/);
+  assert.match(output, /Project skills installed:/);
+  assert.match(output, /Project command entries synced: 0/);
+  assert.match(output, /Global skills installed:/);
   assert.equal(fs.existsSync(path.join(workspace, 'OME.md')), true);
   assert.equal(fs.existsSync(path.join(workspace, 'CLAUDE.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.claude', 'commands', 'ome-bug.md')), true);
+  assert.equal(fs.existsSync(path.join(workspace, '.ome', 'skills', 'ome-bug', 'SKILL.md')), true);
+  assert.equal(fs.existsSync(path.join(workspace, '.agents', 'skills', 'ome-bug', 'SKILL.md')), false);
+  assert.equal(fs.existsSync(path.join(home, '.agents', 'skills', 'ome-bug', 'SKILL.md')), true);
 });
 
 export {};
