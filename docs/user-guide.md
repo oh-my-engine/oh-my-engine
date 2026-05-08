@@ -271,7 +271,109 @@ This ensures every workflow has complete context.
 
 ## Available Workflows
 
-### `/ome-init`
+### Lifecycle Workflows
+
+Oh My Engine provides structured lifecycle workflows that guide you through the complete software development process:
+
+#### `/ome-define`
+
+Clarify requirements, boundaries, and success criteria before implementation.
+
+**What it does**:
+- Extracts user goals and success criteria
+- Distinguishes must-do, optional, and out-of-scope items
+- Identifies missing information and assumptions
+- Generates executable requirement summary
+
+**Usage**:
+```bash
+ome define "add user login feature"
+/ome-define "add user login feature"
+```
+
+#### `/ome-plan`
+
+Form implementation plans with interface changes and test strategies.
+
+**What it does**:
+- Reads relevant code and rules
+- Identifies dependencies, risks, and boundaries
+- Designs minimal implementation path
+- Defines test and acceptance criteria
+
+**Usage**:
+```bash
+ome plan "implement login API"
+/ome-plan "implement login API"
+```
+
+#### `/ome-build`
+
+Guide or execute incremental implementation with verification.
+
+**What it does**:
+- Loads project rules and source code
+- Implements changes in small verified slices
+- Prioritizes reusing existing patterns
+- Runs appropriate verification after each slice
+
+**Usage**:
+```bash
+ome build "create login form"
+/ome-build "create login form"
+```
+
+#### `/ome-test`
+
+Design behavior-focused tests and run regression checks.
+
+**What it does**:
+- Writes failing reproduction tests for bugs
+- Tests behavior and results, not implementation details
+- Selects appropriate test level (unit/integration/e2e)
+- Diagnoses test failures
+
+**Usage**:
+```bash
+ome test "verify login flow"
+/ome-test "verify login flow"
+```
+
+#### `/ome-review`
+
+Code review across correctness, security, performance, and architecture.
+
+**What it does**:
+- Reviews correctness and readability
+- Checks security and performance
+- Evaluates architecture and test coverage
+- Reports findings with severity and file references
+
+**Usage**:
+```bash
+ome review "review current changes"
+/ome-review "review current changes"
+```
+
+#### `/ome-ship`
+
+Pre-delivery checks and handoff preparation.
+
+**What it does**:
+- Confirms tests, build, and lint status
+- Summarizes user-readable changes
+- Checks for incomplete items
+- Generates commit message draft
+
+**Usage**:
+```bash
+ome ship "prepare login feature for commit"
+/ome-ship "prepare login feature for commit"
+```
+
+### Task-Specific Workflows
+
+#### `/ome-init`
 
 Initialize Oh My Engine in a project.
 

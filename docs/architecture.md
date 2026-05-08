@@ -22,14 +22,31 @@ The public API is exported from `src/index.ts` and includes stable surfaces for 
 
 The `ome` CLI is the source of truth for engine operations:
 
-- `ome init`
-- `ome init-rules`
-- `ome rules sync`
-- `ome superpowers ...`
-- `ome spec ...`
-- `ome guidance ...`
-- `ome memory view`
-- `ome evolve ...`
+**Lifecycle Commands:**
+- `ome define` - Clarify requirements, boundaries, and success criteria
+- `ome plan` - Form implementation plans and test strategies
+- `ome build` - Guide incremental implementation
+- `ome test` - Design tests and run regression checks
+- `ome review` - Code review across multiple dimensions
+- `ome ship` - Pre-delivery checks and handoff preparation
+
+**Workflow Commands:**
+- `ome bug` - Bug analysis and fix workflow
+- `ome ui` - UI restoration workflow
+- `ome comp` - Component generation workflow
+- `ome api` - API integration workflow
+
+**Project Commands:**
+- `ome init` - Initialize project configuration
+- `ome init-rules` - Refresh and personalize rules
+- `ome rules sync` - Sync rules to all platforms
+
+**System Commands:**
+- `ome spec ...` - Spec workflow operations
+- `ome memory view` - View execution memory
+- `ome evolve ...` - Evolution and learning system
+- `ome guidance ...` - Render workflow guidance
+- `ome superpowers ...` - Superpowers bridge management
 
 The CLI dispatcher is command-registry based, so new top-level commands can be added without extending a long conditional chain.
 
