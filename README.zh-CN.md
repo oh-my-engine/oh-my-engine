@@ -250,6 +250,10 @@ MIT 许可证 - 详见 [LICENSE](LICENSE) 文件
 
 为 Anthropic 的 [Claude Code](https://claude.ai/code) 和 [Codex](https://codex.dev) 构建。
 
+## 💬 社区
+
+- [LINUX DO](https://linux.do/) — 开源技术社区
+
 ---
 
 **注意**：`ome` CLI 可在任何终端运行。Claude Code 和 Codex skills 是可选的原生入口；其他工具通过 `ome rules sync` 生成的规则文件使用。

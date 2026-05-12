@@ -117,16 +117,19 @@ ome init-rules
 Agent-specific legacy commands such as `/oh-my-engine-init` remain available only for compatibility. New commands use `ome-*`.
 
 This creates a `.ome/` directory with:
+
 - `context/project-scan.json` - A deterministic local scan of the project codebase
 - `context/rules-generation-prompt.md` - Agent instructions for personalizing rules from current source code
 - `rules/` - Project-specific rules (single source of truth, auto-syncs to all platforms)
 - `memory/` - Execution history and learnings in Markdown format (git-ignored, human-readable)
 
 It also generates **agent integration files** at the project root:
+
 - **Single-file platforms**: `CLAUDE.md`, `AGENTS.md`, `.windsurfrules`, `GEMINI.md`
 - **Multi-file platforms**: `.cursor/rules/00-ome-auto-detection.mdc`, `.trae/rules/00-ome-auto-detection.md`, etc.
 
 **🎯 Auto-Detection Feature**: These files teach **all 8 supported AI agents** when to automatically use OME commands:
+
 - User: "登录按钮点击没反应" → Agent automatically uses `/ome-bug` or `ome-bug`
 - User: "还原这个设计稿 [URL]" → Agent automatically uses `/ome-ui` or `ome-ui`
 - User: "集成用户登录 API" → Agent automatically uses `/ome-api` or `ome-api`
@@ -138,11 +141,11 @@ The generated rule set is dynamic. `ome init-rules` scans the repository and cre
 `ome init` also installs project-local Agent workflow entries such as `.claude/commands/`, `.cursor/commands/`, `.qoder/commands/`, `.opencode/command/`, `.windsurf/workflows/`, and `.agent/workflows/` so the initialized rules are reachable from each editor inside the repository.
 
 It also creates an `openspec/` workspace for long-lived specs and active changes:
+
 - `project.md` - Project-level context
 - `changes/` - In-progress changes
 - `specs/` - Stable capability specs
 - `archive/` - Completed changes
-
 
 ### TypeScript-Driven Development
 
@@ -251,8 +254,8 @@ const {
   listAdapterManifests,
   previewAdapterSync,
   renderWorkflowCommand,
-  validateJsonFile
-} = require('oh-my-engine');
+  validateJsonFile,
+} = require("oh-my-engine");
 ```
 
 See [docs/framework-api.md](docs/framework-api.md) for the public API surface, adapter dry-run behavior, and schema validation notes.
@@ -326,6 +329,7 @@ You can add real project checks under `workflows.spec.options.verifyCommands` in
 ### React Native Project
 
 See [examples/react-native](examples/react-native) for a complete configuration example including:
+
 - i18n rules for multi-language support
 - Theme system integration
 - Design tokens
@@ -342,21 +346,25 @@ description: Deploy application with pre-flight checks
 # Deploy Workflow
 
 ## Context Loading
+
 1. Load `.ome/config.json`
 2. Check deployment configuration
 3. Verify environment variables
 
 ## Pre-flight Checks
+
 - Run tests
 - Check build status
 - Verify dependencies
 
 ## Deployment
+
 - Build production bundle
 - Deploy to configured environment
 - Update deployment logs
 
 ## Post-deployment
+
 - Save execution to memory
 - Update learnings
 ```
@@ -407,7 +415,12 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 Built for [Claude Code](https://claude.ai/code) by Anthropic and [Codex](https://codex.dev).
 
+## 💬 Community
+
+- [LINUX DO](https://linux.do/)
+
 ---
 
 **Note**: The `ome` CLI works in any terminal. Claude Code and Codex skills are optional native entry points; other tools consume generated rule files through `ome rules sync`.
+
 # Test auto-record
