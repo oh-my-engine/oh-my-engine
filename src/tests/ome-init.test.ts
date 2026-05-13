@@ -321,4 +321,25 @@ test('ome init migrates legacy .oh-my-engine projects to .ome', () => {
   assert.ok(config.project, 'Config should have project section');
 });
 
+test('ome init migrates legacy .ome/spec contents into .ome/omespec and removes the old directory', () => {
+  const workspace = createWorkspace();
+  fs.mkdirSync(path.join(workspace, '.ome', 'spec', 'changes', 'legacy-flow', 'specs', 'checkout'), { recursive: true });
+  fs.mkdirSync(path.join(workspace, '.ome', 'spec', 'specs', 'payments'), { recursive: true });
+  fs.mkdirSync(path.join(workspace, '.ome', 'omespec'), { recursive: true });
+
+  fs.writeFileSync(path.join(workspace, '.ome', 'spec', 'project.md'), '# Legacy Project\n', 'utf8');
+  fs.writeFileSync(path.join(workspace, '.ome', 'spec', 'changes', 'legacy-flow', 'proposal.md'), '# Legacy Proposal\n', 'utf8');
+  fs.writeFileSync(path.join(workspace, '.ome', 'spec', 'changes', 'legacy-flow', 'specs', 'checkout', 'spec.md'), '# Legacy Checkout Spec\n', 'utf8');
+  fs.writeFileSync(path.join(workspace, '.ome', 'spec', 'specs', 'payments', 'spec.md'), '# Legacy Payments Spec\n', 'utf8');
+
+  const output = runOme(['init'], workspace);
+
+  assert.match(output, /Initialized Oh My Engine project/);
+  assert.equal(fs.existsSync(path.join(workspace, '.ome', 'spec')), false);
+  assert.match(fs.readFileSync(path.join(workspace, '.ome', 'omespec', 'project.md'), 'utf8'), /Legacy Project|Project:/);
+  assert.match(fs.readFileSync(path.join(workspace, '.ome', 'omespec', 'changes', 'legacy-flow', 'proposal.md'), 'utf8'), /Legacy Proposal/);
+  assert.match(fs.readFileSync(path.join(workspace, '.ome', 'omespec', 'changes', 'legacy-flow', 'specs', 'checkout', 'spec.md'), 'utf8'), /Legacy Checkout Spec/);
+  assert.match(fs.readFileSync(path.join(workspace, '.ome', 'omespec', 'specs', 'payments', 'spec.md'), 'utf8'), /Legacy Payments Spec/);
+});
+
 export {};
