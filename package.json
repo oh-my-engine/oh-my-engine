@@ -1,6 +1,6 @@
 {
   "name": "oh-my-engine",
-  "version": "0.4.6",
+  "version": "0.4.7",
   "description": "Cross-agent workflow engine for rules, memory, specs, and skills.",
   "type": "commonjs",
   "main": "dist/index.js",
