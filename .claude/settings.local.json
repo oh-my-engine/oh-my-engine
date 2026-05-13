@@ -38,7 +38,8 @@
       "Read(//tmp/**)",
       "Bash(npx tsc *)",
       "Bash(find skills/oh-my-engine* -name \"*plan*\" -o -name \"*output*\" -o -name \"*contract*\")",
-      "Bash(./dist/bin/ome.js agents *)"
+      "Bash(./dist/bin/ome.js agents *)",
+      "Bash(ome rules *)"
     ]
   }
 }

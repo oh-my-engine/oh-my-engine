@@ -4,10 +4,10 @@
 TBD: Describe the proposed solution and why it fits the current system.
 
 ## Intake Context
-- Source: `openspec/changes/<change-slug>/context/source.md`
-- Prompt: `openspec/changes/<change-slug>/context/prompt.md`
-- Analysis: `openspec/changes/<change-slug>/context/analysis.md`
-- References: `openspec/changes/<change-slug>/context/references.json`
+- Source: `.ome/omespec/changes/<change-slug>/context/source.md`
+- Prompt: `.ome/omespec/changes/<change-slug>/context/prompt.md`
+- Analysis: `.ome/omespec/changes/<change-slug>/context/analysis.md`
+- References: `.ome/omespec/changes/<change-slug>/context/references.json`
 
 ## Architecture
 - Components involved: TBD: list the main components.

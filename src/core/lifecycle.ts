@@ -34,7 +34,8 @@ const LIFECYCLE_WORKFLOWS: Record<LifecycleWorkflowName, LifecycleMeta> = {
       `Read OME.md, ${ENGINE_DIR}/rules/, relevant source files, and existing tests before planning.`,
       'Identify dependencies, risks, compatibility constraints, and the smallest viable path.',
       'Define verification before implementation starts.',
-      'Do not modify project files while producing the plan.'
+      `Automatically generate a markdown file for the plan and strictly save it in the \`${ENGINE_DIR}/plans/\` directory with a descriptive name (e.g., YYYY-MM-DD-task-name.md).`,
+      'Do not modify other project files while producing the plan.'
     ],
     output: ['Implementation approach', 'Public API / type changes', 'Data flow', 'Edge cases', 'Test plan', 'Assumptions'],
     references: ['testing.md', 'code-review.md', 'documentation.md']
@@ -114,7 +115,7 @@ export function renderLifecycleGuidance(options: LifecycleGuidanceOptions): stri
   const projectRoot = options.cwd || process.cwd();
   const session = createSession(workflow, input, projectRoot);
 
-  return [
+  const sections: string[] = [
     `# ${meta.title}`,
     '',
     `Session ID: ${session.id}`,
@@ -139,11 +140,33 @@ export function renderLifecycleGuidance(options: LifecycleGuidanceOptions): stri
     '- "No error output means it is done."',
     '',
     'Output contract:',
-    ...meta.output.map(item => `- ${item}`),
+    ...meta.output.map(item => `- ${item}`)
+  ];
+
+  // Plan 工作流：强制要求将计划保存为文件
+  if (workflow === 'plan') {
+    const today = new Date().toISOString().slice(0, 10);
+    const slug = input.replace(/[^a-zA-Z0-9\u4e00-\u9fff]+/g, '-').replace(/^-|-$/g, '').toLowerCase().slice(0, 60) || 'plan';
+    const suggestedFile = `${ENGINE_DIR}/plans/${today}-${slug}.md`;
+
+    sections.push(
+      '',
+      '⚠️  MANDATORY file output:',
+      `- You MUST create a markdown file and save it to \`${ENGINE_DIR}/plans/\`.`,
+      `- Suggested path: \`${suggestedFile}\``,
+      `- The file MUST contain ALL sections from the output contract above.`,
+      `- Do NOT only print the plan in the conversation — the plan MUST be persisted as a file.`,
+      `- Create the \`${ENGINE_DIR}/plans/\` directory if it does not exist.`
+    );
+  }
+
+  sections.push(
     '',
     'Terminal equivalent:',
     `- ${meta.usage}`
-  ].join('\n') + '\n';
+  );
+
+  return sections.join('\n') + '\n';
 }
 
 module.exports = {

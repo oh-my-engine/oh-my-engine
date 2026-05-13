@@ -24,7 +24,7 @@ test('ome spec propose creates scaffold and status through TypeScript implementa
   const proposeOutput = runOme(['spec', 'propose', 'User Authentication', '--capability', 'auth'], workspace);
   assert.match(proposeOutput, /Created change scaffold/);
 
-  const changeDir = path.join(workspace, '.ome', 'spec', 'changes', 'user-authentication');
+  const changeDir = path.join(workspace, '.ome', 'omespec', 'changes', 'user-authentication');
   assert.equal(fs.existsSync(path.join(changeDir, 'proposal.md')), true);
   assert.equal(fs.existsSync(path.join(changeDir, 'design.md')), true);
   assert.equal(fs.existsSync(path.join(changeDir, 'tasks.md')), true);
@@ -46,7 +46,7 @@ test('ome spec propose supports design-first and force overwrite', () => {
   const workspace = createWorkspace();
 
   runOme(['spec', 'propose', 'new-flow', '--design-first'], workspace);
-  const designPath = path.join(workspace, '.ome', 'spec', 'changes', 'new-flow', 'design.md');
+  const designPath = path.join(workspace, '.ome', 'omespec', 'changes', 'new-flow', 'design.md');
   assert.match(fs.readFileSync(designPath, 'utf8'), /Planning Mode/);
 
   fs.writeFileSync(designPath, 'custom\n', 'utf8');
@@ -65,7 +65,7 @@ test('ome spec plan and apply update lifecycle state through TypeScript implemen
   const planOutput = runOme(['spec', 'plan', 'checkout-flow'], workspace);
   assert.match(planOutput, /Planned change: checkout-flow/);
 
-  const changeDir = path.join(workspace, '.ome', 'spec', 'changes', 'checkout-flow');
+  const changeDir = path.join(workspace, '.ome', 'omespec', 'changes', 'checkout-flow');
   assert.match(fs.readFileSync(path.join(changeDir, 'design.md'), 'utf8'), /Planning Notes/);
 
   let memory = JSON.parse(fs.readFileSync(path.join(workspace, '.ome', 'memory', 'specs', 'checkout-flow.json'), 'utf8'));
@@ -134,7 +134,7 @@ test('ome spec import and decompose are TypeScript-backed', () => {
   ], workspace);
   assert.match(importOutput, /Imported context/);
 
-  const contextDir = path.join(workspace, '.ome/spec', 'changes', 'intake-flow', 'context');
+  const contextDir = path.join(workspace, '.ome/omespec', 'changes', 'intake-flow', 'context');
   assert.match(fs.readFileSync(path.join(contextDir, 'source.md'), 'utf8'), /saved checkout flow/);
   assert.match(fs.readFileSync(path.join(contextDir, 'prompt.md'), 'utf8'), /Prioritize mobile behavior/);
   assert.equal(fs.existsSync(path.join(contextDir, 'assets', 'asset.txt')), true);
@@ -142,7 +142,7 @@ test('ome spec import and decompose are TypeScript-backed', () => {
   const decomposeOutput = runOme(['spec', 'decompose', 'intake-flow', '--capability', 'checkout'], workspace);
   assert.match(decomposeOutput, /Decomposed change/);
   assert.equal(fs.existsSync(path.join(contextDir, 'analysis.md')), true);
-  assert.equal(fs.existsSync(path.join(workspace, '.ome/spec', 'changes', 'intake-flow', 'specs', 'checkout', 'spec.md')), true);
+  assert.equal(fs.existsSync(path.join(workspace, '.ome/omespec', 'changes', 'intake-flow', 'specs', 'checkout', 'spec.md')), true);
 });
 
 test('ome spec verify and archive are TypeScript-backed', () => {
@@ -150,7 +150,7 @@ test('ome spec verify and archive are TypeScript-backed', () => {
   runOme(['spec', 'propose', 'accepted-flow', '--capability', 'checkout'], workspace);
   runOme(['spec', 'apply', 'accepted-flow', '--all-tasks', '--all-acceptance'], workspace);
 
-  const changeDir = path.join(workspace, '.ome/spec', 'changes', 'accepted-flow');
+  const changeDir = path.join(workspace, '.ome/omespec', 'changes', 'accepted-flow');
   fs.writeFileSync(
     path.join(changeDir, 'proposal.md'),
     `# Change Proposal\n\n## Summary\nAccepted checkout flow.\n\n## Acceptance Criteria\n- [x] Checkout succeeds.\n`,
@@ -174,11 +174,12 @@ test('ome spec verify and archive are TypeScript-backed', () => {
   assert.match(archiveOutput, /Archived change/);
 
   assert.equal(fs.existsSync(changeDir), false);
-  const specPath = path.join(workspace, '.ome/spec', 'specs', 'checkout', 'spec.md');
+  const specPath = path.join(workspace, '.ome/omespec', 'specs', 'checkout', 'spec.md');
   assert.match(fs.readFileSync(specPath, 'utf8'), /Saved Checkout Flow/);
 
   const memory = JSON.parse(fs.readFileSync(path.join(workspace, '.ome', 'memory', 'specs', 'accepted-flow.json'), 'utf8'));
   assert.equal(memory.status, 'archived');
   assert.equal(memory.phase, 'archive');
-  assert.match(memory.archivedPath, /\.ome[\/\\]spec[\/\\]archive[\/\\]/);
+  assert.match(memory.archivedPath, /\.ome[\/\\]omespec[\/\\]archive[\/\\]/);
 });
+

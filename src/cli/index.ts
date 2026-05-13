@@ -338,5 +338,6 @@ export function runShortcut(shortcut: string, args: string[]): void {
   if (shortcut === 'spec') return run(['spec', ...args]);
   if (shortcut === 'memory') return run(['memory', 'view', ...args]);
   if (shortcut === 'evolve') return run(['evolve', 'analyze', ...args]);
+  if (shortcut === 'superpowers') return run(['superpowers', ...args]);
   throw new Error(`Unknown shortcut: ${shortcut}`);
 }

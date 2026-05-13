@@ -27,6 +27,8 @@ const COMMON_RATIONALIZATIONS = [
   '"A vague summary is enough for handoff."'
 ];
 
+const SUPERPOWERS_REPO = 'https://github.com/obra/superpowers';
+
 function repoRoot(): string {
   return path.resolve(__dirname, '..', '..');
 }
@@ -74,7 +76,7 @@ function replaceFrontmatterName(content: string, name: string): string {
   ].join('\n');
 }
 
-function renderFrontmatterBlock(description: string): string {
+export function renderFrontmatterBlock(description: string): string {
   return [
     '---',
     `description: ${description}`,

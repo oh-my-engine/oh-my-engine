@@ -25,10 +25,10 @@ skills: []
 
 ### Step 2: Create change scaffold
 ```
-1. Create openspec/changes/<change-id>/proposal.md
-2. Create openspec/changes/<change-id>/design.md
-3. Create openspec/changes/<change-id>/tasks.md
-4. Create openspec/changes/<change-id>/specs/<capability>/spec.md
+1. Create .ome/omespec/changes/<change-id>/proposal.md
+2. Create .ome/omespec/changes/<change-id>/design.md
+3. Create .ome/omespec/changes/<change-id>/tasks.md
+4. Create .ome/omespec/changes/<change-id>/specs/<capability>/spec.md
 ```
 
 ### Step 3: Link long-lived context

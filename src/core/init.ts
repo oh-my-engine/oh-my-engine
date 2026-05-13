@@ -56,9 +56,9 @@ const ENGINE_DIRECTORIES = [
   `${ENGINE_DIR}/memory/preferences`,
   `${ENGINE_DIR}/memory/skill-candidates`,
   `${ENGINE_DIR}/memory/specs`,
-  '.ome/spec/changes',
-  '.ome/spec/specs',
-  '.ome/spec/archive'
+  '.ome/omespec/changes',
+  '.ome/omespec/specs',
+  '.ome/omespec/archive'
 ];
 
 function ensureDirectory(directoryPath: string): void {
@@ -186,10 +186,10 @@ function buildDefaultConfig(scan: ProjectScanSummary, template: string): any {
         enabled: true,
         format: 'openspec-compatible',
         options: {
-          specRoot: '.ome/spec',
-          changesDir: '.ome/spec/changes',
-          specsDir: '.ome/spec/specs',
-          archiveDir: '.ome/spec/archive',
+          specRoot: '.ome/omespec',
+          changesDir: '.ome/omespec/changes',
+          specsDir: '.ome/omespec/specs',
+          archiveDir: '.ome/omespec/archive',
           memoryDir: `${ENGINE_DIR}/memory/specs`,
           defaultFlow: 'import-decompose-plan-apply-verify-archive',
           manualFlow: 'propose-plan-apply-verify-archive',
@@ -843,7 +843,7 @@ export function initializeProject(options: InitOptions): InitResult {
 
   const projectCreated = copyFileIfNeeded(
     path.join(options.repoRoot, 'skills', 'oh-my-engine-spec', 'templates', 'project.md'),
-    path.join(options.projectRoot, '.ome', 'spec', 'project.md'),
+    path.join(options.projectRoot, '.ome', 'omespec', 'project.md'),
     options.force
   );
 
@@ -943,7 +943,7 @@ export function renderInitResult(result: InitResult): string {
     `Legacy .oh-my-engine migration: ${result.migratedLegacy ? 'migrated to .ome' : 'not needed'}`,
     `Project scan: ${result.scanSummary}`,
     `Config: ${result.configCreated ? 'created' : 'preserved'}`,
-    `.ome/spec/project.md: ${result.projectCreated ? 'created' : 'preserved'}`,
+    `.ome/omespec/project.md: ${result.projectCreated ? 'created' : 'preserved'}`,
     `Rule files updated: ${result.rulesUpdated}`,
     `Agent context files updated: ${result.contextFilesUpdated}`,
     `Agent guidance files generated: ${result.agentGuidanceFiles.length}`,

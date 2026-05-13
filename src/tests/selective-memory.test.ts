@@ -84,7 +84,7 @@ function readExecutionRecords(workspace: string, workflow: string): any[] {
 }
 
 function writeValidFeatureDocs(workspace: string, change: string): void {
-  const changeDirectory = path.join(workspace, '.ome/spec', 'changes', change);
+  const changeDirectory = path.join(workspace, '.ome/omespec', 'changes', change);
 
   fs.writeFileSync(
     path.join(changeDirectory, 'proposal.md'),
@@ -126,7 +126,7 @@ Protected routes currently duplicate auth checks in multiple handlers.
 - Monitoring: watch protected-route 401 volume
 
 ## Related Capability Specs
-- \`.ome/spec/specs/${change}/spec.md\`
+- \`.ome/omespec/specs/${change}/spec.md\`
 `,
     'utf8'
   );
@@ -227,7 +227,7 @@ function seedEvolutionWorkspace(workspace: string): any {
       novelty: 0.6,
       status: 'verified',
       summary: 'Verified the spec change and acceptance state.',
-      filesTouched: ['.ome/spec/changes/demo/spec.md'],
+      filesTouched: ['.ome/omespec/changes/demo/spec.md'],
       testsRun: ['sh tests/spec-workflow-smoke.sh'],
       errors: [],
       metadata: {
@@ -808,7 +808,7 @@ test('spec plan and apply load adopted engine memory context', () => {
 
   const engineMemoryContextPath = path.join(
     workspace,
-    '.ome/spec',
+    '.ome/omespec',
     'changes',
     'engine-memory-demo',
     'context',
@@ -820,7 +820,7 @@ test('spec plan and apply load adopted engine memory context', () => {
   );
   assert.match(
     planOutput,
-    /\.ome[\/\\]spec[\/\\]changes[\/\\]engine-memory-demo[\/\\]context[\/\\]engine-memory\.md/
+    /\.ome[\/\\]omespec[\/\\]changes[\/\\]engine-memory-demo[\/\\]context[\/\\]engine-memory\.md/
   );
   assert.match(
     planOutput,
@@ -848,7 +848,7 @@ test('spec plan and apply load adopted engine memory context', () => {
 
   assert.match(
     applyOutput,
-    /\.ome[\/\\]spec[\/\\]changes[\/\\]engine-memory-demo[\/\\]context[\/\\]engine-memory\.md/
+    /\.ome[\/\\]omespec[\/\\]changes[\/\\]engine-memory-demo[\/\\]context[\/\\]engine-memory\.md/
   );
   assert.match(
     applyOutput,
@@ -1037,3 +1037,5 @@ test('non-spec workflows surface adopted learnings and generated skill directive
 });
 
 export {};
+
+

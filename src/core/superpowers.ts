@@ -1,6 +1,10 @@
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { execSync } = require('node:child_process');
+const {
+  AGENTS
+} = require('./agents');
 
 interface SuperpowersPlatform {
   id: string;
@@ -15,18 +19,21 @@ interface SuperpowersOptions {
   home?: string;
 }
 
+const NATIVE_SUPPORT_MAP: Record<string, SuperpowersPlatform['nativeSupport']> = {
+  'claude-code': 'plugin',
+  'codex': 'codex-link',
+  'antigravity': 'gemini-extension'
+};
+
 const SUPERPOWERS_REPO = 'https://github.com/obra/superpowers';
 
-const PLATFORMS: SuperpowersPlatform[] = [
-  { id: 'claude-code', name: 'Claude Code', kind: 'slash', directory: '.claude/commands', nativeSupport: 'plugin' },
-  { id: 'codex', name: 'Codex', kind: 'skill', directory: '.agents/skills', nativeSupport: 'codex-link' },
-  { id: 'cursor', name: 'Cursor', kind: 'slash', directory: '.cursor/commands', nativeSupport: 'wrapper' },
-  { id: 'trae', name: 'Trae', kind: 'slash', directory: '.trae/commands', nativeSupport: 'wrapper' },
-  { id: 'windsurf', name: 'Windsurf', kind: 'workflow', directory: '.codeium/windsurf/global_workflows', nativeSupport: 'wrapper' },
-  { id: 'qoder', name: 'Qoder', kind: 'slash', directory: '.qoder/commands', nativeSupport: 'wrapper' },
-  { id: 'opencode', name: 'OpenCode', kind: 'slash', directory: '.config/opencode/command', nativeSupport: 'wrapper' },
-  { id: 'antigravity', name: 'Antigravity', kind: 'workflow', directory: '.gemini/antigravity/global_workflows', nativeSupport: 'gemini-extension' }
-];
+const PLATFORMS: SuperpowersPlatform[] = AGENTS.map((agent: any) => ({
+  id: agent.id,
+  name: agent.name,
+  kind: agent.commandStyle,
+  directory: agent.globalCommandDirectory || '',
+  nativeSupport: NATIVE_SUPPORT_MAP[agent.id] || 'wrapper'
+})).filter((p: SuperpowersPlatform) => p.directory);
 
 function normalizeHome(home?: string): string {
   return home ? path.resolve(home) : os.homedir();
@@ -74,97 +81,78 @@ function targetPath(home: string, platform: SuperpowersPlatform): string {
   return path.join(base, 'ome-superpowers.md');
 }
 
-function nativeInstallInstructions(platform: SuperpowersPlatform): string[] {
-  switch (platform.nativeSupport) {
-    case 'plugin':
-      return [
-        'Native Superpowers install:',
-        '- In Claude Code, run `/plugin install superpowers@claude-plugins-official`.',
-        '- Restart or reload Claude Code if the plugin does not appear immediately.'
-      ];
-    case 'codex-link':
-      return [
-        'Native Superpowers install:',
-        `- Clone or update ${SUPERPOWERS_REPO} into ` + '`~/.codex/superpowers`.',
-        '- Link its Codex skills directory to `~/.agents/skills/superpowers`.',
-        '- On Windows, use a directory junction if symlinks require elevated permissions.'
-      ];
-    case 'gemini-extension':
-      return [
-        'Native Superpowers install:',
-        `- Run \`gemini extensions install ${SUPERPOWERS_REPO}\` when Gemini CLI extensions are available.`,
-        '- Reload Antigravity/Gemini after installing the extension.'
-      ];
-    default:
-      return [
-        'Native Superpowers install:',
-        '- This editor does not have a known native Superpowers installer.',
-        '- Use this Oh My Engine wrapper workflow to apply Superpowers-style discipline.'
-      ];
-  }
-}
-
-function renderWrapper(platform: SuperpowersPlatform): string {
-  const trigger = platform.kind === 'skill' ? 'ome-superpowers' : '/ome-superpowers';
-  const body = [
-    '# ome-superpowers',
-    '',
-    'Use Superpowers from Oh My Engine across Agent editors.',
-    '',
-    `Trigger: \`${trigger}\``,
-    'Terminal equivalent: `ome superpowers doctor`',
-    '',
-    'Before using Superpowers:',
-    '- Read `OME.md` if present.',
-    '- Read project rules under `.ome/rules/` if present.',
-    '- Prefer official Superpowers native installation when this editor supports it.',
-    '',
-    ...nativeInstallInstructions(platform),
-    '',
-    'Workflow:',
-    '- Run or review `ome superpowers doctor` first.',
-    '- If native Superpowers is installed, follow its skill/workflow instructions.',
-    '- If native Superpowers is not installed, use this wrapper to enforce planning, TDD, debugging, and focused verification discipline.',
-    '- Keep project-specific rules in `.ome/rules/`; do not copy Superpowers source into project rules.',
-    '',
-    `Source: ${SUPERPOWERS_REPO}`
-  ];
-
-  if (platform.kind === 'skill') {
-    return [
-      '---',
-      'name: ome-superpowers',
-      'version: 1.0.0',
-      'description: Install, update, or inspect Superpowers bridge entries for Agent editors.',
-      'author: oh-my-engine',
-      'tags: [ome, superpowers, workflow]',
-      '---',
-      '',
-      ...body
-    ].join('\n');
-  }
-
-  if (platform.kind === 'workflow') {
-    return [
-      '---',
-      'description: Install, update, or inspect Superpowers bridge entries for Agent editors.',
-      '---',
-      '',
-      ...body
-    ].join('\n');
-  }
-
-  return body.join('\n');
-}
 
 function installSuperpowers(options: SuperpowersOptions): string {
   const home = normalizeHome(options.home);
-  const lines = ['Superpowers bridge install'];
+  const lines = ['Official Superpowers installation'];
 
   for (const platform of selectedPlatforms(options)) {
-    const target = targetPath(home, platform);
-    writeFile(target, renderWrapper(platform));
-    lines.push(`installed ${platform.id}: ${target}`);
+    if (platform.id === 'codex') {
+      try {
+        const repoPath = path.join(home, '.codex', 'superpowers');
+        const skillPath = path.join(home, '.agents', 'skills', 'superpowers');
+
+        if (!fs.existsSync(repoPath)) {
+          lines.push(`cloning official superpowers to ${repoPath}...`);
+          execSync(`git clone https://github.com/obra/superpowers.git "${repoPath}"`, { stdio: 'inherit' });
+        } else {
+          lines.push(`official superpowers already exists at ${repoPath}, skipping clone.`);
+        }
+
+        ensureDirectory(path.dirname(skillPath));
+        if (!fs.existsSync(skillPath)) {
+          lines.push(`creating symlink to ${skillPath}...`);
+          // Windows junction logic
+          const target = path.join(repoPath, 'skills');
+          const isWindows = process.platform === 'win32';
+          if (isWindows) {
+            execSync(`mklink /J "${skillPath}" "${target}"`, { stdio: 'inherit' });
+          } else {
+            fs.symlinkSync(target, skillPath, 'dir');
+          }
+        }
+        lines.push('✅ codex: official superpowers installed via symlink.');
+      } catch (error: any) {
+        lines.push(`❌ codex install failed: ${error.message}`);
+      }
+      continue;
+    }
+
+    if (platform.id === 'claude-code') {
+      const target = targetPath(home, platform);
+      const content = [
+        '---',
+        'description: Official Superpowers Installation',
+        '---',
+        '',
+        'To install official Superpowers, run the following command in your Claude Code terminal:',
+        '',
+        '```bash',
+        '/plugin install superpowers@claude-plugins-official',
+        '```',
+        '',
+        'Source: https://github.com/obra/superpowers'
+      ].join('\n');
+      writeFile(target, content);
+      lines.push(`✅ claude-code: instructions generated at ${target}`);
+      continue;
+    }
+
+    // 其他平台如果官方没有原生支持，则跳过或提供简单链接
+    if (platform.nativeSupport === 'wrapper' || platform.nativeSupport === 'gemini-extension') {
+      const target = targetPath(home, platform);
+      const content = [
+        '---',
+        'description: Official Superpowers Repository',
+        '---',
+        '',
+        'This editor does not have a native Superpowers plugin yet.',
+        'Please follow the official manual installation instructions at:',
+        'https://github.com/obra/superpowers'
+      ].join('\n');
+      writeFile(target, content);
+      lines.push(`✅ ${platform.id}: repo link generated at ${target}`);
+    }
   }
 
   return `${lines.join('\n')}\n`;

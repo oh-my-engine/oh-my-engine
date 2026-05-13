@@ -18,16 +18,16 @@ Create an OpenSpec-compatible workspace without introducing a new runtime depend
 ### Step 1: Inspect project state
 ```
 1. Check for .ome/config.json
-2. Check whether openspec/ already exists
+2. Check whether .ome/omespec/ already exists
 3. Detect project conventions and relevant rules
 ```
 
 ### Step 2: Create workspace
 ```
-1. Create openspec/project.md
-2. Create openspec/changes/
-3. Create openspec/specs/
-4. Create openspec/archive/
+1. Create .ome/omespec/project.md
+2. Create .ome/omespec/changes/
+3. Create .ome/omespec/specs/
+4. Create .ome/omespec/archive/
 5. Create .ome/memory/specs/
 ```
 
@@ -44,10 +44,10 @@ Create an OpenSpec-compatible workspace without introducing a new runtime depend
 {
   "success": true,
   "created": [
-    "openspec/project.md",
-    "openspec/changes/",
-    "openspec/specs/",
-    "openspec/archive/",
+    ".ome/omespec/project.md",
+    ".ome/omespec/changes/",
+    ".ome/omespec/specs/",
+    ".ome/omespec/archive/",
     ".ome/memory/specs/"
   ]
 }

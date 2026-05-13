@@ -4,10 +4,9 @@
 `<change-id>`
 
 ## Inputs
-- Source: `openspec/changes/<change-slug>/context/source.md`
-- Prompt: `openspec/changes/<change-slug>/context/prompt.md`
-- References: `openspec/changes/<change-slug>/context/references.json`
-- Assets: see `openspec/changes/<change-slug>/context/assets/`
+- Source: `.ome/omespec/changes/<change-slug>/context/source.md`
+- Prompt: `.ome/omespec/changes/<change-slug>/context/prompt.md`
+- References: `.ome/omespec/changes/<change-slug>/context/references.json`
 
 ## Extracted Requirements
 - TBD: derive the primary user-facing requirements from the source and prompt.
@@ -27,3 +26,28 @@
 ## Recommended Capability Split
 - Primary capability: `<capability>`
 - Supporting capabilities: TBD: add secondary capabilities or say none.
+
+---
+
+## Clarification Gate Result
+
+### Dimension Assessment
+| Dimension | Status | Notes |
+|-----------|--------|-------|
+| User goal | TBD: CLEAR / VAGUE / MISSING | TBD |
+| Scope boundary | TBD: CLEAR / VAGUE / MISSING | TBD |
+| Acceptance criteria | TBD: CLEAR / VAGUE / MISSING | TBD |
+| Key constraints | TBD: CLEAR / VAGUE / MISSING | TBD |
+| Edge cases | TBD: CLEAR / VAGUE / MISSING | TBD |
+
+### Blocking Questions
+<!-- Populated if any dimension is MISSING. Must be resolved before decompose can continue. -->
+- TBD: no blocking questions, or list them here.
+
+### Assumptions
+<!-- Populated if any dimension is VAGUE. Will be surfaced in proposal.md for confirmation. -->
+- TBD: no assumptions, or list them here.
+
+### Gate Decision
+- [ ] BLOCKED — waiting for user answers to blocking questions above.
+- [ ] PASSED — proceeding to scaffold OpenSpec artifacts.

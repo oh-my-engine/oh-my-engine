@@ -17,9 +17,9 @@ Close the loop by promoting change-level spec deltas into long-lived capability 
 
 ### Step 1: Promote knowledge
 ```
-1. Merge openspec/changes/<change-id>/specs/* into openspec/specs/*
+1. Merge .ome/omespec/changes/<change-id>/specs/* into .ome/omespec/specs/*
 2. Preserve important rationale in the long-lived spec
-3. Move the completed change under openspec/archive/
+3. Move the completed change under .ome/omespec/archive/
 ```
 
 ### Step 2: Persist memory

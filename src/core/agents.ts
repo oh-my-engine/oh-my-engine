@@ -69,7 +69,7 @@ const WORKFLOWS: WorkflowDefinition[] = [
   { id: 'ship', command: 'ome-ship', title: 'Ship Workflow', usage: 'ome ship "<completed change>"', description: 'Run final readiness checks and prepare user-facing handoff or commit notes.' }
 ];
 
-const AGENTS: AgentDefinition[] = [
+export const AGENTS: AgentDefinition[] = [
   { id: 'claude-code', name: 'Claude Code', globalCommandDirectory: '.claude/commands', projectCommandDirectory: '.claude/commands', projectRules: 'CLAUDE.md', commandStyle: 'slash' },
   { id: 'codex', name: 'Codex', globalCommandDirectory: '.agents/skills', projectCommandDirectory: '.agents/skills', projectRules: 'AGENTS.md', commandStyle: 'skill' },
   { id: 'cursor', name: 'Cursor', globalCommandDirectory: '.cursor/commands', projectCommandDirectory: '.cursor/commands', projectRules: '.cursor/rules/*.mdc', commandStyle: 'slash' },

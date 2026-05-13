@@ -7,10 +7,10 @@
 TBD: Describe the user-visible failure in one paragraph.
 
 ## Intake Context
-- Source: `openspec/changes/<change-slug>/context/source.md`
-- Prompt: `openspec/changes/<change-slug>/context/prompt.md`
-- Analysis: `openspec/changes/<change-slug>/context/analysis.md`
-- References: `openspec/changes/<change-slug>/context/references.json`
+- Source: `.ome/omespec/changes/<change-slug>/context/source.md`
+- Prompt: `.ome/omespec/changes/<change-slug>/context/prompt.md`
+- Analysis: `.ome/omespec/changes/<change-slug>/context/analysis.md`
+- References: `.ome/omespec/changes/<change-slug>/context/references.json`
 
 ## Severity and Blast Radius
 - Severity: TBD: choose severity.

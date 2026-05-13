@@ -7,10 +7,10 @@
 TBD: Describe the change in one paragraph.
 
 ## Intake Context
-- Source: `openspec/changes/<change-slug>/context/source.md`
-- Prompt: `openspec/changes/<change-slug>/context/prompt.md`
-- Analysis: `openspec/changes/<change-slug>/context/analysis.md`
-- References: `openspec/changes/<change-slug>/context/references.json`
+- Source: `.ome/omespec/changes/<change-slug>/context/source.md`
+- Prompt: `.ome/omespec/changes/<change-slug>/context/prompt.md`
+- Analysis: `.ome/omespec/changes/<change-slug>/context/analysis.md`
+- References: `.ome/omespec/changes/<change-slug>/context/references.json`
 
 ## Problem
 TBD: Explain what is broken, missing, or expensive today.
@@ -42,4 +42,4 @@ TBD: Explain what is broken, missing, or expensive today.
 - Monitoring: TBD: describe what to watch after rollout.
 
 ## Related Capability Specs
-- `openspec/specs/<capability>/spec.md`
+- `.ome/omespec/specs/<capability>/spec.md`

@@ -36,7 +36,7 @@ autoApply: true
 │   └── *.md                 # 实现方案文档
 ├── rules/                   # 📏 规则文件
 │   └── *.md                 # 各类规则定义
-├── spec/                    # 📝 规范驱动开发
+├── omespec/                 # 📝 规范驱动开发
 │   ├── archive/             # 已归档的规范
 │   ├── changes/             # 变更记录
 │   └── specs/               # 活跃的规范
@@ -131,7 +131,7 @@ autoApply: true
 ### rules/
 存放项目规则定义，是 CLAUDE.md 等平台文件的源文件。
 
-### spec/
+### omespec/
 规范驱动开发的工作目录，包含活跃规范、变更记录和归档。
 
 ### workflows/
@@ -149,7 +149,7 @@ autoApply: true
     "plans": ".ome/plans",
     "rules": ".ome/rules",
     "memory": ".ome/memory",
-    "spec": ".ome/spec",
+    "spec": ".ome/omespec",
     "context": ".ome/context"
   }
 }
