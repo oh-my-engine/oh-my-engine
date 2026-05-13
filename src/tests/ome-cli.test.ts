@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const { OME_BIN, REPO_ROOT, omeArgs } = require('./helpers');
+const { OME_BIN, REPO_ROOT, omeArgs, runtimePath } = require('./helpers');
 
 function runOme(args: string[]): string {
   return execFileSync(OME_BIN, omeArgs(args), {
@@ -36,6 +36,22 @@ test('ome help lists productized command groups', () => {
   assert.match(output, /evolve adopt-learning/);
   assert.match(output, /evolve adopt-skill/);
   assert.match(output, /adapters list/);
+});
+
+test('ome spec help and ome-spec shortcut help list spec subcommands', () => {
+  const specHelp = runOme(['spec', 'help']);
+  assert.match(specHelp, /Spec commands:/);
+  assert.match(specHelp, /apply/);
+  assert.match(specHelp, /verify/);
+  assert.match(specHelp, /archive/);
+
+  const shortcutHelp = execFileSync(process.execPath, [runtimePath('bin', 'ome-spec.js'), '--help'], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8'
+  });
+  assert.match(shortcutHelp, /Usage:/);
+  assert.match(shortcutHelp, /ome spec <command>/);
+  assert.match(shortcutHelp, /ome-spec <command>/);
 });
 
 test('ome rules validate reports local rules', () => {

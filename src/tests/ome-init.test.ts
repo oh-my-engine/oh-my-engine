@@ -48,6 +48,9 @@ test('ome init initializes project directories and defaults from TypeScript CLI'
   assert.equal(config.project.template, 'node');
   assert.equal(config.memory.captureMode, 'selective');
 
+  const agents = fs.readFileSync(path.join(workspace, 'AGENTS.md'), 'utf8');
+  assert.match(agents, /Spec workflow: `ome-spec <command> \[args\]` -> read `.ome\/skills\/ome-spec\/SKILL\.md`/);
+
   const gitignore = fs.readFileSync(path.join(workspace, '.gitignore'), 'utf8');
   assert.match(gitignore, /\.ome\/memory\//);
 });

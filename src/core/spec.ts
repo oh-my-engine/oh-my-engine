@@ -77,6 +77,28 @@ export function listSpecCommands(): string[] {
   return SPEC_COMMANDS;
 }
 
+export function renderSpecHelp(): string {
+  return [
+    'Oh My Engine Spec Workflow',
+    '',
+    'Usage:',
+    '  ome spec <command> [args]',
+    '  ome-spec <command> [args]',
+    '',
+    'Spec commands:',
+    `  ${SPEC_COMMANDS.join(', ')}`,
+    '',
+    'Common flows:',
+    '  ome spec import <change-id> --source-file docs/prd.md',
+    '  ome spec decompose <change-id>',
+    '  ome spec plan <change-id>',
+    '  ome spec apply <change-id>',
+    '  ome spec verify <change-id>',
+    '  ome spec archive <change-id>',
+    ''
+  ].join('\n');
+}
+
 export function runSpecInit(args: string[]): void {
   const result = initializeProject(parseInitArgs(args));
   const paths = getSpecPaths(result.projectRoot);
@@ -805,6 +827,11 @@ export function runSpecVerify(args: string[]): void {
 }
 
 export function runSpecCommand(command: string, args: string[]): void {
+  if (!command || command === 'help' || command === '--help' || command === '-h') {
+    process.stdout.write(renderSpecHelp());
+    return;
+  }
+
   if (command === 'init') return runSpecInit(args);
   if (command === 'propose') return runSpecPropose(args);
   if (command === 'status') return runSpecStatus(args);

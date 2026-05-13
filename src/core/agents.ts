@@ -508,6 +508,7 @@ function buildAgentGuidanceContent(platform: AgentDefinition, scan: any): string
   const cmdTest = buildCommandExample(platform, 'ome-test');
   const cmdReview = buildCommandExample(platform, 'ome-review');
   const cmdShip = buildCommandExample(platform, 'ome-ship');
+  const cmdSpec = buildCommandExample(platform, 'ome-spec');
 
   const lines: string[] = [];
 
@@ -549,6 +550,7 @@ function buildAgentGuidanceContent(platform: AgentDefinition, scan: any): string
   lines.push(`- Design or run tests: \`${cmdTest} "<target>"\` -> read \`.ome/skills/ome-test/SKILL.md\``);
   lines.push(`- Review code or a diff: \`${cmdReview} "<target>"\` -> read \`.ome/skills/ome-review/SKILL.md\``);
   lines.push(`- Prepare final handoff or release checks: \`${cmdShip} "<change>"\` -> read \`.ome/skills/ome-ship/SKILL.md\``);
+  lines.push(`- Spec workflow: \`${cmdSpec} <command> [args]\` -> read \`.ome/skills/ome-spec/SKILL.md\``);
   lines.push('');
   lines.push('## Rule Loading');
   lines.push('');
