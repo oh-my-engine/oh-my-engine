@@ -23,7 +23,8 @@ test('npm bin points directly to the compiled executable', () => {
     'ome-spec': 'dist/bin/ome-spec.js',
     'ome-mcp': 'dist/bin/ome-mcp.js',
     'ome-memory': 'dist/bin/ome-memory.js',
-    'ome-evolve': 'dist/bin/ome-evolve.js'
+    'ome-evolve': 'dist/bin/ome-evolve.js',
+    'ome-superpowers': 'dist/bin/ome-superpowers.js'
   };
 
   assert.deepEqual(packageJson.bin, expectedBins);

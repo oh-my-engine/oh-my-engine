@@ -167,12 +167,13 @@ test('ome agents doctor reports missing workflow names instead of a single init 
 
 test('ome superpowers install and doctor cover all agent editor wrappers', () => {
   const home = createWorkspace('ome-superpowers-home-');
+  fs.mkdirSync(path.join(home, '.codex', 'superpowers', 'skills'), { recursive: true });
 
   const output = runOme(['superpowers', 'install', '--home', home, 'all'], process.cwd());
 
-  assert.match(output, /Superpowers bridge install/);
+  assert.match(output, /Official Superpowers installation/);
   assert.equal(fs.existsSync(path.join(home, '.claude', 'commands', 'ome-superpowers.md')), true);
-  assert.equal(fs.existsSync(path.join(home, '.agents', 'skills', 'ome-superpowers', 'SKILL.md')), true);
+  assert.equal(fs.existsSync(path.join(home, '.agents', 'skills', 'superpowers')), true);
   assert.equal(fs.existsSync(path.join(home, '.cursor', 'commands', 'ome-superpowers.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.trae', 'commands', 'ome-superpowers.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.qoder', 'commands', 'ome-superpowers.md')), true);
@@ -180,12 +181,8 @@ test('ome superpowers install and doctor cover all agent editor wrappers', () =>
   assert.equal(fs.existsSync(path.join(home, '.codeium', 'windsurf', 'global_workflows', 'ome-superpowers.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.gemini', 'antigravity', 'global_workflows', 'ome-superpowers.md')), true);
 
-  const codexWrapper = fs.readFileSync(path.join(home, '.agents', 'skills', 'ome-superpowers', 'SKILL.md'), 'utf8');
-  assert.match(codexWrapper, /github\.com\/obra\/superpowers/);
-  assert.match(codexWrapper, /~\/\.agents\/skills\/superpowers/);
-
   const doctor = runOme(['superpowers', 'doctor', '--home', home, 'all'], process.cwd());
-  assert.match(doctor, /codex: wrapper=installed/);
+  assert.match(doctor, /codex: wrapper=missing native=installed/);
   assert.match(doctor, /antigravity: wrapper=installed/);
   assert.match(doctor, /opencode: wrapper=installed/);
 });
