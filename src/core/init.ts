@@ -826,6 +826,13 @@ export function parseInitArgs(args: string[], defaults: Partial<InitOptions> = {
 
 export function initializeProject(options: InitOptions): InitResult {
   const migration = options.migrate !== false ? migrateLegacyEngineDirectory(options.projectRoot) : { migrated: false };
+  
+  // 增加 spec -> omespec 的迁移
+  const oldSpecPath = path.join(options.projectRoot, '.ome', 'spec');
+  const newSpecPath = path.join(options.projectRoot, '.ome', 'omespec');
+  if (fs.existsSync(oldSpecPath) && !fs.existsSync(newSpecPath)) {
+    fs.renameSync(oldSpecPath, newSpecPath);
+  }
   const scan = scanProject(options.projectRoot) as ProjectScanSummary;
   const createdDirectories: string[] = [];
 
@@ -862,7 +869,7 @@ export function initializeProject(options: InitOptions): InitResult {
 
   // 生成所有平台的 skill 源和平台入口
   const { generateAllAgentGuidanceFiles, initializeProjectSkillSources, installAgents } = require('./agents');
-  const skillSourceResults = initializeProjectSkillSources(options.projectRoot, options.force);
+  const skillSourceResults = initializeProjectSkillSources(options.projectRoot, options.force || options.sync || false);
   const projectSkillTargets = skillSourceResults
     .filter((result: Record<string, any>) => result.action !== 'skipped')
     .map((result: Record<string, any>) => `${result.workflow}: ${result.path}`);
@@ -958,7 +965,7 @@ export function renderInitResult(result: InitResult): string {
     ...result.installedAgentTargets.map(target => `  - ${target}`),
     'Created directories:',
     `  - ${ENGINE_DIR}/`,
-    '  - .ome/spec/',
+    '  - .ome/omespec/',
     'Next steps:',
     `  - Run \`ome init-rules\` after major code changes to refresh the dynamic rule set`,
     `  - Review ${ENGINE_DIR}/rules/ for the local scan-based rule drafts`,

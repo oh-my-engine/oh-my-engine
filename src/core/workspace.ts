@@ -5,14 +5,16 @@ const { initializeProject } = require('./init');
 /**
  * 递归搜索包含 .ome 目录的项目根路径
  */
-function findOmeProjects(dir: string, depth: number = 0, maxDepth: number = 3): string[] {
+function findOmeProjects(dir: string, depth: number = 0, maxDepth: number = 5): string[] {
   const projects: string[] = [];
   
+  // 基础限制，避免扫描过深
   if (depth > maxDepth) return projects;
 
   try {
     const entries = fs.readdirSync(dir, { withFileTypes: true });
     
+    // 检查当前目录是否是 OME 项目
     const isProject = entries.some((e: any) => e.isDirectory() && e.name === '.ome') || 
                       entries.some((e: any) => e.isFile() && e.name === 'OME.md');
     
@@ -21,14 +23,26 @@ function findOmeProjects(dir: string, depth: number = 0, maxDepth: number = 3): 
       return projects;
     }
 
+    // 递归扫描子目录
     for (const entry of entries) {
-      if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'node_modules') {
-        const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        const name = entry.name;
+        // 跳过隐藏目录、node_modules 以及常见的构建输出目录
+        if (name.startsWith('.') || 
+            name === 'node_modules' || 
+            name === 'dist' || 
+            name === 'build' || 
+            name === 'out' || 
+            name === 'target') {
+          continue;
+        }
+        
+        const fullPath = path.join(dir, name);
         projects.push(...findOmeProjects(fullPath, depth + 1, maxDepth));
       }
     }
   } catch (error) {
-    // Ignore
+    // 忽略权限错误
   }
 
   return projects;

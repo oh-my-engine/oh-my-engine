@@ -14,8 +14,7 @@ function updateGlobalPackage(): void {
   const npmCmd = isWindows ? 'npm.cmd' : 'npm';
   
   const result = spawnSync(npmCmd, ['install', '-g', 'oh-my-engine'], {
-    stdio: 'inherit',
-    shell: true
+    stdio: 'inherit'
   });
 
   if (result.status !== 0) {
