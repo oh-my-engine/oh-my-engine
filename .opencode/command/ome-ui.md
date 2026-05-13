@@ -4,31 +4,49 @@ description: Restore UI components from a design source with project design rule
 
 # ome-ui
 
-Use UI Restoration Workflow for the current project.
+## Purpose
+Restore or implement UI from a design source while preserving project layout, theme, i18n, accessibility, responsiveness, and component conventions.
 
-Trigger: `/ome-ui`
-Terminal equivalent: `ome-ui <design-url-or-description>`
+## When to Use
+- Use for Figma, MasterGo, screenshots, design descriptions, or UI restoration requests.
+- Use when the output is a concrete UI component, view, or interaction.
+- Do not use for generic component scaffolding without a design target; use `ome-comp`.
 
-Before making changes:
-- Read `OME.md` if present.
-- Read relevant files under `.ome/rules/`.
-- Treat `.ome/` as the project-local source of truth.
-- If `.ome/` is missing, ask the user to run `ome init` in the project root.
+## Inputs
+- Design URL, screenshot, description, or component target.
+- Existing UI components, styles, tokens, routes, tests, and screenshots if available.
+- `OME.md`, `.ome/rules/`, and `ome guidance ui-restore --input "<design-source>"`.
+- References: `accessibility.md` and `testing.md`.
 
-Skill anatomy discipline:
-- Start by deciding whether the task is define, plan, build, test, review, or ship work.
-- Name assumptions before relying on them.
-- Stop and surface concrete conflicts when requirements, code, tests, or rules disagree.
-- Prefer the smallest project-consistent implementation and avoid unrelated cleanup.
-- Reject shortcuts such as skipping tests, testing later, or treating no error output as proof.
+## Process
+1. Load OME guidance and project rules before changing code.
+2. Identify the design target, required states, responsive behavior, and asset needs.
+3. Inspect existing UI patterns, tokens, typography, spacing, i18n, and test style.
+4. Implement the smallest faithful UI slice using existing project conventions.
+5. Verify responsive behavior, accessibility basics, and relevant tests.
+6. If visual tooling is available, inspect the rendered result before final handoff.
+7. Report changed files, UI behavior, verification, and remaining risks.
 
-Task:
-- Restore UI components from a design source with project design rules.
-- Use the user arguments as the workflow input.
-- Keep generated project rules in the project; do not write project rules to the global Agent directory.
+## Red Flags
+- The design source is inaccessible or missing critical state details.
+- The implementation would invent a new theme, token system, or layout framework.
+- Text overlaps, controls lack accessible names, or keyboard behavior is broken.
+- The requested UI conflicts with existing project rules.
 
-Arguments:
-- Claude/Cursor/Qoder/OpenCode style commands receive the user text after the command.
-- Codex skill clients should pass the same arguments after the skill name.
+## Common Rationalizations
+- "The screenshot looks close enough without running it."
+- "Accessibility can wait until after visual matching."
+- "A one-off style is faster than using project tokens."
+- "Responsive behavior is obvious from the desktop design."
 
-If shell execution is available, prefer running the equivalent `ome-*` command and then continue from its guidance.
+## Verification
+- Run relevant UI tests, typecheck, build, or visual/manual checks.
+- Verify responsive constraints and accessibility basics.
+- State exact gaps if design data or rendering verification is unavailable.
+
+## Output Contract
+Final response must include:
+- Changed files
+- UI implementation summary
+- Verification
+- Remaining risks

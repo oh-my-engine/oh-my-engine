@@ -29,6 +29,7 @@ export interface InitResult {
   syncedTargets: string[];
   projectSkillTargets: string[];
   projectPlatformTargets: string[];
+  projectSkillMirrorTargets: string[];
   installedAgentTargets: string[];
   agentGuidanceFiles: string[];
   scanSummary: string;
@@ -859,6 +860,7 @@ export function parseInitArgs(args: string[], defaults: Partial<InitOptions> = {
 
 export function initializeProject(options: InitOptions): InitResult {
   const migration = options.migrate !== false ? migrateLegacyEngineDirectory(options.projectRoot) : { migrated: false };
+  const refreshManagedFiles = options.force || options.sync || false;
 
   const oldSpecPath = path.join(options.projectRoot, '.ome', 'spec');
   const newSpecPath = path.join(options.projectRoot, '.ome', 'omespec');
@@ -894,19 +896,19 @@ export function initializeProject(options: InitOptions): InitResult {
   copyFileIfNeeded(
     repoEnginePath(options.repoRoot, 'platforms.json'),
     currentEnginePath(options.projectRoot, 'platforms.json'),
-    options.force
+    refreshManagedFiles
   );
 
-  const generatedRules = writeGeneratedRules(options.projectRoot, scan, options.force);
+  const generatedRules = writeGeneratedRules(options.projectRoot, scan, refreshManagedFiles);
   const rulesUpdated = generatedRules.updated;
 
-  const contextFilesUpdated = writeProjectContext(options.projectRoot, scan, options.force);
+  const contextFilesUpdated = writeProjectContext(options.projectRoot, scan, refreshManagedFiles);
 
   appendGitignoreOnce(options.projectRoot, `${ENGINE_DIR}/memory/`);
 
   // 生成所有平台的 skill 源和平台入口
-  const { generateAllAgentGuidanceFiles, initializeProjectSkillSources, installAgents } = require('./agents');
-  const skillSourceResults = initializeProjectSkillSources(options.projectRoot, options.force || options.sync || false);
+  const { generateAllAgentGuidanceFiles, initializeProjectSkillSources, installAgents, syncExistingProjectAgents, syncExistingProjectSkillMirrors } = require('./agents');
+  const skillSourceResults = initializeProjectSkillSources(options.projectRoot, refreshManagedFiles);
   const projectSkillTargets = skillSourceResults
     .filter((result: Record<string, any>) => result.action !== 'skipped')
     .map((result: Record<string, any>) => `${result.workflow}: ${result.path}`);
@@ -920,7 +922,13 @@ export function initializeProject(options: InitOptions): InitResult {
     .filter((r: any) => r.action !== 'skipped')
     .map((r: any) => `${r.platform}: ${r.path}`);
 
-  const projectPlatformTargets: string[] = [];
+  const projectPlatformTargets = options.sync
+    ? syncExistingProjectAgents(options.projectRoot).map((result: Record<string, any>) => `${result.platform}: ${result.target}`)
+    : [];
+
+  const projectSkillMirrorTargets = options.sync
+    ? syncExistingProjectSkillMirrors(options.projectRoot).map((result: Record<string, any>) => `${result.platform}: ${result.target}`)
+    : [];
 
   let installedAgentTargets: string[] = [];
   if (options.installAgents === true) {
@@ -938,6 +946,7 @@ export function initializeProject(options: InitOptions): InitResult {
     syncedTargets,
     projectSkillTargets,
     projectPlatformTargets,
+    projectSkillMirrorTargets,
     installedAgentTargets,
     agentGuidanceFiles,
     scanSummary: renderScanSummary(scan),
@@ -994,6 +1003,8 @@ export function renderInitResult(result: InitResult): string {
     ...result.agentGuidanceFiles.map(file => `  - ${file}`),
     `Project skills installed: ${result.projectSkillTargets.length}`,
     ...result.projectSkillTargets.map(target => `  - ${target}`),
+    `Project skill mirrors synced: ${result.projectSkillMirrorTargets.length}`,
+    ...result.projectSkillMirrorTargets.map(target => `  - ${target}`),
     `Integration targets synced: ${result.syncedTargets.length}`,
     ...result.syncedTargets.map(target => `  - ${target}`),
     `Project command entries synced: ${result.projectPlatformTargets.length}`,

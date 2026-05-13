@@ -28,6 +28,7 @@ interface AgentDefinition {
   name: string;
   globalCommandDirectory?: string;
   projectCommandDirectory?: string;
+  projectSkillMirrorDirectory?: string;
   projectRules: string;
   commandStyle: 'slash' | 'skill' | 'workflow';
 }
@@ -70,7 +71,7 @@ const WORKFLOWS: WorkflowDefinition[] = [
 ];
 
 export const AGENTS: AgentDefinition[] = [
-  { id: 'claude-code', name: 'Claude Code', globalCommandDirectory: '.claude/commands', projectCommandDirectory: '.claude/commands', projectRules: 'CLAUDE.md', commandStyle: 'slash' },
+  { id: 'claude-code', name: 'Claude Code', globalCommandDirectory: '.claude/commands', projectCommandDirectory: '.claude/commands', projectSkillMirrorDirectory: '.claude/skills', projectRules: 'CLAUDE.md', commandStyle: 'slash' },
   { id: 'codex', name: 'Codex', globalCommandDirectory: '.agents/skills', projectCommandDirectory: '.agents/skills', projectRules: 'AGENTS.md', commandStyle: 'skill' },
   { id: 'cursor', name: 'Cursor', globalCommandDirectory: '.cursor/commands', projectCommandDirectory: '.cursor/commands', projectRules: '.cursor/rules/*.mdc', commandStyle: 'slash' },
   { id: 'trae', name: 'Trae', globalCommandDirectory: '.trae/commands', projectCommandDirectory: '.trae/commands', projectRules: '.trae/rules/*.md', commandStyle: 'slash' },
@@ -127,9 +128,21 @@ function targetPath(baseDirectory: string, agent: AgentDefinition, workflow: Wor
   return path.join(baseDirectory, `${workflow.command}.md`);
 }
 
+function projectCommandBase(projectRoot: string, agent: AgentDefinition): string | undefined {
+  return agent.projectCommandDirectory
+    ? path.join(projectRoot, agent.projectCommandDirectory)
+    : undefined;
+}
+
+function projectSkillMirrorBase(projectRoot: string, agent: AgentDefinition): string | undefined {
+  return agent.projectSkillMirrorDirectory
+    ? path.join(projectRoot, agent.projectSkillMirrorDirectory)
+    : undefined;
+}
+
 function installForAgent(agent: AgentDefinition, options: AgentInstallOptions): AgentInstallResult[] {
   const base = options.project
-    ? agent.projectCommandDirectory && path.join(options.projectRoot || process.cwd(), agent.projectCommandDirectory)
+    ? projectCommandBase(options.projectRoot || process.cwd(), agent)
     : agent.globalCommandDirectory && path.join(normalizeHome(options.home), agent.globalCommandDirectory);
 
   if (!base) {
@@ -326,6 +339,42 @@ function applyInteractiveSelection(options: AgentInstallOptions): AgentInstallOp
 export function installAgents(options: AgentInstallOptions): AgentInstallResult[] {
   const normalized = applyInteractiveSelection(options);
   return selectedAgents(normalized.platforms, normalized.all).flatMap(agent => installForAgent(agent, normalized));
+}
+
+export function syncExistingProjectAgents(projectRoot: string): AgentInstallResult[] {
+  return AGENTS.flatMap(agent => {
+    const base = projectCommandBase(projectRoot, agent);
+    if (!base || !fs.existsSync(base)) {
+      return [];
+    }
+
+    return installForAgent(agent, {
+      platforms: [agent.id],
+      project: true,
+      projectRoot
+    });
+  });
+}
+
+export function syncExistingProjectSkillMirrors(projectRoot: string): AgentInstallResult[] {
+  return AGENTS.flatMap(agent => {
+    const base = projectSkillMirrorBase(projectRoot, agent);
+    if (!base || !fs.existsSync(base)) {
+      return [];
+    }
+
+    return WORKFLOWS.map(workflow => {
+      const sourceContent = resolveWorkflowSkillSource(projectRoot, workflow);
+      const filePath = path.join(base, workflow.command, 'SKILL.md');
+      writeFile(filePath, sourceContent);
+      return {
+        platform: agent.id,
+        target: filePath,
+        kind: 'project-command' as const,
+        status: 'installed' as const
+      };
+    });
+  });
 }
 
 export function renderAgentsList(): string {

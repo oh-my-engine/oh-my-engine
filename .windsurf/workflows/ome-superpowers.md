@@ -1,34 +1,52 @@
+---
+description: Install, update, or inspect Superpowers bridge entries for supported Agent editors.
+---
+
 # ome-superpowers
 
-Use Superpowers Bridge for the current project.
+## Purpose
+Install, update, or inspect Superpowers bridge entries for supported Agent editors.
 
-Trigger: `/ome-superpowers`
-Terminal equivalent: `ome superpowers <install|update|doctor>`
+## When to Use
+- Use when the user wants Superpowers installed or refreshed.
+- Use when the editor-specific bridge needs inspection or repair.
+- Do not use when the task is unrelated to Superpowers integration.
 
-Before making changes:
-- Read `OME.md` if present.
-- Read relevant files under `.ome/rules/`.
-- Treat `.ome/` as the project-local source of truth.
-- If `.ome/` is missing, ask the user to run `ome init` in the project root.
+## Inputs
+- The target editors and install location.
+- Any existing bridge or wrapper state in the user home directory.
+- The Superpowers repository or release source when updates are required.
 
-Skill anatomy discipline:
-- Start by deciding whether the task is define, plan, build, test, review, or ship work.
-- Name assumptions before relying on them.
-- Stop and surface concrete conflicts when requirements, code, tests, or rules disagree.
-- Prefer the smallest project-consistent implementation and avoid unrelated cleanup.
-- Reject shortcuts such as skipping tests, testing later, or treating no error output as proof.
+## Process
+1. Check the current install or doctor state first.
+2. Prefer the native installer or bridge path for each supported editor.
+3. Write or refresh the wrapper only when native support is not available.
+4. Keep the bridge files consistent with the source repository.
+5. Verify the install state after writing.
+6. Report the platform coverage and any manual follow-up steps.
+7. Do not copy unrelated third-party sources into the project rules.
 
-Task:
-- Install, update, or inspect Superpowers bridge entries for supported Agent editors.
-- Run or guide `ome superpowers doctor` first to inspect support status.
-- Use `ome superpowers install all` when the user asks to install across Agent editors.
-- For editors without native Superpowers support, use the generated Oh My Engine wrapper workflow.
-- Do not copy third-party Superpowers sources into project rules.
-- Use the user arguments as the workflow input.
-- Keep generated project rules in the project; do not write project rules to the global Agent directory.
+## Red Flags
+- A native install path exists but the wrapper is used anyway.
+- The bridge would copy external sources into project rules.
+- The user home paths are not checked before writing.
+- The install state cannot be verified after the change.
 
-Arguments:
-- Claude/Cursor/Qoder/OpenCode style commands receive the user text after the command.
-- Codex skill clients should pass the same arguments after the skill name.
+## Common Rationalizations
+- "The obvious fix is good enough without a closer read of the rules."
+- "I can skip verification because the change is small."
+- "I should broaden the patch while I am here."
+- "A vague summary is enough for handoff."
 
-If shell execution is available, prefer running the equivalent `ome-*` command and then continue from its guidance.
+## Verification
+- Run the doctor or status command after install/update.
+- Confirm the expected platform targets exist.
+- State any native installer step that remains manual.
+- Record any home-directory path assumptions.
+
+## Output Contract
+Final response must include:
+- Installed or updated targets
+- Doctor or status result
+- Manual follow-up steps
+- Remaining risks

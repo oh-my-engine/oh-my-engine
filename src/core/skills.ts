@@ -156,19 +156,6 @@ const TEMPLATE_SKILLS: Record<string, string> = {
   spec: 'skills/oh-my-engine-spec/SKILL.md'
 };
 
-function hasRequiredSkillSections(content: string): boolean {
-  return [
-    '## Purpose',
-    '## When to Use',
-    '## Inputs',
-    '## Process',
-    '## Red Flags',
-    '## Common Rationalizations',
-    '## Verification',
-    '## Output Contract'
-  ].every(section => content.includes(section));
-}
-
 function genericSkillSource(workflow: WorkflowDefinition): string {
   switch (workflow.id) {
     case 'init-rules':
@@ -628,8 +615,7 @@ function templateSkillContent(workflow: WorkflowDefinition): string | undefined 
   const templatePath = path.join(repoRoot(), templateRelativePath);
   const source = readFileIfExists(templatePath);
   if (!source) return undefined;
-  const normalized = replaceFrontmatterName(source, workflow.command);
-  return hasRequiredSkillSections(normalized) ? normalized : undefined;
+  return replaceFrontmatterName(source, workflow.command);
 }
 
 export function buildWorkflowSkillSource(workflow: WorkflowDefinition): string {

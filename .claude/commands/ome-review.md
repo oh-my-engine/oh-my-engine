@@ -4,34 +4,49 @@ description: Review correctness, readability, architecture, security, performanc
 
 # ome-review
 
-Use Review Workflow for the current project.
+## Purpose
+Review code for correctness, maintainability, risk, and missing verification before it ships.
 
-Trigger: `/ome-review`
-Terminal equivalent: `ome review "<path, diff, or PR description>"`
+## When to Use
+- Use when a diff, PR, or file set needs a real engineering review.
+- Use when correctness or regressions matter more than style alone.
+- Do not use when you need to implement the change yourself.
 
-Before making changes:
-- Read `OME.md` if present.
-- Read relevant files under `.ome/rules/`.
-- Treat `.ome/` as the project-local source of truth.
-- If `.ome/` is missing, ask the user to run `ome init` in the project root.
+## Inputs
+- The diff, file list, or PR description.
+- Relevant project rules and adjacent code.
+- Any tests, logs, or expected behavior that frame the review.
 
-Skill anatomy discipline:
-- Start by deciding whether the task is define, plan, build, test, review, or ship work.
-- Name assumptions before relying on them.
-- Stop and surface concrete conflicts when requirements, code, tests, or rules disagree.
-- Prefer the smallest project-consistent implementation and avoid unrelated cleanup.
-- Reject shortcuts such as skipping tests, testing later, or treating no error output as proof.
+## Process
+1. Read the changed code and the nearby context.
+2. Check the change against the project rules and existing patterns.
+3. Look for correctness bugs, regression risks, and missing tests.
+4. Call out maintainability or architecture concerns that matter.
+5. Prioritize findings by severity and likelihood.
+6. Avoid hand-wavy praise or summary-only responses.
+7. End with concrete issues, assumptions, and residual risk.
 
-Task:
-- Review correctness, readability, architecture, security, performance, and tests.
-- Use the lifecycle output contract named by this workflow; do not substitute a vague summary.
-- Load relevant references from `skills/oh-my-engine/references/` when available.
-- Finish with verification evidence or a clear statement of what could not be verified.
-- Use the user arguments as the workflow input.
-- Keep generated project rules in the project; do not write project rules to the global Agent directory.
+## Red Flags
+- The review does not identify specific files or lines.
+- The change alters behavior without sufficient test coverage.
+- A security, correctness, or compatibility concern is ignored.
+- The review turns into implementation advice instead of findings.
 
-Arguments:
-- Claude/Cursor/Qoder/OpenCode style commands receive the user text after the command.
-- Codex skill clients should pass the same arguments after the skill name.
+## Common Rationalizations
+- "The obvious fix is good enough without a closer read of the rules."
+- "I can skip verification because the change is small."
+- "I should broaden the patch while I am here."
+- "A vague summary is enough for handoff."
 
-If shell execution is available, prefer running the equivalent `ome-*` command and then continue from its guidance.
+## Verification
+- Confirm findings are tied to the actual diff.
+- Confirm severity is grounded in real behavior or risk.
+- Confirm any missing test or verification concern is stated plainly.
+- State if no issues were found and why.
+
+## Output Contract
+Final response must include:
+- Findings ordered by severity
+- Open questions or assumptions
+- Concise change summary
+- Residual risk

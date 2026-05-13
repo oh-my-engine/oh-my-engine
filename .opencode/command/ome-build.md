@@ -4,34 +4,49 @@ description: Implement scoped changes in small verified slices using project rul
 
 # ome-build
 
-Use Build Workflow for the current project.
+## Purpose
+Implement scoped changes in small verified slices using the repository rules and plan.
 
-Trigger: `/ome-build`
-Terminal equivalent: `ome build "<task or plan>"`
+## When to Use
+- Use when the change is approved and the next step is implementation.
+- Use when the scope is small enough to verify in slices.
+- Do not use when the request still needs definition or planning.
 
-Before making changes:
-- Read `OME.md` if present.
-- Read relevant files under `.ome/rules/`.
-- Treat `.ome/` as the project-local source of truth.
-- If `.ome/` is missing, ask the user to run `ome init` in the project root.
+## Inputs
+- The approved task or plan.
+- Relevant source files, tests, and project rules.
+- Any known constraints that must survive the change.
 
-Skill anatomy discipline:
-- Start by deciding whether the task is define, plan, build, test, review, or ship work.
-- Name assumptions before relying on them.
-- Stop and surface concrete conflicts when requirements, code, tests, or rules disagree.
-- Prefer the smallest project-consistent implementation and avoid unrelated cleanup.
-- Reject shortcuts such as skipping tests, testing later, or treating no error output as proof.
+## Process
+1. Start with the smallest slice that proves the change.
+2. Keep edits close to the existing project structure and patterns.
+3. Lock behavior with tests when the change is risky.
+4. Apply the fix or feature in incremental steps.
+5. Run the nearest meaningful verification after each meaningful slice.
+6. Avoid unrelated cleanup or broad refactors.
+7. Report the changed files, implementation summary, and verification.
 
-Task:
-- Implement scoped changes in small verified slices using project rules.
-- Use the lifecycle output contract named by this workflow; do not substitute a vague summary.
-- Load relevant references from `skills/oh-my-engine/references/` when available.
-- Finish with verification evidence or a clear statement of what could not be verified.
-- Use the user arguments as the workflow input.
-- Keep generated project rules in the project; do not write project rules to the global Agent directory.
+## Red Flags
+- The patch expands beyond the approved scope.
+- A testable behavior change is made without verification.
+- The implementation invents new abstractions unnecessarily.
+- The change depends on a hidden assumption that was not confirmed.
 
-Arguments:
-- Claude/Cursor/Qoder/OpenCode style commands receive the user text after the command.
-- Codex skill clients should pass the same arguments after the skill name.
+## Common Rationalizations
+- "The obvious fix is good enough without a closer read of the rules."
+- "I can skip verification because the change is small."
+- "I should broaden the patch while I am here."
+- "A vague summary is enough for handoff."
 
-If shell execution is available, prefer running the equivalent `ome-*` command and then continue from its guidance.
+## Verification
+- Run targeted tests or behavior checks that prove the slice.
+- Broaden verification when the blast radius warrants it.
+- State any validation that could not be run.
+- Confirm no unrelated files were changed.
+
+## Output Contract
+Final response must include:
+- Changed files
+- Implementation summary
+- Verification
+- Remaining risks

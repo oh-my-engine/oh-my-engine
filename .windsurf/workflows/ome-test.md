@@ -1,33 +1,52 @@
+---
+description: Design behavior-focused tests, regression coverage, and failure diagnosis.
+---
+
 # ome-test
 
-Use Test Workflow for the current project.
+## Purpose
+Design behavior-focused tests and regression coverage that prove the intended project behavior.
 
-Trigger: `/ome-test`
-Terminal equivalent: `ome test "<target or behavior>"`
+## When to Use
+- Use when a behavior change needs coverage or a regression needs protection.
+- Use when you need to reproduce a failure before fixing it.
+- Do not use when the task is only a documentation or planning exercise.
 
-Before making changes:
-- Read `OME.md` if present.
-- Read relevant files under `.ome/rules/`.
-- Treat `.ome/` as the project-local source of truth.
-- If `.ome/` is missing, ask the user to run `ome init` in the project root.
+## Inputs
+- The behavior, failure, or feature under test.
+- Relevant source files, fixtures, and existing test patterns.
+- The narrowest command or check that can prove the case.
 
-Skill anatomy discipline:
-- Start by deciding whether the task is define, plan, build, test, review, or ship work.
-- Name assumptions before relying on them.
-- Stop and surface concrete conflicts when requirements, code, tests, or rules disagree.
-- Prefer the smallest project-consistent implementation and avoid unrelated cleanup.
-- Reject shortcuts such as skipping tests, testing later, or treating no error output as proof.
+## Process
+1. Identify the behavior that must be protected.
+2. Find the nearest existing test style or fixture pattern.
+3. Add the smallest deterministic test that proves the behavior.
+4. Include failing-before evidence when the task is a regression fix.
+5. Keep the test close to the changed code.
+6. Run the relevant tests and broaden only when needed.
+7. Report what is covered and what remains unverified.
 
-Task:
-- Design behavior-focused tests, regression coverage, and failure diagnosis.
-- Use the lifecycle output contract named by this workflow; do not substitute a vague summary.
-- Load relevant references from `skills/oh-my-engine/references/` when available.
-- Finish with verification evidence or a clear statement of what could not be verified.
-- Use the user arguments as the workflow input.
-- Keep generated project rules in the project; do not write project rules to the global Agent directory.
+## Red Flags
+- The test only checks implementation details.
+- The fixture is noisy or nondeterministic.
+- A failing regression is not demonstrated when one is expected.
+- The verification command does not prove the behavior.
 
-Arguments:
-- Claude/Cursor/Qoder/OpenCode style commands receive the user text after the command.
-- Codex skill clients should pass the same arguments after the skill name.
+## Common Rationalizations
+- "The obvious fix is good enough without a closer read of the rules."
+- "I can skip verification because the change is small."
+- "I should broaden the patch while I am here."
+- "A vague summary is enough for handoff."
 
-If shell execution is available, prefer running the equivalent `ome-*` command and then continue from its guidance.
+## Verification
+- Run the new or updated test.
+- Run any nearby regression or type checks needed for confidence.
+- State exact failures or gaps if the test cannot run.
+- Confirm the test is behavior-focused rather than incidental.
+
+## Output Contract
+Final response must include:
+- Tests added or updated
+- Behavior verified
+- Verification commands
+- Remaining gaps
