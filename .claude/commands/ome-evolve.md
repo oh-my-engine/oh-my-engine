@@ -2,13 +2,6 @@
 description: Analyze local memory for learning and skill candidates.
 ---
 
----
-name: ome-evolve
-version: 1.0.0
-description: 触发系统进化分析
-author: yunxi
-tags: [evolution, optimization, learning]
----
 
 # ome-evolve
 

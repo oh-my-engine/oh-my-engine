@@ -2,13 +2,6 @@
 description: Inspect local Oh My Engine memory and adopted learnings.
 ---
 
----
-name: ome-memory
-version: 1.0.0
-description: 查看系统记忆和学习数据
-author: yunxi
-tags: [memory, statistics, learning]
----
 
 # ome-memory
 

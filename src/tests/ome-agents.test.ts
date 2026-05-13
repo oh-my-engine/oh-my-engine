@@ -74,7 +74,9 @@ test('ome agents install writes global short command entries', () => {
   assert.match(codexSkill, /## Common Rationalizations/);
   assert.match(codexSkill, /## Verification/);
   assert.match(codexSkill, /## Output Contract/);
-  assert.match(initCommand, /## Purpose/);
+  assert.match(initCommand, /^---\ndescription: Initialize \.ome project configuration and Agent rules\.\n---\n/);
+  assert.match(initCommand, /\n# ome-init\r?\n/);
+  assert.doesNotMatch(initCommand, /\nname: ome-init\r?\n/);
   assert.match(initRulesCommand, /## Purpose/);
   assert.match(initRulesCommand, /\.ome\/context\/project-scan\.json/);
   assert.match(initRulesCommand, /Do not create UI, mobile, or design-token rules unless the repository signals them/);

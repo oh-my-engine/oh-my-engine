@@ -6,6 +6,7 @@ author: yunxi
 tags: [init, setup, configuration, ai, smart]
 ---
 
+
 # ome-init
 
 **智能初始化**：扫描代码仓库，结合用户需求，AI 生成定制化的开发规则。

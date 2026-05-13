@@ -52,16 +52,16 @@ function readFileIfExists(filePath: string): string | undefined {
 }
 
 function stripFrontmatter(content: string): string {
-  const match = content.match(/^---\n[\s\S]*?\n---\n?/);
+  const match = content.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/);
   return match ? content.slice(match[0].length).replace(/^\n+/, '') : content;
 }
 
 function replaceFrontmatterName(content: string, name: string): string {
-  const match = content.match(/^---\n([\s\S]*?)\n---\n?/);
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
   if (!match) return content;
 
   const body = content.slice(match[0].length).replace(/^\n+/, '');
-  const frontmatterLines = match[1].split('\n').filter(Boolean);
+  const frontmatterLines = match[1].split(/\r?\n/).filter(Boolean);
   const hasName = frontmatterLines.some(line => /^name:\s*/.test(line));
   const updatedLines = hasName
     ? frontmatterLines.map(line => (/^name:\s*/.test(line) ? `name: ${name}` : line))

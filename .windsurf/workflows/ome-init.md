@@ -2,13 +2,6 @@
 description: Initialize .ome project configuration and Agent rules.
 ---
 
----
-name: ome-init
-version: 2.0.0
-description: 智能初始化项目配置 - 扫描代码仓库并生成定制化规则
-author: yunxi
-tags: [init, setup, configuration, ai, smart]
----
 
 # ome-init
 
