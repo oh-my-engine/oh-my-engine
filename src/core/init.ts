@@ -89,6 +89,39 @@ function copyFileIfNeeded(sourcePath: string, targetPath: string, force: boolean
   return false;
 }
 
+function moveDirectoryContents(sourcePath: string, targetPath: string): void {
+  if (!fs.existsSync(sourcePath)) {
+    return;
+  }
+
+  ensureDirectory(targetPath);
+
+  for (const entry of fs.readdirSync(sourcePath, { withFileTypes: true })) {
+    const sourceEntryPath = path.join(sourcePath, entry.name);
+    const targetEntryPath = path.join(targetPath, entry.name);
+
+    if (entry.isDirectory()) {
+      moveDirectoryContents(sourceEntryPath, targetEntryPath);
+      if (fs.existsSync(sourceEntryPath) && fs.readdirSync(sourceEntryPath).length === 0) {
+        fs.rmdirSync(sourceEntryPath);
+      }
+      continue;
+    }
+
+    if (fs.existsSync(targetEntryPath)) {
+      fs.rmSync(sourceEntryPath, { force: true });
+      continue;
+    }
+
+    ensureDirectory(path.dirname(targetEntryPath));
+    fs.renameSync(sourceEntryPath, targetEntryPath);
+  }
+
+  if (fs.existsSync(sourcePath) && fs.readdirSync(sourcePath).length === 0) {
+    fs.rmdirSync(sourcePath);
+  }
+}
+
 function appendGitignoreOnce(projectRoot: string, pattern: string): void {
   const gitignorePath = path.join(projectRoot, '.gitignore');
 
@@ -826,13 +859,17 @@ export function parseInitArgs(args: string[], defaults: Partial<InitOptions> = {
 
 export function initializeProject(options: InitOptions): InitResult {
   const migration = options.migrate !== false ? migrateLegacyEngineDirectory(options.projectRoot) : { migrated: false };
-  
-  // 增加 spec -> omespec 的迁移
+
   const oldSpecPath = path.join(options.projectRoot, '.ome', 'spec');
   const newSpecPath = path.join(options.projectRoot, '.ome', 'omespec');
-  if (fs.existsSync(oldSpecPath) && !fs.existsSync(newSpecPath)) {
-    fs.renameSync(oldSpecPath, newSpecPath);
+  if (fs.existsSync(oldSpecPath)) {
+    if (!fs.existsSync(newSpecPath)) {
+      fs.renameSync(oldSpecPath, newSpecPath);
+    } else {
+      moveDirectoryContents(oldSpecPath, newSpecPath);
+    }
   }
+
   const scan = scanProject(options.projectRoot) as ProjectScanSummary;
   const createdDirectories: string[] = [];
 
