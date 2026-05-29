@@ -5,6 +5,7 @@ const os = require('node:os');
 const path = require('node:path');
 
 const { writeJsonFile, writeTextFile } = require('../core/file-system');
+const { startRun } = require('../core/run');
 const { countDoneCheckboxes, countOpenCheckboxes, renderTemplate, slugify } = require('../core/spec-utils');
 
 function createWorkspace(): string {
@@ -29,6 +30,19 @@ test('writeJsonFile writes formatted JSON atomically', () => {
 
   assert.deepEqual(JSON.parse(fs.readFileSync(target, 'utf8')), { ok: true, count: 2 });
   assert.match(fs.readFileSync(target, 'utf8'), /\n  "count": 2\n/);
+});
+
+test('startRun writes run state atomically without temp siblings', () => {
+  const workspace = createWorkspace();
+
+  const result = startRun(workspace, 'add login');
+  const statePath = result.response.statePath;
+
+  assert.equal(result.exitCode, 0);
+  assert.equal(typeof statePath, 'string');
+  assert.equal(fs.existsSync(statePath), true);
+  assert.deepEqual(fs.readdirSync(path.dirname(statePath)), ['state.json']);
+  assert.equal(JSON.parse(fs.readFileSync(statePath, 'utf8')).stage, 'validate');
 });
 
 test('spec utility helpers normalize slugs, templates, and checkbox counts', () => {

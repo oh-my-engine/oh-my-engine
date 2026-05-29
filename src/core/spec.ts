@@ -81,6 +81,8 @@ export function renderSpecHelp(): string {
   return [
     'Oh My Engine Spec Workflow',
     '',
+    'OpenSpec is the authoritative spec lifecycle. OME adds project rules, memory, and Agent context.',
+    '',
     'Usage:',
     '  ome spec <command> [args]',
     '  ome-spec <command> [args]',
@@ -97,6 +99,27 @@ export function renderSpecHelp(): string {
     '  ome spec archive <change-id>',
     ''
   ].join('\n');
+}
+
+function isLegacySpecProject(projectRoot: string): boolean {
+  return fs.existsSync(path.join(projectRoot, '.ome', 'omespec')) && !fs.existsSync(path.join(projectRoot, 'openspec'));
+}
+
+function shouldUseOpenSpec(command: string, projectRoot: string): boolean {
+  if (process.env.OME_SPEC_LEGACY === '1') return false;
+  if (isLegacySpecProject(projectRoot)) return false;
+  return ['init', 'propose', 'plan', 'apply', 'status', 'verify', 'archive'].includes(command);
+}
+
+function printOpenSpecContext(command: string): void {
+  const paths = getSpecPaths(process.cwd());
+  process.stdout.write('OME OpenSpec context:\n');
+  process.stdout.write(`  - provider: ${paths.config.provider}\n`);
+  process.stdout.write(`  - spec root: ${paths.config.specRoot}\n`);
+  process.stdout.write(`  - rules: ${ENGINE_DIR}/rules/\n`);
+  process.stdout.write(`  - skills: ${ENGINE_DIR}/skills/ome-spec/SKILL.md\n`);
+  process.stdout.write(`  - memory: ${paths.config.memoryDir}\n`);
+  process.stdout.write(`  - command: openspec ${command}\n`);
 }
 
 export function runSpecInit(args: string[]): void {
@@ -830,6 +853,14 @@ export function runSpecCommand(command: string, args: string[]): void {
   if (!command || command === 'help' || command === '--help' || command === '-h') {
     process.stdout.write(renderSpecHelp());
     return;
+  }
+
+  if (shouldUseOpenSpec(command, process.cwd())) {
+    const { runOpenSpec } = require('./openspec');
+    printOpenSpecContext(command);
+    if (runOpenSpec([command, ...args], process.cwd())) return;
+    process.exitCode = undefined;
+    process.stdout.write('OpenSpec CLI unavailable or failed; using OME legacy fallback.\n');
   }
 
   if (command === 'init') return runSpecInit(args);

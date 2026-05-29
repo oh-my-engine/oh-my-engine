@@ -11,6 +11,7 @@ const executableFiles = [
   'dist/bin/ome-mcp.js',
   'dist/bin/ome-spec.js',
   'dist/bin/ome-memory.js',
+  'dist/bin/ome-remember.js',
   'dist/bin/ome-evolve.js',
   'dist/scripts/restore-shebangs.js',
   'dist/skills/oh-my-engine/scripts/adopt-learning-candidate.js',

@@ -32,10 +32,13 @@ test('ome init initializes project directories and defaults from TypeScript CLI'
   const output = runOme(['init', '--template', 'node'], workspace);
 
   assert.match(output, /Initialized Oh My Engine project/);
+  assert.doesNotMatch(output, /OpenSpec workspace/);
   assert.equal(fs.existsSync(path.join(workspace, 'OME.md')), true);
+  assert.equal(fs.existsSync(path.join(workspace, '.ome', 'rules', 'agent-behavior.md')), true);
   assert.equal(fs.existsSync(path.join(workspace, '.ome', 'rules', 'code-style.md')), true);
-  assert.equal(fs.existsSync(path.join(workspace, '.ome', 'omespec', 'project.md')), true);
+  assert.equal(fs.existsSync(path.join(workspace, 'openspec', 'project.md')), false);
   assert.equal(fs.existsSync(path.join(workspace, '.ome', 'skills', 'ome-bug', 'SKILL.md')), true);
+  assert.equal(fs.existsSync(path.join(workspace, '.ome', 'skills', 'ome-spec', 'SKILL.md')), false);
   assert.equal(fs.existsSync(path.join(workspace, 'CLAUDE.md')), true);
   assert.equal(fs.existsSync(path.join(workspace, 'AGENTS.md')), true);
   assert.equal(fs.existsSync(path.join(workspace, '.claude', 'commands', 'ome-init-rules.md')), false);
@@ -47,9 +50,14 @@ test('ome init initializes project directories and defaults from TypeScript CLI'
   assert.equal(config.project.name, path.basename(workspace));
   assert.equal(config.project.template, 'node');
   assert.equal(config.memory.captureMode, 'selective');
+  assert.equal(config.workflows.spec.enabled, false);
+  assert.equal(config.workflows.spec.provider, 'openspec');
+  assert.equal(config.workflows.spec.options.specRoot, 'openspec');
 
   const agents = fs.readFileSync(path.join(workspace, 'AGENTS.md'), 'utf8');
-  assert.match(agents, /Spec workflow: `ome-spec <command> \[args\]` -> read `.ome\/skills\/ome-spec\/SKILL\.md`/);
+  assert.match(agents, /Default Delivery Workflow/);
+  assert.match(agents, /agent-behavior\.md/);
+  assert.doesNotMatch(agents, /Spec workflow: `ome-spec <command> \[args\]`/);
 
   const gitignore = fs.readFileSync(path.join(workspace, '.gitignore'), 'utf8');
   assert.match(gitignore, /\.ome\/memory\//);
@@ -84,6 +92,9 @@ test('ome init scans TypeScript Node projects and writes agent personalization c
   assert.match(output, /Project command entries synced: 0/);
 
   const config = parseOMEConfig(workspace);
+  assert.equal(config.workflows['bug-analysis'].rules.includes('agent-behavior'), true);
+  assert.equal(config.workflows['component-gen'].rules.includes('agent-behavior'), true);
+  assert.equal(config.workflows['api-integration'].rules.includes('agent-behavior'), true);
   assert.equal(config.project.name, 'scan-target');
   assert.equal(config.project.framework, 'Node.js');
   assert.equal(config.project.language, 'TypeScript');
@@ -219,6 +230,7 @@ test('ome init scans Koa Gulp apps and generates project-specific rule files', (
   assert.equal(scan.deploymentSignals.includes('env-template'), true);
 
   const expectedRules = [
+    'agent-behavior.md',
     'project-overview.md',
     'code-style.md',
     'testing.md',
@@ -324,7 +336,7 @@ test('ome init migrates legacy .oh-my-engine projects to .ome', () => {
   assert.ok(config.project, 'Config should have project section');
 });
 
-test('ome init migrates legacy .ome/spec contents into .ome/omespec and removes the old directory', () => {
+test('ome init migrates legacy .ome/spec contents into .ome/omespec and keeps legacy spec root', () => {
   const workspace = createWorkspace();
   fs.mkdirSync(path.join(workspace, '.ome', 'spec', 'changes', 'legacy-flow', 'specs', 'checkout'), { recursive: true });
   fs.mkdirSync(path.join(workspace, '.ome', 'spec', 'specs', 'payments'), { recursive: true });
@@ -339,6 +351,9 @@ test('ome init migrates legacy .ome/spec contents into .ome/omespec and removes 
 
   assert.match(output, /Initialized Oh My Engine project/);
   assert.equal(fs.existsSync(path.join(workspace, '.ome', 'spec')), false);
+  const config = parseOMEConfig(workspace);
+  assert.equal(config.workflows.spec.enabled, false);
+  assert.equal(config.workflows.spec.options.specRoot, '.ome/omespec');
   assert.match(fs.readFileSync(path.join(workspace, '.ome', 'omespec', 'project.md'), 'utf8'), /Legacy Project|Project:/);
   assert.match(fs.readFileSync(path.join(workspace, '.ome', 'omespec', 'changes', 'legacy-flow', 'proposal.md'), 'utf8'), /Legacy Proposal/);
   assert.match(fs.readFileSync(path.join(workspace, '.ome', 'omespec', 'changes', 'legacy-flow', 'specs', 'checkout', 'spec.md'), 'utf8'), /Legacy Checkout Spec/);

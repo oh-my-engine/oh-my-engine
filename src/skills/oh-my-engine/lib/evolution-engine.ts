@@ -21,6 +21,13 @@ type EvolutionGroup = {
   evidence: MemoryRecord[];
 };
 
+type BehavioralAntipattern = {
+  id: string;
+  title: string;
+  summary: string;
+  match: RegExp;
+};
+
 const SUCCESS_STATUSES = new Set([
   'success',
   'verified',
@@ -41,6 +48,33 @@ const DEFAULT_THRESHOLDS = {
   skillCandidateMinEvidence: 3,
   adoptedPreferenceMinEvidence: 2
 };
+
+const BEHAVIORAL_ANTIPATTERNS: BehavioralAntipattern[] = [
+  {
+    id: 'agent-behavior-overengineering',
+    title: 'Avoid overengineering and speculative abstractions',
+    summary: 'Repeated feedback or execution metadata indicates overengineering, speculative abstractions, or unnecessary configurability. Prefer the smallest implementation that satisfies the current request.',
+    match: /over[- ]?engineer|overcomplicat|too complex|unnecessary abstraction|speculative|bloated|过度设计|过度工程|太复杂|不必要的抽象/i
+  },
+  {
+    id: 'agent-behavior-unrelated-edits',
+    title: 'Avoid unrelated edits and drive-by refactors',
+    summary: 'Repeated feedback or execution metadata indicates unrelated edits, drive-by cleanup, formatting churn, or refactors outside the requested scope. Keep changes surgical.',
+    match: /unrelated|drive[- ]?by|scope creep|formatting churn|changed too much|refactor.*unrelated|无关修改|顺手|改多了|范围蔓延/i
+  },
+  {
+    id: 'agent-behavior-missing-verification',
+    title: 'Require concrete verification before handoff',
+    summary: 'Repeated feedback or execution metadata indicates missing tests, vague verification, or unverified completion claims. Report concrete checks or explicit gaps.',
+    match: /missing (test|verification)|unverified|no test|skip.*test|vague verification|缺少测试|未验证|没有验证|跳过测试/i
+  },
+  {
+    id: 'agent-behavior-hidden-assumptions',
+    title: 'Surface assumptions before implementation',
+    summary: 'Repeated feedback or execution metadata indicates hidden assumptions or silently chosen interpretations. State assumptions and ask when ambiguity changes the implementation.',
+    match: /assum|clarif|ambiguous|silently chose|wrong interpretation|假设|澄清|不明确|歧义|理解错/i
+  }
+];
 
 function loadEvolutionThresholds(projectRoot: string): EvolutionThresholds {
   const config = loadProjectConfig(projectRoot);
@@ -139,6 +173,35 @@ function collectAdoptedPreferences(preferenceRecords: MemoryRecord[], thresholds
   );
 }
 
+function searchableBehaviorText(record: MemoryRecord): string {
+  return [
+    record.summary,
+    record.whyStored,
+    ...(Array.isArray(record.errors) ? record.errors : []),
+    record.metadata ? JSON.stringify(record.metadata) : ''
+  ].filter(Boolean).join('\n');
+}
+
+function buildBehavioralAntipatternGroups(executionRecords: MemoryRecord[], thresholds: EvolutionThresholds): EvolutionGroup[] {
+  return BEHAVIORAL_ANTIPATTERNS.map(pattern => {
+    const evidence = executionRecords
+      .filter(record => pattern.match.test(searchableBehaviorText(record)))
+      .map(record => ({
+        changeId: record.changeId,
+        timestamp: record.timestamp,
+        status: record.status,
+        workflow: record.workflow,
+        phase: record.phase
+      }));
+
+    return {
+      patternId: pattern.id,
+      summary: pattern.summary,
+      evidence
+    };
+  }).filter(group => group.evidence.length >= thresholds.learningCandidateMinEvidence);
+}
+
 function analyzeEvolution(projectRoot: string): MemoryRecord {
   const thresholds = loadEvolutionThresholds(projectRoot);
   const executionRecords = listExecutionRecords(projectRoot);
@@ -193,6 +256,31 @@ function analyzeEvolution(projectRoot: string): MemoryRecord {
     return upsertSkillCandidate(projectRoot, candidate).record;
   });
 
+  const behavioralAntipatternCandidates = buildBehavioralAntipatternGroups(executionRecords, thresholds).map((group: EvolutionGroup) => {
+    const pattern = BEHAVIORAL_ANTIPATTERNS.find(item => item.id === group.patternId);
+    const candidate = {
+      slug: slugifyForFile(group.patternId),
+      title: pattern?.title || `Avoid ${group.patternId}`,
+      category: 'agent_behavior_antipattern',
+      source: 'post_run_promotion',
+      status: 'candidate',
+      workflow: 'all',
+      phase: 'review',
+      summary: group.summary,
+      evidenceCount: group.evidence.length,
+      evidence: group.evidence,
+      appliesTo: ['define', 'plan', 'build', 'test', 'review', 'ship', 'bug-analysis', 'component-gen', 'api-integration', 'ui-restore'],
+      reusability: 0.95,
+      whyStored: 'promoted_agent_behavior_antipattern',
+      verification: {
+        state: 'pending',
+        required: true
+      }
+    };
+
+    return upsertLearningCandidate(projectRoot, candidate).record;
+  });
+
   const adoptedPreferences = collectAdoptedPreferences(
     preferenceRecords,
     thresholds
@@ -202,12 +290,14 @@ function analyzeEvolution(projectRoot: string): MemoryRecord {
     summary: {
       executionRecords: executionRecords.length,
       preferenceRecords: preferenceRecords.length,
-      learningCandidates: learningCandidates.length,
+      learningCandidates: learningCandidates.length + behavioralAntipatternCandidates.length,
       skillCandidates: skillCandidates.length,
+      behavioralAntipatternCandidates: behavioralAntipatternCandidates.length,
       adoptedPreferences: adoptedPreferences.length
     },
-    learningCandidates,
+    learningCandidates: [...learningCandidates, ...behavioralAntipatternCandidates],
     skillCandidates,
+    behavioralAntipatternCandidates,
     adoptedPreferences
   };
 }

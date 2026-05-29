@@ -2,6 +2,29 @@
 
 Use this flow to bump `oh-my-engine`, verify the package, and publish the current `ome` CLI plus all `ome-*` command bins, including `ome-mcp`.
 
+## Local Testing Before Publish
+
+You do not need to publish to npm to test local CLI changes on your machine. Build the package, link it globally, then run the command behavior you changed:
+
+```bash
+npm run build
+npm link
+ome --help
+ome-spec --help
+ome spec help
+```
+
+On Windows PowerShell, use the `.cmd` shims if script execution policy blocks plain `npm`:
+
+```powershell
+cmd.exe /c npm.cmd run build
+cmd.exe /c npm.cmd link
+cmd.exe /c ome-spec.cmd --help
+cmd.exe /c ome.cmd spec help
+```
+
+Use `npm pack --dry-run` when you want to inspect what the published tarball would contain without publishing it.
+
 ## Recommended Flow
 
 ```bash

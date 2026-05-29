@@ -1,5 +1,5 @@
 ---
-description: Run OpenSpec-compatible proposal, plan, apply, verify, and archive workflows.
+description: Run OpenSpec with Oh My Engine rules, memory, and Agent context.
 ---
 
 ﻿---

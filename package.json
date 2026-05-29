@@ -1,6 +1,6 @@
 {
   "name": "oh-my-engine",
-  "version": "0.4.8",
+  "version": "0.4.9",
   "description": "Cross-agent workflow engine for rules, memory, specs, and skills.",
   "type": "commonjs",
   "main": "dist/index.js",
@@ -28,6 +28,7 @@
     "ome-spec": "dist/bin/ome-spec.js",
     "ome-mcp": "dist/bin/ome-mcp.js",
     "ome-memory": "dist/bin/ome-memory.js",
+    "ome-remember": "dist/bin/ome-remember.js",
     "ome-evolve": "dist/bin/ome-evolve.js",
     "ome-superpowers": "dist/bin/ome-superpowers.js"
   },

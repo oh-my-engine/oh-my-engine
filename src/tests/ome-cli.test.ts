@@ -18,9 +18,21 @@ function createWorkspace(prefix: string): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
 }
 
-test('ome help lists productized command groups', () => {
+function runOmeInWorkspace(workspace: string, args: string[]): ReturnType<typeof spawnSync> {
+  return spawnSync(OME_BIN, omeArgs(args), {
+    cwd: workspace,
+    encoding: 'utf8'
+  });
+}
+
+function parseJsonOutput(result: ReturnType<typeof spawnSync>): any {
+  return JSON.parse(result.stdout);
+}
+
+test('ome help lists the default delivery lifecycle without spec commands', () => {
   const output = runOme(['--help']);
 
+  assert.match(output, /Default delivery workflow/);
   assert.match(output, /rules validate/);
   assert.match(output, /agents <command>/);
   assert.match(output, /bug <description>/);
@@ -30,9 +42,13 @@ test('ome help lists productized command groups', () => {
   assert.match(output, /test <target>/);
   assert.match(output, /review <target>/);
   assert.match(output, /ship <target>/);
-  assert.match(output, /spec <command>/);
+  assert.match(output, /run <command>/);
+  assert.doesNotMatch(output, /spec <command>/);
+  assert.doesNotMatch(output, /Spec commands:/);
   assert.match(output, /guidance <workflow>/);
   assert.match(output, /memory view/);
+  assert.match(output, /memory remember/);
+  assert.match(output, /remember <text>/);
   assert.match(output, /evolve adopt-learning/);
   assert.match(output, /evolve adopt-skill/);
   assert.match(output, /adapters list/);
@@ -99,6 +115,126 @@ test('ome lifecycle commands render structured guidance', () => {
   assert.match(review, /Verification gaps/);
 });
 
+test('ome run start creates an active delivery run with JSON output', () => {
+  const workspace = createWorkspace('ome-run-start-');
+
+  const result = runOmeInWorkspace(workspace, ['run', 'start', 'add login']);
+
+  assert.equal(result.status, 0);
+  const payload = parseJsonOutput(result);
+  assert.match(payload.runId, /^run-/);
+  assert.equal(payload.status, 'active');
+  assert.equal(payload.stage, 'validate');
+  assert.deepEqual(payload.requiredEvidence, ['requirement_summary']);
+  assert.equal(payload.blockingIssues.length, 0);
+  assert.match(payload.nextAction, /Clarify/i);
+  assert.match(payload.exitCodeMeaning, /0 means/);
+  assert.equal(fs.existsSync(path.join(workspace, '.ome', 'runs', payload.runId, 'state.json')), true);
+});
+
+test('ome run status reads the active run and can render text', () => {
+  const workspace = createWorkspace('ome-run-status-');
+  const start = runOmeInWorkspace(workspace, ['run', 'start', 'add login']);
+  const runId = parseJsonOutput(start).runId;
+
+  const jsonStatus = runOmeInWorkspace(workspace, ['run', 'status']);
+  const textStatus = runOmeInWorkspace(workspace, ['run', 'status', '--text']);
+
+  assert.equal(jsonStatus.status, 0);
+  assert.equal(parseJsonOutput(jsonStatus).runId, runId);
+  assert.equal(textStatus.status, 0);
+  assert.match(textStatus.stdout, /Run:/);
+  assert.match(textStatus.stdout, /Stage: validate/);
+});
+
+test('ome run next blocks until required stage evidence is registered', () => {
+  const workspace = createWorkspace('ome-run-next-');
+  runOmeInWorkspace(workspace, ['run', 'start', 'add login']);
+
+  const blocked = runOmeInWorkspace(workspace, ['run', 'next']);
+
+  assert.notEqual(blocked.status, 0);
+  const blockedPayload = parseJsonOutput(blocked);
+  assert.equal(blockedPayload.stage, 'validate');
+  assert.deepEqual(blockedPayload.requiredEvidence, ['requirement_summary']);
+  assert.match(blockedPayload.blockingIssues[0], /requirement_summary/);
+
+  const evidence = runOmeInWorkspace(workspace, [
+    'run',
+    'evidence',
+    'requirement_summary',
+    'Goal: login; Scope: auth UI; Success: tests pass'
+  ]);
+  const advanced = runOmeInWorkspace(workspace, ['run', 'next']);
+
+  assert.equal(evidence.status, 0);
+  assert.equal(advanced.status, 0);
+  const advancedPayload = parseJsonOutput(advanced);
+  assert.equal(advancedPayload.stage, 'define');
+  assert.deepEqual(advancedPayload.requiredEvidence, ['requirement_summary']);
+});
+
+test('ome run finish requires ship evidence and completes the active run', () => {
+  const workspace = createWorkspace('ome-run-finish-');
+  const start = runOmeInWorkspace(workspace, ['run', 'start', 'add login']);
+  const runId = parseJsonOutput(start).runId;
+  const evidenceByStage = [
+    'requirement_summary',
+    'requirement_summary',
+    'plan_artifact',
+    'implementation_summary',
+    'verification_command',
+    'review_summary',
+    'ship_summary'
+  ];
+
+  for (const evidenceType of evidenceByStage) {
+    assert.equal(runOmeInWorkspace(workspace, ['run', 'evidence', evidenceType, `${evidenceType} done`]).status, 0);
+    assert.equal(runOmeInWorkspace(workspace, ['run', 'next']).status, 0);
+  }
+
+  const finish = runOmeInWorkspace(workspace, ['run', 'finish']);
+  const statusAfterFinish = runOmeInWorkspace(workspace, ['run', 'status']);
+
+  assert.equal(finish.status, 0);
+  const finishPayload = parseJsonOutput(finish);
+  assert.equal(finishPayload.runId, runId);
+  assert.equal(finishPayload.status, 'completed');
+  assert.equal(finishPayload.stage, 'learn');
+  assert.notEqual(statusAfterFinish.status, 0);
+  assert.match(parseJsonOutput(statusAfterFinish).blockingIssues[0], /No active run/);
+});
+
+test('ome run enforces a single active run until cancellation', () => {
+  const workspace = createWorkspace('ome-run-single-active-');
+  runOmeInWorkspace(workspace, ['run', 'start', 'add login']);
+
+  const duplicate = runOmeInWorkspace(workspace, ['run', 'start', 'add checkout']);
+  const cancelled = runOmeInWorkspace(workspace, ['run', 'cancel', 'changed priority']);
+  const restarted = runOmeInWorkspace(workspace, ['run', 'start', 'add checkout']);
+
+  assert.notEqual(duplicate.status, 0);
+  assert.match(parseJsonOutput(duplicate).blockingIssues[0], /active run already exists/i);
+  assert.equal(cancelled.status, 0);
+  assert.equal(parseJsonOutput(cancelled).status, 'cancelled');
+  assert.equal(restarted.status, 0);
+  assert.equal(parseJsonOutput(restarted).request, 'add checkout');
+});
+
+test('ome run status fails clearly when active run state is invalid', () => {
+  const workspace = createWorkspace('ome-run-corrupt-state-');
+  const statePath = path.join(workspace, '.ome', 'runs', 'run-broken', 'state.json');
+  fs.mkdirSync(path.dirname(statePath), { recursive: true });
+  fs.writeFileSync(statePath, '{ invalid json', 'utf8');
+
+  const result = runOmeInWorkspace(workspace, ['run', 'status']);
+
+  assert.notEqual(result.status, 0);
+  const payload = parseJsonOutput(result);
+  assert.equal(payload.status, 'error');
+  assert.match(payload.blockingIssues[0], /Run state is invalid/);
+});
+
 test('ome unknown command exits non-zero with a clear error', () => {
   const result = spawnSync(OME_BIN, omeArgs(['missing-command']), {
     cwd: REPO_ROOT,
@@ -113,6 +249,7 @@ test('ome update surfaces npm failure details before continuing project sync', (
   const env = { ...process.env };
   if (process.platform === 'win32') {
     env.Path = '';
+    env.PATH = '';
   } else {
     env.PATH = '';
   }

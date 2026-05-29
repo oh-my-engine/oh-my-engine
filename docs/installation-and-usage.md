@@ -59,6 +59,22 @@ npm link
 ome --help
 ```
 
+`npm link` is enough to test local CLI changes on your machine. You do not need to publish to npm before checking command behavior:
+
+```bash
+ome spec help
+ome-spec --help
+ome-spec apply <change-id>
+```
+
+On Windows PowerShell, use the `.cmd` shims when script execution policy blocks plain `npm`:
+
+```powershell
+cmd.exe /c npm.cmd link
+cmd.exe /c ome-spec.cmd --help
+cmd.exe /c ome.cmd spec help
+```
+
 Install global Agent commands when you want native `/ome-*` or skill-name entries:
 
 ```bash
@@ -123,9 +139,13 @@ ome agents list
 
 `ome init-rules` refreshes `.ome/context/project-scan.json`, rewrites local deterministic rule drafts, and tells the active Agent editor to inspect the latest source before final personalization. It does not call an AI API or require network access.
 
-Spec workflow:
+Spec workflow (optional, disabled by default):
+
+> **Note**: The spec workflow is an **optional advanced compatibility feature**, disabled by default in `OME.md`. Enable it by setting `workflows.spec.enabled: true` if needed. The external OpenSpec CLI is optional; OME provides a complete TypeScript fallback implementation.
 
 ```bash
+ome spec help
+ome-spec --help
 ome spec propose add-auth --capability auth
 ome spec plan add-auth
 ome spec apply add-auth
@@ -137,6 +157,8 @@ Memory and evolution:
 
 ```bash
 ome memory view --format json
+ome memory remember "Prefer concise reports with exact verification evidence"
+ome-remember "Prefer concise reports with exact verification evidence"
 ome evolve analyze --format json
 ome evolve verify-learning --slug <learning-slug>
 ome evolve adopt-learning --slug <learning-slug>
@@ -242,8 +264,11 @@ ome-init
 ome-init-rules
 ome-superpowers
 ome-spec propose add-auth
+ome-spec apply add-auth
 ome-bug Login button click does nothing
 ```
+
+Codex does not use project slash commands like Claude Code. `ome-spec` is a skill-name entry in Codex, while the terminal equivalent is `ome spec <command> [args]` or `ome-spec <command> [args]`.
 
 Run this in the project to generate/update `AGENTS.md`:
 
@@ -455,6 +480,26 @@ Do not commit local memory by default:
 ```
 
 ## Publisher Checklist
+
+Publishing is not required for local CLI testing. To test the package on the current machine, build and link it first:
+
+```bash
+npm run build
+npm link
+ome-spec --help
+ome spec help
+```
+
+On Windows PowerShell:
+
+```powershell
+cmd.exe /c npm.cmd run build
+cmd.exe /c npm.cmd link
+cmd.exe /c ome-spec.cmd --help
+cmd.exe /c ome.cmd spec help
+```
+
+Publish only when other machines should receive the update through `npm install -g oh-my-engine`.
 
 Before publishing:
 

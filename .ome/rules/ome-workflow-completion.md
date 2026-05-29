@@ -1,14 +1,18 @@
 ---
 rule: ome-workflow-completion
-version: 1.0.0
+version: 1.1.0
 category: ome/workflow
-priority: critical
-severity: error
+priority: reference
+severity: info
 tags: [ome, workflow, memory, auto-record]
-autoApply: true
+autoApply: false
 ---
 
-# Oh My Engine 工作流完成规则
+# Oh My Engine 工作流完成规则（参考文档）
+
+> **说明（v1.1）**：自从 v1.1 起，`ome finish` 的强制提示已下沉到每个 lifecycle skill 的 SKILL.md 末尾的
+> "Workflow Completion (MANDATORY)" 段，由各 agent 在执行具体工作流时直接看到。
+> 本文件仅作为人类可读的背景说明保留，不再依赖 `autoApply` 加载。
 
 ## 自动记录执行
 

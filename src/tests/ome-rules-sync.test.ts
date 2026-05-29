@@ -6,6 +6,7 @@ const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 
 const { OME_BIN, omeArgs, repoPath } = require('./helpers');
+const { syncRules } = require('../core/rules');
 
 function createWorkspace(): string {
   const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'oh-my-engine-rules-'));
@@ -44,6 +45,32 @@ test('ome rules sync writes single-file and multi-file platform targets through 
   const antigravityRulesDirectory = path.join(workspace, '.agents', 'rules');
   const antigravityRules = fs.readdirSync(antigravityRulesDirectory).filter((fileName: string) => fileName.endsWith('.md'));
   assert.deepEqual(antigravityRules, ['00-ome-rules.md']);
+});
+
+test('rules sync skips generated platform files that cannot be written', () => {
+  const workspace = createWorkspace();
+  const originalWriteFileSync = fs.writeFileSync;
+
+  try {
+    fs.writeFileSync = (...args: any[]) => {
+      const filePath = String(args[0]);
+      if (filePath.endsWith(path.join('.agents', 'rules', '00-ome-rules.md'))) {
+        const error = new Error('permission denied') as NodeJS.ErrnoException;
+        error.code = 'EPERM';
+        throw error;
+      }
+      return originalWriteFileSync(...args);
+    };
+
+    const results = syncRules(['antigravity'], workspace);
+
+    assert.equal(results.length, 1);
+    assert.equal(results[0].platform, 'antigravity');
+    assert.equal(results[0].status, 'skipped');
+    assert.equal(results[0].message, 'permission denied');
+  } finally {
+    fs.writeFileSync = originalWriteFileSync;
+  }
 });
 
 test('ome rules sync replaces legacy .ome/rules-sync.js entrypoint', () => {

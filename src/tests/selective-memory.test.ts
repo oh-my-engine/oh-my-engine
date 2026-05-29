@@ -84,7 +84,7 @@ function readExecutionRecords(workspace: string, workflow: string): any[] {
 }
 
 function writeValidFeatureDocs(workspace: string, change: string): void {
-  const changeDirectory = path.join(workspace, '.ome/omespec', 'changes', change);
+  const changeDirectory = path.join(workspace, 'openspec', 'changes', change);
 
   fs.writeFileSync(
     path.join(changeDirectory, 'proposal.md'),
@@ -126,7 +126,7 @@ Protected routes currently duplicate auth checks in multiple handlers.
 - Monitoring: watch protected-route 401 volume
 
 ## Related Capability Specs
-- \`.ome/omespec/specs/${change}/spec.md\`
+- \`openspec/specs/${change}/spec.md\`
 `,
     'utf8'
   );
@@ -227,7 +227,7 @@ function seedEvolutionWorkspace(workspace: string): any {
       novelty: 0.6,
       status: 'verified',
       summary: 'Verified the spec change and acceptance state.',
-      filesTouched: ['.ome/omespec/changes/demo/spec.md'],
+      filesTouched: ['openspec/changes/demo/spec.md'],
       testsRun: ['sh tests/spec-workflow-smoke.sh'],
       errors: [],
       metadata: {
@@ -478,6 +478,66 @@ test('explicit remembered preferences are stored and visible in the memory viewe
   assert.equal(report.records[0].evidenceCount, 2);
 });
 
+test('ome remember shortcuts store explicit preference memory', () => {
+  const workspace = createWorkspace();
+
+  runOme(workspace, ['init']);
+  const rememberOutput = runOme(workspace, [
+    'remember',
+    'Prefer cross-agent commands to work in every supported editor'
+  ]);
+  const rememberResult = JSON.parse(rememberOutput);
+  assert.equal(rememberResult.persisted, true);
+
+  const secondOutput = runOme(workspace, [
+    'memory',
+    'remember',
+    '--scope',
+    'project',
+    '--statement',
+    'Prefer explicit public memory commands over internal scripts'
+  ]);
+  const secondResult = JSON.parse(secondOutput);
+  assert.equal(secondResult.persisted, true);
+
+  const shortcutOutput = run(
+    process.execPath,
+    [
+      path.join(workspace, 'dist', 'bin', 'ome-remember.js'),
+      '--project-root',
+      workspace,
+      '--scope',
+      'user',
+      'Prefer short remember commands'
+    ],
+    workspace
+  );
+  const shortcutResult = JSON.parse(shortcutOutput);
+  assert.equal(shortcutResult.persisted, true);
+
+  const output = runOme(workspace, [
+    'memory',
+    'view',
+    '--type',
+    'preferences',
+    '--format',
+    'json'
+  ]);
+
+  const report = JSON.parse(output);
+  assert.equal(report.summary.totalRecords, 3);
+  assert.equal(report.summary.byScope.user, 2);
+  assert.equal(report.summary.byScope.project, 1);
+  assert.deepEqual(
+    report.records.map((record: Record<string, any>) => record.statement).sort(),
+    [
+      'Prefer cross-agent commands to work in every supported editor',
+      'Prefer explicit public memory commands over internal scripts',
+      'Prefer short remember commands'
+    ].sort()
+  );
+});
+
 test('evolve analyzer persists learning and skill candidates from repeated patterns', () => {
   const workspace = createWorkspace();
 
@@ -544,6 +604,58 @@ test('evolve analyzer persists learning and skill candidates from repeated patte
   );
   assert.equal(skillView.summary.totalRecords, 1);
   assert.equal(skillView.records[0].patternId, 'react-event-handler-invocation');
+});
+
+test('evolve analyzer surfaces repeated agent behavior antipatterns as learning candidates', () => {
+  const workspace = createWorkspace();
+
+  runOme(workspace, ['init']);
+
+  for (let index = 1; index <= 3; index += 1) {
+    recordExecutionEvent(workspace, {
+      source: 'workflow_command',
+      workflow: 'review',
+      phase: 'behavioral-gate',
+      changeId: `behavior-${index}`,
+      changeSlug: `behavior-${index}`,
+      capability: 'agent-behavior',
+      complexity: 'medium',
+      confidence: 'high',
+      sensitivity: 'low',
+      reusePotential: 0.9,
+      stability: 0.9,
+      novelty: 0.5,
+      status: 'verified',
+      summary: 'Detected overengineering and unnecessary abstraction in the implementation.',
+      filesTouched: ['src/example.ts'],
+      testsRun: ['npm test'],
+      errors: [],
+      metadata: {
+        patternCategory: 'agent_behavior_antipattern',
+        behaviorGate: 'overengineering'
+      }
+    });
+  }
+
+  const report = JSON.parse(runOme(workspace, ['evolve', 'analyze', '--format', 'json']));
+
+  assert.equal(report.summary.behavioralAntipatternCandidates, 1);
+  assert.equal(report.behavioralAntipatternCandidates[0].slug, 'agent-behavior-overengineering');
+  assert.equal(report.behavioralAntipatternCandidates[0].category, 'agent_behavior_antipattern');
+  assert.equal(report.behavioralAntipatternCandidates[0].evidenceCount, 3);
+
+  const learningView = JSON.parse(
+    runOme(workspace, [
+      'memory',
+      'view',
+      '--type',
+      'learnings',
+      '--format',
+      'json'
+    ])
+  );
+
+  assert.equal(learningView.records.some((record: Record<string, any>) => record.slug === 'agent-behavior-overengineering'), true);
 });
 
 test('learning candidates must be verified before adoption and preserve adopted state across evolve reruns', () => {
@@ -808,7 +920,7 @@ test('spec plan and apply load adopted engine memory context', () => {
 
   const engineMemoryContextPath = path.join(
     workspace,
-    '.ome/omespec',
+    'openspec',
     'changes',
     'engine-memory-demo',
     'context',
@@ -820,7 +932,7 @@ test('spec plan and apply load adopted engine memory context', () => {
   );
   assert.match(
     planOutput,
-    /\.ome[\/\\]omespec[\/\\]changes[\/\\]engine-memory-demo[\/\\]context[\/\\]engine-memory\.md/
+    /openspec[\/\\]changes[\/\\]engine-memory-demo[\/\\]context[\/\\]engine-memory\.md/
   );
   assert.match(
     planOutput,
@@ -848,7 +960,7 @@ test('spec plan and apply load adopted engine memory context', () => {
 
   assert.match(
     applyOutput,
-    /\.ome[\/\\]omespec[\/\\]changes[\/\\]engine-memory-demo[\/\\]context[\/\\]engine-memory\.md/
+    /openspec[\/\\]changes[\/\\]engine-memory-demo[\/\\]context[\/\\]engine-memory\.md/
   );
   assert.match(
     applyOutput,

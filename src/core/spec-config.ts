@@ -3,6 +3,7 @@ const path = require('node:path');
 const yaml = require('js-yaml');
 
 interface SpecConfig {
+  provider: string;
   specRoot: string;
   changesDir: string;
   specsDir: string;
@@ -16,10 +17,11 @@ interface SpecConfig {
 }
 
 const DEFAULT_SPEC_CONFIG: SpecConfig = {
-  specRoot: '.ome/omespec',
-  changesDir: '.ome/omespec/changes',
-  specsDir: '.ome/omespec/specs',
-  archiveDir: '.ome/omespec/archive',
+  provider: 'openspec',
+  specRoot: 'openspec',
+  changesDir: 'openspec/changes',
+  specsDir: 'openspec/specs',
+  archiveDir: 'openspec/archive',
   memoryDir: '.ome/memory/specs',
   defaultFlow: 'import-decompose-plan-apply-verify-archive',
   manualFlow: 'propose-plan-apply-verify-archive',
@@ -41,9 +43,9 @@ export function loadSpecConfig(projectRoot: string): SpecConfig {
       const match = content.match(/^---\n([\s\S]*?)\n---/);
       if (match) {
         const frontmatter = yaml.load(match[1]);
-        const specWorkflow = frontmatter?.workflows?.['spec-driven'];
+        const specWorkflow = frontmatter?.workflows?.spec || frontmatter?.workflows?.['spec-driven'];
         if (specWorkflow?.options) {
-          return mergeConfig(DEFAULT_SPEC_CONFIG, specWorkflow.options);
+          return mergeConfig(DEFAULT_SPEC_CONFIG, { ...specWorkflow.options, provider: specWorkflow.provider });
         }
       }
     } catch (error) {
@@ -58,7 +60,7 @@ export function loadSpecConfig(projectRoot: string): SpecConfig {
       const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
       const specOptions = config?.workflows?.spec?.options;
       if (specOptions) {
-        return mergeConfig(DEFAULT_SPEC_CONFIG, specOptions);
+        return mergeConfig(DEFAULT_SPEC_CONFIG, { ...specOptions, provider: config?.workflows?.spec?.provider });
       }
     } catch (error) {
       // Fall through to defaults
@@ -71,6 +73,7 @@ export function loadSpecConfig(projectRoot: string): SpecConfig {
 
 function mergeConfig(defaults: SpecConfig, overrides: Partial<SpecConfig>): SpecConfig {
   return {
+    provider: overrides.provider || defaults.provider,
     specRoot: overrides.specRoot || defaults.specRoot,
     changesDir: overrides.changesDir || defaults.changesDir,
     specsDir: overrides.specsDir || defaults.specsDir,

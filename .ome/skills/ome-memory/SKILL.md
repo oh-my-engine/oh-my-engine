@@ -1,112 +1,64 @@
 ---
 name: ome-memory
 version: 1.0.0
-description: 查看系统记忆和学习数据
-author: yunxi
-tags: [memory, statistics, learning]
+description: Inspect local Oh My Engine memory and adopted learnings.
+author: oh-my-engine
+tags: [ome, memory, action]
+allowed-tools: Bash(ome memory view:*)
 ---
 
-
+<!-- OME:ACTION -->
 # ome-memory
 
-查看系统记忆统计。
+> **Action command — execute, do not narrate.**
+> When the user invokes this command, you MUST do the following before any other reasoning or commentary:
+>
+> 1. Run this shell command exactly (substitute `$ARGUMENTS` with whatever the user passed, empty if none):
+>
+>    ```bash
+>    ome memory view $ARGUMENTS
+>    ```
+>
+> 2. Show the raw output to the user.
+> 3. Add commentary ONLY after the output is shown, and only if the user explicitly asks.
+>
+> Do NOT print the Reference section below unless the user asks "how do I use this". The user invoked this command to see memory inspection results, not docs.
 
-当前 v1 已落地的是选择性执行记忆：
-- 只有命中策略门控的事件才会落盘
-- 当前 viewer 已支持 `executions`、显式 `preferences`、`learnings`、`adopted-learnings`、`skill-candidates`、`generated-skills`
+Claude Code fast path — the line below starting with `!` is pre-executed automatically. Other agents: ignore the leading `!` and run the bare command via your shell tool, following the instructions above.
 
-## 使用方法
-
-```bash
-/ome-memory [options]
-```
-
-Claude Code 可直接使用上面的 slash command。
-Codex 请按技能名 `ome-memory` 触发，并沿用相同参数。
-
-## 参数
-
-- `--workflow`: 指定工作流（可选）
-- `--type`: 记忆类型（当前 v1 支持 `executions` / `preferences` / `learnings` / `adopted-learnings` / `skill-candidates` / `generated-skills`）
-- `--project-root`: 指定项目根目录（可选，默认当前目录）
-- `--scope`: 偏好作用域（可选，当前用于 `preferences`）
-- `--format`: 输出格式（可选：`text`/`json`）
-
-## 示例
-
-```bash
-# 查看执行记忆
-/ome-memory
-
-# 查看 spec 工作流执行记忆
-/ome-memory --type executions --workflow spec
-
-# 查看显式记住的偏好
-/ome-memory --type preferences --scope user
-
-# 查看 learning candidates
-/ome-memory --type learnings
-
-# 查看 adopted learnings
-/ome-memory --type adopted-learnings
-
-# 查看 skill candidates
-/ome-memory --type skill-candidates
-
-# 查看 adopted generated skills
-/ome-memory --type generated-skills
-
-# 以 JSON 输出
-/ome-memory --type executions --format json
-```
-
-## 输出示例
-
-```
-Execution memory
-Total records: 2
-Workflow spec: 2
-
-- 2026-04-24T14:28:48Z spec/propose demo-memory [rich] workflow_command_high_complexity
-- 2026-04-24T14:30:12Z spec/plan demo-memory [summary] workflow_command_medium_complexity
-```
-
-## 当前实现
-
-v1 viewer 命令：
-
-```bash
-ome memory view --type executions
-ome memory view --type preferences --scope user
-ome memory view --type learnings
-ome memory view --type adopted-learnings
-ome memory view --type skill-candidates
-ome memory view --type generated-skills
-```
-
-当前返回：
-- 执行记录总数
-- 按 workflow 聚合的数量
-- 每条记录的 `captureLevel`
-- 每条记录的 `whyStored`
-- 偏好记录总数
-- 按 scope 聚合的偏好数量
-- 偏好的 `evidenceCount`
-- learning candidate 总数
-- learning candidate 的 `status`
-- learning candidate 的 `verification.state`
-- adopted learning 总数
-- skill candidate 总数
-- skill candidate 的 `status`
-- skill candidate 的 `verification.state`
-- generated skill 总数
-- generated skill 的 `executionDirectives`
-
-## 相关命令
-
-- `/ome-evolve` - 触发进化分析
-- `ome init` - 初始化项目配置
+!ome memory view $ARGUMENTS
 
 ---
 
-**提示**：v1 的重点不是“全部记住”，而是“只记值得记的东西”。
+## Reference (only show when the user asks)
+
+Underlying CLI: `ome memory view`
+
+Supported `--type` values (v1):
+- `executions` (default)
+- `preferences`
+- `learnings`
+- `adopted-learnings`
+- `skill-candidates`
+- `generated-skills`
+
+Other flags:
+- `--workflow <name>` — filter execution records by workflow
+- `--scope <user|project>` — filter preferences by scope
+- `--project-root <path>` — override the project root
+- `--format text|json` — output format (default `text`)
+
+Examples:
+
+```bash
+ome memory view
+ome memory view --type executions --workflow spec
+ome memory view --type preferences --scope user
+ome memory view --type learnings
+ome memory view --type skill-candidates
+ome memory view --type executions --format json
+```
+
+For deeper docs see `.ome/skills/ome-memory/SKILL.md` or run `ome memory view --help`.
+
+**Note**: v1 stores only events that pass the policy gate. Empty output means nothing has been recorded yet — invoke a workflow command and finish it (`ome finish`) to populate the store.

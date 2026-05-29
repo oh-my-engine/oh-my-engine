@@ -117,6 +117,27 @@ export type {
   McpTargetStatus
 } from './core/mcp';
 
+export {
+  cancelRun,
+  finishRun,
+  nextRun,
+  recordRunEvidence,
+  renderRunResponse,
+  startRun,
+  statusRun
+} from './core/run';
+
+export type {
+  RunCommandResult,
+  RunEvidence,
+  RunEvidenceType,
+  RunOutputFormat,
+  RunResponse,
+  RunStage,
+  RunState,
+  RunStatus
+} from './core/run';
+
 export type {
   WorkflowName
 } from './core/workflows';

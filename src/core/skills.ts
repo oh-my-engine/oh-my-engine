@@ -29,6 +29,48 @@ const COMMON_RATIONALIZATIONS = [
 
 const SUPERPOWERS_REPO = 'https://github.com/obra/superpowers';
 
+export const OME_ACTION_MARKER = '<!-- OME:ACTION -->';
+
+const ACTION_SKILLS: Record<string, { cli: string; humanLabel: string }> = {
+  memory: { cli: 'ome memory view', humanLabel: 'memory inspection' },
+  remember: { cli: 'ome memory remember', humanLabel: 'explicit memory recording' },
+  evolve: { cli: 'ome evolve analyze', humanLabel: 'evolution analysis' }
+};
+
+const COMPLETION_LIFECYCLE_IDS = new Set([
+  'define', 'plan', 'build', 'test', 'review', 'ship',
+  'bug', 'ui', 'comp', 'api'
+]);
+
+function renderWorkflowCompletionSection(): string {
+  return [
+    '## Workflow Completion (MANDATORY)',
+    '',
+    'After you finish the work for this workflow — successful or not — you MUST run the following shell command as the very last step, AFTER you have reported results to the user:',
+    '',
+    '```bash',
+    'ome finish',
+    '```',
+    '',
+    'This records the execution into `.ome/memory/executions/` so the engine can learn from it.',
+    '',
+    'Skip ONLY if all of these are true:',
+    '- The user explicitly said "do not record" or "just testing".',
+    '- You made zero file changes.',
+    '- You wrote zero new code.',
+    '- You ran zero verifications.',
+    '',
+    'Do NOT skip because "the task was small" or "nothing interesting happened" — the engine\'s policy gate decides what to keep, not you.',
+    '',
+    'Claude Code fast path (other agents: ignore the leading `!` and run the bare command via your shell tool):',
+    '',
+    '```',
+    '!ome finish',
+    '```',
+    ''
+  ].join('\n');
+}
+
 function repoRoot(): string {
   return path.resolve(__dirname, '..', '..');
 }
@@ -105,8 +147,9 @@ function renderStructuredSkill(options: {
   rationalizations?: string[];
   verification: string[];
   outputContract: string[];
+  workflowId?: string;
 }): string {
-  return [
+  const sections = [
     '---',
     `name: ${options.command}`,
     'version: 1.0.0',
@@ -141,6 +184,61 @@ function renderStructuredSkill(options: {
     '## Output Contract',
     'Final response must include:',
     renderBulletList(options.outputContract),
+    ''
+  ];
+
+  if (options.workflowId && COMPLETION_LIFECYCLE_IDS.has(options.workflowId)) {
+    sections.push('', renderWorkflowCompletionSection());
+  } else {
+    const inferredId = options.command.replace(/^ome-/, '');
+    if (COMPLETION_LIFECYCLE_IDS.has(inferredId)) {
+      sections.push('', renderWorkflowCompletionSection());
+    }
+  }
+
+  return sections.join('\n');
+}
+
+export function renderActionSkillSource(workflow: WorkflowDefinition, options: { cli: string; humanLabel: string }): string {
+  const tag = workflow.id;
+  return [
+    '---',
+    `name: ${workflow.command}`,
+    'version: 1.0.0',
+    `description: ${workflow.description}`,
+    'author: oh-my-engine',
+    `tags: [ome, ${tag}, action]`,
+    `allowed-tools: Bash(${options.cli}:*)`,
+    '---',
+    '',
+    OME_ACTION_MARKER,
+    `# ${workflow.command}`,
+    '',
+    `> **Action command — execute, do not narrate.**`,
+    '> When the user invokes this command, you MUST do the following before any other reasoning or commentary:',
+    '>',
+    `> 1. Run this shell command exactly (substitute \`$ARGUMENTS\` with whatever the user passed, empty if none):`,
+    '>',
+    '>    ```bash',
+    `>    ${options.cli} $ARGUMENTS`,
+    '>    ```',
+    '>',
+    '> 2. Show the raw output to the user.',
+    '> 3. Add commentary ONLY after the output is shown, and only if the user explicitly asks.',
+    '>',
+    `> Do NOT print the Reference section below unless the user asks "how do I use this". The user invoked this command to see ${options.humanLabel} results, not docs.`,
+    '',
+    'Claude Code fast path — the line below starting with `!` is pre-executed automatically. Other agents: ignore the leading `!` and run the bare command via your shell tool, following the instructions above.',
+    '',
+    `!${options.cli} $ARGUMENTS`,
+    '',
+    '---',
+    '',
+    '## Reference (only show when the user asks)',
+    '',
+    `Underlying CLI: \`${options.cli}\``,
+    '',
+    `For detailed flags and examples, run \`${options.cli} --help\` or read \`.ome/skills/${workflow.command}/SKILL.md\` directly.`,
     ''
   ].join('\n');
 }
@@ -402,26 +500,31 @@ function genericSkillSource(workflow: WorkflowDefinition): string {
           'Read the changed code and the nearby context.',
           'Check the change against the project rules and existing patterns.',
           'Look for correctness bugs, regression risks, and missing tests.',
+          'Apply the behavioral quality gate: assumptions surfaced, simplicity preserved, scope stayed surgical, and verification is concrete.',
           'Call out maintainability or architecture concerns that matter.',
           'Prioritize findings by severity and likelihood.',
           'Avoid hand-wavy praise or summary-only responses.',
-          'End with concrete issues, assumptions, and residual risk.'
+          'End with concrete issues, assumptions, behavioral-gate result, and residual risk.'
         ],
         redFlags: [
           'The review does not identify specific files or lines.',
           'The change alters behavior without sufficient test coverage.',
           'A security, correctness, or compatibility concern is ignored.',
-          'The review turns into implementation advice instead of findings.'
+          'The review turns into implementation advice instead of findings.',
+          'The review ignores overengineering, speculative abstractions, drive-by refactors, or unrelated edits.',
+          'The review accepts vague verification instead of concrete tests, checks, or stated gaps.'
         ],
         verification: [
           'Confirm findings are tied to the actual diff.',
           'Confirm severity is grounded in real behavior or risk.',
           'Confirm any missing test or verification concern is stated plainly.',
+          'Confirm every behavioral quality gate dimension is pass, warning, fail, or not applicable.',
           'State if no issues were found and why.'
         ],
         outputContract: [
           'Findings ordered by severity',
           'Open questions or assumptions',
+          'Behavioral quality gate: assumptions, simplicity, surgical scope, verification',
           'Concise change summary',
           'Residual risk'
         ]
@@ -619,6 +722,12 @@ function templateSkillContent(workflow: WorkflowDefinition): string | undefined 
 }
 
 export function buildWorkflowSkillSource(workflow: WorkflowDefinition): string {
+  const action = ACTION_SKILLS[workflow.id];
+  if (action) {
+    const template = templateSkillContent(workflow);
+    if (template && template.includes(OME_ACTION_MARKER)) return template;
+    return renderActionSkillSource(workflow, action);
+  }
   const template = templateSkillContent(workflow);
   if (template) return template;
   return genericSkillSource(workflow);
@@ -653,15 +762,26 @@ export function initializeWorkflowSkillSources(projectRoot: string, workflows: W
 }
 
 export function renderPlatformSkillEntry(options: PlatformSkillEntryOptions, workflow: WorkflowDefinition, sourceContent: string): string {
+  const isAction = sourceContent.includes(OME_ACTION_MARKER);
+
   if (options.style === 'skill') {
     return sourceContent.endsWith('\n') ? sourceContent : `${sourceContent}\n`;
   }
 
   const body = stripFrontmatter(sourceContent).trimEnd();
-  const sections = [
-    renderFrontmatterBlock(workflow.description),
-    body
-  ];
+  const sections: string[] = [];
+
+  if (isAction && options.platformId === 'claude-code') {
+    sections.push(renderActionFrontmatterFor('claude-code', workflow));
+  } else {
+    sections.push(renderFrontmatterBlock(workflow.description));
+  }
+
+  if (isAction && options.platformId !== 'claude-code') {
+    sections.push(stripPreExecutedShellLine(body));
+  } else {
+    sections.push(body);
+  }
 
   if (options.platformId === 'antigravity') {
     sections.push(
@@ -673,4 +793,28 @@ export function renderPlatformSkillEntry(options: PlatformSkillEntryOptions, wor
   }
 
   return `${sections.join('\n')}\n`;
+}
+
+function renderActionFrontmatterFor(platformId: string, workflow: WorkflowDefinition): string {
+  const action = ACTION_SKILLS[workflow.id];
+  const allowedTools = action ? `Bash(${action.cli}:*)` : 'Bash(ome:*)';
+  return [
+    '---',
+    `description: ${workflow.description}`,
+    `allowed-tools: ${allowedTools}`,
+    '---',
+    ''
+  ].join('\n');
+}
+
+function stripPreExecutedShellLine(body: string): string {
+  // Remove the `!ome ...` Claude-Code-specific pre-execution line so that
+  // platforms which do not understand the `!` prefix don't try to literally
+  // echo it back. The surrounding natural-language instructions remain.
+  return body
+    .split(/\r?\n/)
+    .filter(line => !/^![a-zA-Z0-9_.-]+/.test(line.trimStart()))
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trimEnd();
 }

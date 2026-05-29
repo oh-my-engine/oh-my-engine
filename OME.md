@@ -25,7 +25,7 @@ project:
     - node:test
   buildTools:
     - typescript
-  filesScanned: 186
+  filesScanned: 571
   detectedPatterns:
     - automated-tests
     - build-script
@@ -54,6 +54,7 @@ workflows:
   bug-analysis:
     enabled: true
     rules:
+      - agent-behavior
       - project-overview
       - code-style
       - architecture
@@ -64,12 +65,14 @@ workflows:
   component-gen:
     enabled: true
     rules:
+      - agent-behavior
       - code-style
       - architecture
       - tooling
   api-integration:
     enabled: true
     rules:
+      - agent-behavior
       - routing-middleware
       - data-access
       - configuration-env
@@ -78,6 +81,7 @@ workflows:
   rules-personalization:
     enabled: true
     rules:
+      - agent-behavior
       - architecture
       - code-style
       - configuration-env
@@ -90,8 +94,9 @@ workflows:
       - testing
       - tooling
   spec:
-    enabled: true
-    format: openspec-compatible
+    enabled: false
+    provider: openspec
+    format: openspec
     options:
       specRoot: .ome/omespec
       changesDir: .ome/omespec/changes
@@ -127,15 +132,6 @@ evolution:
     adoptedPreferenceMinEvidence: 2
   evaluationInterval: daily
   optimizationThreshold: 85
-directories:
-  plans: .ome/plans
-  rules: .ome/rules
-  memory: .ome/memory
-  spec: .ome/spec
-  context: .ome/context
-  docs: .ome/docs
-  generatedSkills: .ome/generated-skills
-  workflows: .ome/workflows
 ---
 
 # Oh My Engine Configuration
@@ -152,7 +148,7 @@ directories:
 
 ## Project Scan
 
-- **Files Scanned**: 186
+- **Files Scanned**: 571
 - **Source Directories**: src, docs, schemas, skills, examples, bin
 - **Entrypoints**: dist/index.d.ts, dist/index.js, src/index.ts
 - **Test Frameworks**: node:test
@@ -168,7 +164,7 @@ This project has the following workflows enabled:
 - **bug-analysis**: Bug analysis workflow with project-specific code, architecture, and tooling rules
 - **component-gen**: Component generation workflow
 - **api-integration**: API integration workflow
-- **spec**: OpenSpec workflow for structured change management
+- **spec**: disabled by default; use `ome spec` only as an advanced compatibility workflow
 
 ## Memory System
 

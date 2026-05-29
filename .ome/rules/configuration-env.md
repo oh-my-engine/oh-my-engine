@@ -15,7 +15,7 @@ category: configuration
 - Frameworks: Node.js
 - Language: TypeScript
 - Package manager: npm
-- Files scanned: 474
+- Files scanned: 571
 - Source directories: src, docs, schemas, skills, examples, bin
 - Entrypoints: dist/index.d.ts, dist/index.js, src/index.ts
 - Route files: none detected
@@ -33,13 +33,17 @@ category: configuration
 - Database signals: migrations-or-sql
 - Deployment signals: github-actions
 - Source signals: commonjs-exports, commonjs-require, console-logging, environment-variables, esm-exports, esm-imports, http-routing, koa-context, try-catch-error-handling
-- Source extensions: .json: 8, .md: 321, .ts: 99, .yml: 1
+- Source extensions: .json: 8, .md: 415, .ts: 102, .yml: 1
 - Existing rule files: .agents/rules, .cursor/rules, .qoder/rules, .trae/rules, .windsurfrules, AGENTS.md, CLAUDE.md
 - Detected patterns: automated-tests, build-script, build-tooling, commonjs-exports, commonjs-require, console-logging, data-access, deployment-config, environment-variables, esm-exports, esm-imports, http-routing, koa-context, npm-package-manager, src-directory, structured-content-parsing, try-catch-error-handling, typecheck-script, typed-source
 
 ## Representative Files
 
   - .agent/rules/00-ome-auto-detection.md
+  - .agent/skills/openspec-apply-change/SKILL.md
+  - .agent/skills/openspec-archive-change/SKILL.md
+  - .agent/skills/openspec-explore/SKILL.md
+  - .agent/skills/openspec-propose/SKILL.md
   - .agent/workflows/ome-api.md
   - .agent/workflows/ome-bug.md
   - .agent/workflows/ome-build.md
@@ -51,18 +55,14 @@ category: configuration
   - .agent/workflows/ome-mcp.md
   - .agent/workflows/ome-memory.md
   - .agent/workflows/ome-plan.md
+  - .agent/workflows/ome-remember.md
   - .agent/workflows/ome-review.md
   - .agent/workflows/ome-ship.md
   - .agent/workflows/ome-spec.md
   - .agent/workflows/ome-superpowers.md
   - .agent/workflows/ome-test.md
   - .agent/workflows/ome-ui.md
-  - .agents/rules/00-ome-rules.md
-  - .agents/rules/01-api-rest-design.md
-  - .agents/rules/02-arch-clean-architecture.md
-  - .agents/rules/03-arch-database-design.md
-  - .agents/rules/04-arch-microservices.md
-  - .agents/rules/05-architecture.md
+  - .agent/workflows/opsx-apply.md
 
 ## Config Files
 

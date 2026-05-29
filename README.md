@@ -15,7 +15,7 @@ Oh My Engine is a powerful framework that transforms Claude Code and Codex into 
 - **🤖 Auto-Detection**: AI agents automatically recognize task types and invoke the right OME commands without manual prompting
 - **⚙️ Project Configuration**: Per-project workflow customization with `.ome/`
 - **📋 Rich Workflows**: Pre-built workflows for UI restoration, bug analysis, component generation, and API integration
-- **📝 Spec Mode**: OpenSpec-compatible proposal, planning, apply, verify, and archive workflow
+- **📝 Spec Mode** (Optional): OpenSpec-compatible proposal, planning, apply, verify, and archive workflow - disabled by default, available as an advanced compatibility feature
 - **🎯 Smart Context**: Loads project-specific rules and configurations automatically
 - **🔧 Extensible**: Easy to create custom workflows for your specific needs
 - **🌐 Cross-Platform Rules**: Single source of truth for rules, auto-sync to 9+ AI platforms (Claude Code, Cursor, Trae, Agents, etc.) - [Learn more](docs/CROSS_PLATFORM_RULES.md)
@@ -57,6 +57,22 @@ npm install
 npm run build
 npm link
 ome --help
+```
+
+`npm link` is enough to test local CLI changes on your machine. You do not need to publish to npm before checking command behavior:
+
+```bash
+ome spec help
+ome-spec --help
+ome-spec apply <change-id>
+```
+
+On Windows PowerShell, use the npm and command shims when script execution policy blocks plain `npm`:
+
+```powershell
+cmd.exe /c npm.cmd link
+cmd.exe /c ome-spec.cmd --help
+cmd.exe /c ome.cmd spec help
 ```
 
 #### Method 3: Install Global Agent Commands
@@ -103,7 +119,7 @@ Copy the installation prompt from [INSTALL_WITH_AI.md](INSTALL_WITH_AI.md) and p
 Detailed install and multi-tool usage: [docs/installation-and-usage.md](docs/installation-and-usage.md).
 
 Claude Code users can invoke installed workflows as `/ome-bug`, `/ome-spec`, etc.
-Codex users can invoke installed skills by name such as `ome-bug`; clients that support `$skill` can use `$ome-bug`.
+Codex users can invoke installed skills by name such as `ome-bug` or `ome-spec apply <change-id>`; clients that support `$skill` can use `$ome-bug`.
 
 ### Initialize a Project
 
@@ -193,6 +209,8 @@ Rules sync is implemented in `src/core/rules.ts`; use `ome rules sync` instead o
 
 ```bash
 # Run TypeScript-backed spec workflow commands
+ome spec help
+ome-spec --help
 ome spec init
 ome spec propose user-authentication
 ome spec plan user-authentication
@@ -205,6 +223,8 @@ ome spec archive user-authentication
 
 # Inspect memory and evolution system
 ome memory view --format json
+ome memory remember "Prefer concise reports with exact verification evidence"
+ome-remember "Prefer concise reports with exact verification evidence"
 ome evolve analyze --format json
 ome evolve review  # View candidates pending approval
 ome evolve stats   # View effectiveness statistics
@@ -223,6 +243,17 @@ Platform adapters live under `src/adapters/platforms/` and expose detection meta
 
 Generated artifact policy is documented in `docs/generated-artifacts.md`.
 
+You can test local CLI changes before publishing by building and linking the package:
+
+```bash
+npm run build
+npm link
+ome-spec --help
+ome spec help
+```
+
+Publishing is only needed when other machines should receive the updated package through `npm install -g oh-my-engine`.
+
 Packaging is guarded by `npm run verify` and `prepack`, which run typecheck, clean build, and the full test suite before publishing. On Windows, if `npm run verify` fails on the Unix `rm -rf dist` clean step, use:
 
 ```powershell
@@ -230,7 +261,6 @@ Remove-Item -LiteralPath dist -Recurse -Force -ErrorAction SilentlyContinue
 .\node_modules\.bin\tsc.cmd -p tsconfig.json
 node dist\scripts\restore-shebangs.js
 node --test dist\tests\*.test.js
-npm publish
 ```
 
 Recommended release flow:
@@ -279,13 +309,15 @@ See [docs/lifecycle-workflows.md](docs/lifecycle-workflows.md) and [docs/skill-a
 
 #### All Commands
 
-- Terminal: `ome`, `ome-init`, `ome-init-rules`, `ome-bug`, `ome-ui`, `ome-comp`, `ome-api`, `ome-spec`, `ome-memory`, `ome-evolve`, `ome-superpowers`, `ome-mcp`, `ome-define`, `ome-plan`, `ome-build`, `ome-test`, `ome-review`, `ome-ship`
-- Claude Code: `/ome-init`, `/ome-init-rules`, `/ome-bug`, `/ome-ui`, `/ome-comp`, `/ome-api`, `/ome-spec`, `/ome-memory`, `/ome-evolve`, `/ome-superpowers`, `/ome-mcp`, `/ome-define`, `/ome-plan`, `/ome-build`, `/ome-test`, `/ome-review`, `/ome-ship`
-- Codex skill names: `ome-init`, `ome-init-rules`, `ome-bug`, `ome-ui`, `ome-comp`, `ome-api`, `ome-spec`, `ome-memory`, `ome-evolve`, `ome-superpowers`, `ome-mcp`, `ome-define`, `ome-plan`, `ome-build`, `ome-test`, `ome-review`, `ome-ship`
+- Terminal: `ome`, `ome-init`, `ome-init-rules`, `ome-bug`, `ome-ui`, `ome-comp`, `ome-api`, `ome-spec`, `ome-memory`, `ome-remember`, `ome-evolve`, `ome-superpowers`, `ome-mcp`, `ome-define`, `ome-plan`, `ome-build`, `ome-test`, `ome-review`, `ome-ship`
+- Claude Code: `/ome-init`, `/ome-init-rules`, `/ome-bug`, `/ome-ui`, `/ome-comp`, `/ome-api`, `/ome-spec`, `/ome-memory`, `/ome-remember`, `/ome-evolve`, `/ome-superpowers`, `/ome-mcp`, `/ome-define`, `/ome-plan`, `/ome-build`, `/ome-test`, `/ome-review`, `/ome-ship`
+- Codex skill names: `ome-init`, `ome-init-rules`, `ome-bug`, `ome-ui`, `ome-comp`, `ome-api`, `ome-spec`, `ome-memory`, `ome-remember`, `ome-evolve`, `ome-superpowers`, `ome-mcp`, `ome-define`, `ome-plan`, `ome-build`, `ome-test`, `ome-review`, `ome-ship`
 - Cursor, Trae, Windsurf, Qoder, OpenCode, and Antigravity receive the same workflow set through `ome agents install --all`.
 - `ome init` generates project rules for each tool, and `ome init-rules` refreshes scan context plus local rule drafts before an Agent editor rewrites `.ome/rules/*.md`.
 
-### Spec Workflow
+### Spec Workflow (Optional Advanced Feature)
+
+> **Note**: The spec workflow is **disabled by default** and available as an optional advanced compatibility feature. Enable it in `OME.md` by setting `workflows.spec.enabled: true` if needed.
 
 ```bash
 # Initialize the spec workspace
@@ -311,8 +343,9 @@ ome spec verify user-authentication
 ome spec archive user-authentication
 ```
 
-`import` persists normalized source text, prompt input, provenance, and copied attachments under `openspec/changes/<change-id>/context/`. `decompose` turns that intake context into `analysis.md`, `proposal.md`, `design.md`, `tasks.md`, and spec deltas while keeping source references attached to the change. `apply` updates lifecycle state, can mark task and acceptance progress, and prints the files the agent should load. It does not generate production code automatically. `status` summarizes the current phase and remaining checklist items. `archive` now creates the long-lived capability spec on first acceptance, rebuilds canonical summary/requirements/compatibility sections from accepted deltas, and keeps both the current accepted snapshot and archived history.
-You can add real project checks under `workflows.spec.options.verifyCommands` in `.ome/config.json`; `verify` runs them sequentially and fails on the first non-zero exit. `verify` also blocks unresolved `TBD:` template markers and requires each spec delta to select exactly one change type plus at least one concrete requirement and WHEN/THEN scenario.
+The spec workflow provides OpenSpec-compatible change management. When the external `openspec` CLI is unavailable, OME uses its TypeScript-backed fallback implementation. `import` persists normalized source text, prompt input, provenance, and copied attachments under `openspec/changes/<change-id>/context/`. `decompose` turns that intake context into `analysis.md`, `proposal.md`, `design.md`, `tasks.md`, and spec deltas while keeping source references attached to the change. `apply` updates lifecycle state, can mark task and acceptance progress, and prints the files the agent should load. It does not generate production code automatically. `status` summarizes the current phase and remaining checklist items. `archive` now creates the long-lived capability spec on first acceptance, rebuilds canonical summary/requirements/compatibility sections from accepted deltas, and keeps both the current accepted snapshot and archived history.
+
+You can add real project checks under `workflows.spec.options.verifyCommands` in `OME.md`; `verify` runs them sequentially and fails on the first non-zero exit. `verify` also blocks unresolved `TBD:` template markers and requires each spec delta to select exactly one change type plus at least one concrete requirement and WHEN/THEN scenario.
 
 ## 📖 Documentation
 

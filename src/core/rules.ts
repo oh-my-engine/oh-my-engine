@@ -27,6 +27,8 @@ export interface RulesSyncResult {
   platform: string;
   target: string;
   files?: string[];
+  status?: 'synced' | 'skipped';
+  message?: string;
 }
 
 export interface RuleMetadata {
@@ -87,19 +89,29 @@ function loadRules(root: string = process.cwd()): Record<string, string> {
   return rules;
 }
 
-function writeFile(filePath: string, content: string): void {
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, content, 'utf8');
+function isPermissionError(error: any): boolean {
+  return error?.code === 'EPERM' || error?.code === 'EACCES';
 }
 
-function writeManagedFileBlock(filePath: string, content: string): void {
+function writeFile(filePath: string, content: string): 'written' | 'unchanged' | 'skipped' {
+  try {
+    if (fs.existsSync(filePath) && fs.readFileSync(filePath, 'utf8') === content) return 'unchanged';
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, content, 'utf8');
+    return 'written';
+  } catch (error) {
+    if (isPermissionError(error)) return 'skipped';
+    throw error;
+  }
+}
+
+function writeManagedFileBlock(filePath: string, content: string): 'written' | 'unchanged' | 'skipped' {
   const start = '<!-- OME:START -->';
   const end = '<!-- OME:END -->';
   const block = `${start}\n${content.trimEnd()}\n${end}\n`;
 
   if (!fs.existsSync(filePath)) {
-    writeFile(filePath, block);
-    return;
+    return writeFile(filePath, block);
   }
 
   const current = fs.readFileSync(filePath, 'utf8');
@@ -107,7 +119,7 @@ function writeManagedFileBlock(filePath: string, content: string): void {
   const next = pattern.test(current)
     ? current.replace(pattern, block)
     : `${current.trimEnd()}\n\n${block}`;
-  writeFile(filePath, next);
+  return writeFile(filePath, next);
 }
 
 export function getMappedFilename(ruleName: string, platform: string, platformsConfig: Record<string, any>): string {
@@ -295,8 +307,10 @@ function generateRulesEntryContent(platform: string, platformConfig: Record<stri
 function processSingleFilePlatform(platform: string, platformConfig: Record<string, any>, config: Record<string, any>, rules: Record<string, string>, root: string): RulesSyncResult {
   const filePath = path.join(root, platformConfig.file);
   const content = generateRulesEntryContent(platform, platformConfig, config, rules);
-  writeManagedFileBlock(filePath, content);
-  return { platform, target: path.relative(root, filePath) };
+  const status = writeManagedFileBlock(filePath, content);
+  return status === 'skipped'
+    ? { platform, target: path.relative(root, filePath), status: 'skipped', message: 'permission denied' }
+    : { platform, target: path.relative(root, filePath), status: 'synced' };
 }
 
 function processMultiFilePlatform(platform: string, platformConfig: Record<string, any>, config: Record<string, any>, rules: Record<string, string>, platformsConfig: Record<string, any>, root: string): RulesSyncResult {
@@ -304,9 +318,11 @@ function processMultiFilePlatform(platform: string, platformConfig: Record<strin
   const extension = platformConfig.extension || '.md';
   const fileName = `00-ome-rules${extension}`;
   const content = generateRulesEntryContent(platform, platformConfig, config, rules);
-  writeFile(path.join(directory, fileName), content);
+  const status = writeFile(path.join(directory, fileName), content);
 
-  return { platform, target: `${path.relative(root, directory)}/${fileName}`, files: [fileName] };
+  return status === 'skipped'
+    ? { platform, target: `${path.relative(root, directory)}/${fileName}`, files: [fileName], status: 'skipped', message: 'permission denied' }
+    : { platform, target: `${path.relative(root, directory)}/${fileName}`, files: [fileName], status: 'synced' };
 }
 
 export function validateRules(): RulesValidationReport {

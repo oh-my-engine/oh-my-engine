@@ -201,7 +201,7 @@ export function cleanupStaleSessions(projectRoot: string = process.cwd()): void 
   const startTime = new Date(session.startTime).getTime();
   const now = Date.now();
   const ageMs = now - startTime;
-  const maxAgeMs = 60 * 60 * 1000; // 1 小时
+  const maxAgeMs = 15 * 60 * 1000; // 15 分钟兜底：忘记 `ome finish` 时由这里清理
 
   if (ageMs > maxAgeMs) {
     process.stdout.write(`⚠️  Found stale session (${formatDuration(ageMs)} old)\n`);

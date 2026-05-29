@@ -14,13 +14,16 @@ export interface AgentInstallOptions {
   entries?: boolean;
   home?: string;
   projectRoot?: string;
+  installOpenSpec?: boolean;
 }
 
 export interface AgentInstallResult {
-  platform: string;
+  platform?: string;
+  tool?: string;
   target: string;
-  kind: 'global-command' | 'project-command';
-  status: 'installed' | 'skipped';
+  kind: 'global-command' | 'project-command' | 'openspec-cli';
+  status: 'installed' | 'skipped' | 'present' | 'failed';
+  message?: string;
 }
 
 interface AgentDefinition {
@@ -57,8 +60,8 @@ const WORKFLOWS: WorkflowDefinition[] = [
   { id: 'ui', command: 'ome-ui', title: 'UI Restoration Workflow', usage: 'ome-ui <design-url-or-description>', description: 'Restore UI components from a design source with project design rules.' },
   { id: 'comp', command: 'ome-comp', title: 'Component Generation Workflow', usage: 'ome-comp <component-name>', description: 'Generate reusable components using project code and design rules.' },
   { id: 'api', command: 'ome-api', title: 'API Integration Workflow', usage: 'ome-api <api-spec-or-description>', description: 'Integrate API clients, services, and contracts using project rules.' },
-  { id: 'spec', command: 'ome-spec', title: 'Spec Workflow', usage: 'ome-spec <command> [args]', description: 'Run OpenSpec-compatible proposal, plan, apply, verify, and archive workflows.' },
   { id: 'memory', command: 'ome-memory', title: 'Memory Viewer', usage: 'ome-memory [options]', description: 'Inspect local Oh My Engine memory and adopted learnings.' },
+  { id: 'remember', command: 'ome-remember', title: 'Remember Preference', usage: 'ome-remember "<preference or instruction>"', description: 'Explicitly remember a reusable preference or instruction.' },
   { id: 'evolve', command: 'ome-evolve', title: 'Evolution Analyzer', usage: 'ome-evolve [options]', description: 'Analyze local memory for learning and skill candidates.' },
   { id: 'superpowers', command: 'ome-superpowers', title: 'Superpowers Bridge', usage: 'ome superpowers <install|update|doctor>', description: 'Install, update, or inspect Superpowers bridge entries for supported Agent editors.' },
   { id: 'mcp', command: 'ome-mcp', title: 'MCP Setup', usage: 'ome mcp <init|sync|preview|doctor> [figma|mastergo|all]', description: 'Initialize, sync, preview, or inspect Figma and MasterGo MCP configuration for Agent editors.' },
@@ -177,6 +180,14 @@ function parseInstallArgs(args: string[]): AgentInstallOptions {
     }
     if (argument === '--entries') {
       options.entries = true;
+      continue;
+    }
+    if (argument === '--install-openspec') {
+      options.installOpenSpec = true;
+      continue;
+    }
+    if (argument === '--no-install-openspec') {
+      options.installOpenSpec = false;
       continue;
     }
     if (argument === '--home') {
@@ -338,7 +349,19 @@ function applyInteractiveSelection(options: AgentInstallOptions): AgentInstallOp
 
 export function installAgents(options: AgentInstallOptions): AgentInstallResult[] {
   const normalized = applyInteractiveSelection(options);
-  return selectedAgents(normalized.platforms, normalized.all).flatMap(agent => installForAgent(agent, normalized));
+  const results = selectedAgents(normalized.platforms, normalized.all).flatMap(agent => installForAgent(agent, normalized));
+  if (!normalized.project && normalized.installOpenSpec !== false) {
+    const { installOpenSpecCli } = require('./openspec');
+    const openspec = installOpenSpecCli(true);
+    results.push({
+      tool: openspec.tool,
+      target: openspec.target,
+      kind: 'openspec-cli',
+      status: openspec.status,
+      message: openspec.message
+    });
+  }
+  return results;
 }
 
 export function syncExistingProjectAgents(projectRoot: string): AgentInstallResult[] {
@@ -417,6 +440,11 @@ export function runAgentsCommand(args: string[]): void {
   if (subcommand === 'install') {
     const results = installAgents(parseInstallArgs(args.slice(1)));
     for (const result of results) {
+      if (result.kind === 'openspec-cli') {
+        const marker = result.status === 'failed' ? '⚠' : result.status === 'skipped' ? '↷' : '✅';
+        process.stdout.write(`${marker} openspec: ${result.message || result.target}\n`);
+        continue;
+      }
       process.stdout.write(`${result.status === 'installed' ? '✅' : '↷'} ${result.platform}: ${result.target}\n`);
     }
     return;
@@ -508,7 +536,6 @@ function buildAgentGuidanceContent(platform: AgentDefinition, scan: any): string
   const cmdTest = buildCommandExample(platform, 'ome-test');
   const cmdReview = buildCommandExample(platform, 'ome-review');
   const cmdShip = buildCommandExample(platform, 'ome-ship');
-  const cmdSpec = buildCommandExample(platform, 'ome-spec');
 
   const lines: string[] = [];
 
@@ -538,6 +565,14 @@ function buildAgentGuidanceContent(platform: AgentDefinition, scan: any): string
   lines.push('- Treat `.ome/rules/` and `.ome/skills/` as the project-local source of truth.');
   lines.push('- Do not copy full rule or skill content into platform files; regenerate platform views from `.ome` instead.');
   lines.push('');
+  lines.push('## Default Delivery Workflow');
+  lines.push('');
+  lines.push(`1. Define requirements: \`${cmdDefine} "<task>"\` -> read \`.ome/skills/ome-define/SKILL.md\``);
+  lines.push(`2. Explore code and plan: \`${cmdPlan} "<task>"\` -> read \`.ome/skills/ome-plan/SKILL.md\``);
+  lines.push(`3. Implement in small slices: \`${cmdBuild} "<task>"\` -> read \`.ome/skills/ome-build/SKILL.md\``);
+  lines.push(`4. Self-test and review: \`${cmdTest} "<target>"\` and \`${cmdReview} "<diff>"\``);
+  lines.push(`5. Ship handoff: \`${cmdShip} "<change>"\` -> read \`.ome/skills/ome-ship/SKILL.md\``);
+  lines.push('');
   lines.push('## Workflow Routing');
   lines.push('');
   lines.push(`- Bug investigation or fix planning: \`${cmdBug} "<issue description>"\` -> read \`.ome/skills/ome-bug/SKILL.md\``);
@@ -550,11 +585,10 @@ function buildAgentGuidanceContent(platform: AgentDefinition, scan: any): string
   lines.push(`- Design or run tests: \`${cmdTest} "<target>"\` -> read \`.ome/skills/ome-test/SKILL.md\``);
   lines.push(`- Review code or a diff: \`${cmdReview} "<target>"\` -> read \`.ome/skills/ome-review/SKILL.md\``);
   lines.push(`- Prepare final handoff or release checks: \`${cmdShip} "<change>"\` -> read \`.ome/skills/ome-ship/SKILL.md\``);
-  lines.push(`- Spec workflow: \`${cmdSpec} <command> [args]\` -> read \`.ome/skills/ome-spec/SKILL.md\``);
   lines.push('');
   lines.push('## Rule Loading');
   lines.push('');
-  lines.push('- Load general rules from `.ome/rules/project-overview.md`, `.ome/rules/code-style.md`, `.ome/rules/architecture.md`, `.ome/rules/testing.md`, and `.ome/rules/tooling.md` when they exist.');
+  lines.push('- Load general rules from `.ome/rules/agent-behavior.md`, `.ome/rules/project-overview.md`, `.ome/rules/code-style.md`, `.ome/rules/architecture.md`, `.ome/rules/testing.md`, and `.ome/rules/tooling.md` when they exist.');
   lines.push('- Load domain rules only when the task touches that domain, such as security, API routing, data access, deployment, UI, accessibility, performance, or i18n.');
   lines.push('- If a needed rule or skill file is missing, continue with the nearest available `.ome` guidance and report the gap.');
 

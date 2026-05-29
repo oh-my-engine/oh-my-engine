@@ -5,13 +5,54 @@ const { runVerifyLearningCandidate } = require('../skills/oh-my-engine-evolve/sc
 const { runVerifySkillCandidate } = require('../skills/oh-my-engine-evolve/scripts/verify-skill-candidate');
 const { runReviewCandidates } = require('../skills/oh-my-engine-evolve/scripts/review-candidates');
 const { runViewMemoryCommand } = require('../skills/oh-my-engine-memory/scripts/view-memory');
+const { runRecordPreferenceMemory } = require('../skills/oh-my-engine/scripts/record-preference-memory');
 
-export function runMemoryCommand(command: string, args: string[]): void {
-  if (command !== 'view') {
-    throw new Error(`Unknown memory command: ${command}`);
+function normalizeRememberArgs(args: string[]): string[] {
+  const passthrough: string[] = [];
+  const positional: string[] = [];
+  let hasProjectRoot = false;
+  let hasStatement = false;
+
+  for (let index = 0; index < args.length; index += 1) {
+    const argument = args[index];
+    if (argument.startsWith('--')) {
+      passthrough.push(argument);
+      if (argument === '--project-root') hasProjectRoot = true;
+      if (argument === '--statement') hasStatement = true;
+
+      if (index + 1 < args.length && !args[index + 1].startsWith('--')) {
+        passthrough.push(args[index + 1]);
+        index += 1;
+      }
+      continue;
+    }
+
+    positional.push(argument);
   }
 
-  runViewMemoryCommand(args);
+  if (!hasProjectRoot) {
+    passthrough.push('--project-root', process.cwd());
+  }
+
+  if (!hasStatement && positional.length > 0) {
+    passthrough.push('--statement', positional.join(' '));
+  }
+
+  return passthrough;
+}
+
+export function runMemoryCommand(command: string, args: string[]): void {
+  if (command === 'view') {
+    runViewMemoryCommand(args);
+    return;
+  }
+
+  if (command === 'remember') {
+    runRecordPreferenceMemory(normalizeRememberArgs(args));
+    return;
+  }
+
+  throw new Error(`Unknown memory command: ${command}`);
 }
 
 export function runEvolveCommand(command: string, args: string[]): void {

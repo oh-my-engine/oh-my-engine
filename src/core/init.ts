@@ -15,7 +15,10 @@ export interface InitOptions {
   sync?: boolean;
   migrate?: boolean;
   installAgents?: boolean;
+  installOpenSpec?: boolean;
   home?: string;
+  specRoot?: string;
+  openspecInit?: boolean;
 }
 
 export interface InitResult {
@@ -31,6 +34,7 @@ export interface InitResult {
   projectPlatformTargets: string[];
   projectSkillMirrorTargets: string[];
   installedAgentTargets: string[];
+  openspecStatus: string;
   agentGuidanceFiles: string[];
   scanSummary: string;
   contextFilesUpdated: number;
@@ -56,10 +60,7 @@ const ENGINE_DIRECTORIES = [
   `${ENGINE_DIR}/memory/learnings/adopted`,
   `${ENGINE_DIR}/memory/preferences`,
   `${ENGINE_DIR}/memory/skill-candidates`,
-  `${ENGINE_DIR}/memory/specs`,
-  '.ome/omespec/changes',
-  '.ome/omespec/specs',
-  '.ome/omespec/archive'
+  `${ENGINE_DIR}/memory/specs`
 ];
 
 function ensureDirectory(directoryPath: string): void {
@@ -144,6 +145,7 @@ function formatList(values: string[], fallback: string = 'none detected'): strin
 
 function planRuleNames(scan: ProjectScanSummary): string[] {
   const rules = new Set([
+    'agent-behavior',
     'project-overview',
     'code-style',
     'testing',
@@ -170,12 +172,12 @@ function planRuleNames(scan: ProjectScanSummary): string[] {
   return Array.from(rules).sort();
 }
 
-function buildDefaultConfig(scan: ProjectScanSummary, template: string): any {
+function buildDefaultConfig(scan: ProjectScanSummary, template: string, specRoot: string): any {
   const ruleSet = new Set(planRuleNames(scan));
   const allRules = Array.from(ruleSet);
   const uiRules = ['theme', 'design-tokens', 'i18n', 'views-static-assets', 'styling-assets'].filter(rule => ruleSet.has(rule));
-  const apiRules = ['server-koa', 'server-express', 'server-fastify', 'routing-middleware', 'data-access', 'configuration-env', 'security', 'logging-error-handling'].filter(rule => ruleSet.has(rule));
-  const componentRules = ['code-style', 'architecture', 'tooling', 'views-static-assets', 'styling-assets', 'theme', 'design-tokens'].filter(rule => ruleSet.has(rule));
+  const apiRules = ['agent-behavior', 'server-koa', 'server-express', 'server-fastify', 'routing-middleware', 'data-access', 'configuration-env', 'security', 'logging-error-handling'].filter(rule => ruleSet.has(rule));
+  const componentRules = ['agent-behavior', 'code-style', 'architecture', 'tooling', 'views-static-assets', 'styling-assets', 'theme', 'design-tokens'].filter(rule => ruleSet.has(rule));
 
   return {
     project: {
@@ -202,7 +204,7 @@ function buildDefaultConfig(scan: ProjectScanSummary, template: string): any {
       },
       'bug-analysis': {
         enabled: true,
-        rules: ['project-overview', 'code-style', 'architecture', 'testing', 'tooling', 'security', 'logging-error-handling'].filter(rule => ruleSet.has(rule))
+        rules: ['agent-behavior', 'project-overview', 'code-style', 'architecture', 'testing', 'tooling', 'security', 'logging-error-handling'].filter(rule => ruleSet.has(rule))
       },
       'component-gen': {
         enabled: true,
@@ -217,13 +219,14 @@ function buildDefaultConfig(scan: ProjectScanSummary, template: string): any {
         rules: allRules
       },
       spec: {
-        enabled: true,
-        format: 'openspec-compatible',
+        enabled: false,
+        provider: 'openspec',
+        format: 'openspec',
         options: {
-          specRoot: '.ome/omespec',
-          changesDir: '.ome/omespec/changes',
-          specsDir: '.ome/omespec/specs',
-          archiveDir: '.ome/omespec/archive',
+          specRoot,
+          changesDir: `${specRoot}/changes`,
+          specsDir: `${specRoot}/specs`,
+          archiveDir: `${specRoot}/archive`,
           memoryDir: `${ENGINE_DIR}/memory/specs`,
           defaultFlow: 'import-decompose-plan-apply-verify-archive',
           manualFlow: 'propose-plan-apply-verify-archive',
@@ -265,8 +268,8 @@ function buildDefaultConfig(scan: ProjectScanSummary, template: string): any {
   };
 }
 
-function buildOMEMarkdown(scan: ProjectScanSummary, template: string): string {
-  const config = buildDefaultConfig(scan, template);
+function buildOMEMarkdown(scan: ProjectScanSummary, template: string, specRoot: string): string {
+  const config = buildDefaultConfig(scan, template, specRoot);
   const frontmatter = yaml.dump(config, {
     indent: 2,
     lineWidth: 120,
@@ -303,7 +306,7 @@ This project has the following workflows enabled:
 - **bug-analysis**: Bug analysis workflow with project-specific code, architecture, and tooling rules
 - **component-gen**: Component generation workflow
 - **api-integration**: API integration workflow
-- **spec**: OpenSpec workflow for structured change management
+- **spec**: disabled by default; use \`ome spec\` only as an advanced compatibility workflow
 
 ## Memory System
 
@@ -400,6 +403,52 @@ function commandFor(scan: ProjectScanSummary, scriptName: string): string {
   if (!scan.scripts[scriptName]) return 'not configured';
   if (scriptName === 'test' && scan.packageManager === 'npm') return '`npm test`';
   return `\`${scan.packageManager} run ${scriptName}\``;
+}
+
+function buildAgentBehaviorRule(): string {
+  return buildRule('agent-behavior', 'Agent behavior rules for simple, surgical, verifiable changes', 'agent-behavior', `
+# Agent Behavior
+
+## Purpose
+
+Keep AI-assisted implementation cautious, simple, scoped, and verifiable. These rules are adapted for Oh My Engine workflows from Karpathy-style coding-agent guidelines.
+
+## Rules
+
+- State material assumptions before implementation when requirements are ambiguous.
+- Ask for clarification instead of silently choosing between materially different interpretations.
+- Surface simpler approaches and tradeoffs when the requested path appears overbuilt.
+- Prefer the smallest implementation that satisfies the current request.
+- Do not add speculative features, abstractions, configuration, or error handling for scenarios the task does not require.
+- Touch only files and lines required by the task.
+- Do not refactor adjacent code, comments, formatting, or naming unless the task requires it.
+- Match existing style even when a different style would be preferred.
+- Remove imports, variables, files, or functions only when the current change made them unused.
+- Do not delete pre-existing dead code unless explicitly asked.
+- Every changed line should trace back to the user request, accepted plan, or required verification.
+- Convert implementation work into verifiable goals before coding.
+- For bug fixes, reproduce the bug before fixing when feasible.
+- For refactors, verify behavior before and after.
+- Report verification honestly, including checks that could not be run.
+
+## Behavioral Quality Gate
+
+Before final handoff, check:
+
+- Assumptions: important assumptions were confirmed or stated.
+- Simplicity: the solution is the minimum code needed now.
+- Surgical scope: the diff avoids unrelated edits and drive-by cleanup.
+- Verification: tests or checks prove the behavior, or gaps are explicit.
+
+## Tradeoff
+
+These rules bias toward caution over speed. For trivial typo fixes or obvious one-line changes, apply judgment without expanding the workflow.
+
+## Attribution
+
+Inspired by Karpathy-style behavioral guidelines from \`https://github.com/multica-ai/andrej-karpathy-skills\`.
+Original license: MIT. Adapted for Oh My Engine rule workflows.
+`);
 }
 
 function buildProjectOverviewRule(scan: ProjectScanSummary): string {
@@ -713,6 +762,7 @@ ${renderProjectProfile(scan)}
 
 function buildGeneratedRules(scan: ProjectScanSummary): Record<string, string> {
   const rules: Record<string, string> = {
+    'agent-behavior': buildAgentBehaviorRule(),
     'project-overview': buildProjectOverviewRule(scan),
     'code-style': buildCodeStyleRule(scan),
     testing: buildTestingRule(scan),
@@ -770,6 +820,12 @@ ${renderProjectProfile(scan)}
 `;
 }
 
+function defaultSpecRoot(projectRoot: string, requested?: string): string {
+  if (requested) return requested;
+  if (fs.existsSync(path.join(projectRoot, '.ome', 'omespec'))) return '.ome/omespec';
+  return 'openspec';
+}
+
 function writeProjectContext(projectRoot: string, scan: ProjectScanSummary, force: boolean): number {
   let updated = 0;
   if (writeFileIfNeeded(currentEnginePath(projectRoot, 'context', 'project-scan.json'), JSON.stringify(scan, null, 2), force)) updated += 1;
@@ -799,7 +855,10 @@ export function parseInitArgs(args: string[], defaults: Partial<InitOptions> = {
     sync: defaults.sync ?? true,
     migrate: defaults.migrate ?? true,
     installAgents: defaults.installAgents ?? false,
-    home: defaults.home
+    installOpenSpec: defaults.installOpenSpec ?? false,
+    home: defaults.home,
+    specRoot: defaults.specRoot,
+    openspecInit: defaults.openspecInit ?? false
   };
 
   for (let index = 0; index < args.length; index += 1) {
@@ -825,11 +884,35 @@ export function parseInitArgs(args: string[], defaults: Partial<InitOptions> = {
       continue;
     }
 
+    if (argument === '--no-install-openspec') {
+      options.installOpenSpec = false;
+      continue;
+    }
+
+    if (argument === '--install-openspec') {
+      options.installOpenSpec = true;
+      continue;
+    }
+
+    if (argument === '--no-openspec-init') {
+      options.openspecInit = false;
+      continue;
+    }
+
     if (argument === '--template') {
       if (index + 1 >= args.length) {
         throw new Error('Missing value for --template');
       }
       options.template = args[index + 1];
+      index += 1;
+      continue;
+    }
+
+    if (argument === '--spec-root') {
+      if (index + 1 >= args.length) {
+        throw new Error('Missing value for --spec-root');
+      }
+      options.specRoot = args[index + 1];
       index += 1;
       continue;
     }
@@ -874,6 +957,7 @@ export function initializeProject(options: InitOptions): InitResult {
 
   const scan = scanProject(options.projectRoot) as ProjectScanSummary;
   const createdDirectories: string[] = [];
+  const specRoot = defaultSpecRoot(options.projectRoot, options.specRoot);
 
   for (const directory of ENGINE_DIRECTORIES) {
     const target = path.join(options.projectRoot, directory);
@@ -883,15 +967,13 @@ export function initializeProject(options: InitOptions): InitResult {
 
   const configCreated = writeFileIfNeeded(
     path.join(options.projectRoot, 'OME.md'),
-    buildOMEMarkdown(scan, options.template),
+    buildOMEMarkdown(scan, options.template, specRoot),
     options.force
   );
 
-  const projectCreated = copyFileIfNeeded(
-    path.join(options.repoRoot, 'skills', 'oh-my-engine-spec', 'templates', 'project.md'),
-    path.join(options.projectRoot, '.ome', 'omespec', 'project.md'),
-    options.force
-  );
+  const { initializeOpenSpecWorkspace } = require('./openspec');
+  const openspec = initializeOpenSpecWorkspace(options.projectRoot, specRoot, options.force, options.openspecInit !== false);
+  const projectCreated = openspec.projectCreated;
 
   copyFileIfNeeded(
     repoEnginePath(options.repoRoot, 'platforms.json'),
@@ -932,7 +1014,11 @@ export function initializeProject(options: InitOptions): InitResult {
 
   let installedAgentTargets: string[] = [];
   if (options.installAgents === true) {
-    installedAgentTargets = installAgents({ platforms: [], all: true, home: options.home }).map((result: Record<string, any>) => `${result.platform}: ${result.target}`);
+    const agentResults = installAgents({ platforms: [], all: true, home: options.home, installOpenSpec: options.installOpenSpec });
+    installedAgentTargets = agentResults.map((result: Record<string, any>) => {
+      if (result.kind === 'openspec-cli') return `${result.tool}: ${result.status} ${result.target}`;
+      return `${result.platform}: ${result.target}`;
+    });
   }
 
   return {
@@ -948,6 +1034,7 @@ export function initializeProject(options: InitOptions): InitResult {
     projectPlatformTargets,
     projectSkillMirrorTargets,
     installedAgentTargets,
+    openspecStatus: `${openspec.initializedBy}: ${openspec.message}`,
     agentGuidanceFiles,
     scanSummary: renderScanSummary(scan),
     contextFilesUpdated
@@ -996,7 +1083,6 @@ export function renderInitResult(result: InitResult): string {
     `Legacy .oh-my-engine migration: ${result.migratedLegacy ? 'migrated to .ome' : 'not needed'}`,
     `Project scan: ${result.scanSummary}`,
     `Config: ${result.configCreated ? 'created' : 'preserved'}`,
-    `.ome/omespec/project.md: ${result.projectCreated ? 'created' : 'preserved'}`,
     `Rule files updated: ${result.rulesUpdated}`,
     `Agent context files updated: ${result.contextFilesUpdated}`,
     `Agent guidance files generated: ${result.agentGuidanceFiles.length}`,
@@ -1013,7 +1099,6 @@ export function renderInitResult(result: InitResult): string {
     ...result.installedAgentTargets.map(target => `  - ${target}`),
     'Created directories:',
     `  - ${ENGINE_DIR}/`,
-    '  - .ome/omespec/',
     'Next steps:',
     `  - Run \`ome init-rules\` after major code changes to refresh the dynamic rule set`,
     `  - Review ${ENGINE_DIR}/rules/ for the local scan-based rule drafts`,

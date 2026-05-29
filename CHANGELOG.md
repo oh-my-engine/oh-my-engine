@@ -5,6 +5,26 @@ All notable changes to Oh My Engine will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.9] - 2026-05-29
+
+### Changed
+- **Spec Workflow Status**: OpenSpec/spec workflow is now an **optional advanced compatibility workflow**, disabled by default in `OME.md`
+- **Spec Implementation**: `ome spec` commands now use TypeScript-backed fallback implementation when external OpenSpec CLI is unavailable
+- **Spec Commands**: All spec commands (`init`, `import`, `decompose`, `propose`, `plan`, `apply`, `status`, `verify`, `archive`) remain fully functional through `ome spec` or `ome-spec` CLI
+- **OpenSpec CLI**: External `openspec` CLI is now optional; OME provides complete fallback implementation in `src/core/spec.ts`
+
+### Technical Details
+- Spec workflow can be enabled per-project via `OME.md` → `workflows.spec.enabled: true`
+- `src/core/openspec.ts` provides optional delegation to external OpenSpec CLI
+- `src/core/spec.ts` provides complete TypeScript fallback implementation
+- Legacy `.ome/omespec/` projects continue to use fallback implementation
+- Environment variable `OME_SPEC_LEGACY=1` forces fallback mode
+
+### Documentation
+- Updated `README.md` to clarify spec workflow is optional
+- Updated `docs/installation-and-usage.md` to document spec workflow status
+- Added clarification that spec workflow is an advanced compatibility feature
+
 ## [0.4.0] - 2026-04-29
 
 ### Added
@@ -96,7 +116,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Spec workflow support
 - Multi-platform agent support
 
-[Unreleased]: https://github.com/oh-my-engine/oh-my-engine/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/oh-my-engine/oh-my-engine/compare/v0.4.9...HEAD
+[0.4.9]: https://github.com/oh-my-engine/oh-my-engine/compare/v0.4.0...v0.4.9
 [0.4.0]: https://github.com/oh-my-engine/oh-my-engine/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/oh-my-engine/oh-my-engine/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/oh-my-engine/oh-my-engine/compare/v0.2.0...v0.2.1

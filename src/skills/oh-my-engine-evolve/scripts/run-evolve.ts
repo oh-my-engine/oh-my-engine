@@ -40,6 +40,9 @@ export function renderEvolutionTextReport(report: any): string {
   lines.push(`Preference records: ${report.summary.preferenceRecords}`);
   lines.push(`Learning candidates: ${report.summary.learningCandidates}`);
   lines.push(`Skill candidates: ${report.summary.skillCandidates}`);
+  if (typeof report.summary.behavioralAntipatternCandidates === 'number') {
+    lines.push(`Behavioral antipattern candidates: ${report.summary.behavioralAntipatternCandidates}`);
+  }
   lines.push(`Adopted preferences: ${report.summary.adoptedPreferences}`);
 
   if (report.learningCandidates.length > 0) {
