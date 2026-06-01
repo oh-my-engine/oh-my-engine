@@ -546,6 +546,47 @@ test('bug finish writes diagnostic memory and filters preexisting platform noise
   assert.match(content, /## Reusable Learning/);
 });
 
+test('finish records explicit diagnostic memory without an active session', () => {
+  const workspace = createWorkspace();
+
+  runOme(workspace, ['init']);
+
+  const output = runOme(workspace, [
+    'finish',
+    '--symptom',
+    'No active session prevented memory recording after completed work',
+    '--impact',
+    'The user could finish code and tests but lose the execution memory',
+    '--root-cause',
+    'finish required .ome/.session even when structured diagnostic fields were supplied',
+    '--evidence',
+    'ome finish printed No active workflow session found',
+    '--fix',
+    'allow explicit finish payloads to create ad-hoc execution memory',
+    '--verification',
+    'node:test verifies ad-hoc memory rendering',
+    '--learning',
+    'A structured finish command should be enough to record a completed diagnostic handoff'
+  ]);
+
+  assert.match(output, /Execution recorded/);
+  assert.match(output, /Workflow: bug/);
+
+  const executionFiles = findExecutionFiles(workspace, 'bug');
+  assert.equal(executionFiles.length, 1);
+
+  const content = fs.readFileSync(executionFiles[0], 'utf8');
+  const parsed = matter(content);
+
+  assert.equal(parsed.data.source, 'workflow_command');
+  assert.equal(parsed.data.workflow, 'bug');
+  assert.equal(parsed.data.symptom, 'No active session prevented memory recording after completed work');
+  assert.match(content, /## Root Cause/);
+  assert.match(content, /finish required \.ome\/\.session/);
+  assert.match(content, /## Verification/);
+  assert.match(content, /node:test verifies ad-hoc memory rendering/);
+});
+
 test('ome remember shortcuts store explicit preference memory', () => {
   const workspace = createWorkspace();
 

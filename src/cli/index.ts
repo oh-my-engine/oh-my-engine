@@ -169,17 +169,113 @@ function parseFinishOptions(args: string[]): Record<string, any> {
   return options;
 }
 
+function hasExplicitFinishPayload(options: Record<string, any>): boolean {
+  return Boolean(
+    options.symptom ||
+    options.impact ||
+    options['root-cause'] ||
+    options.rootCause ||
+    options.fix ||
+    options['fix-summary'] ||
+    options.verification ||
+    options.learning ||
+    options['reusable-learning'] ||
+    options.evidence.length > 0
+  );
+}
+
+function printFinishRecordResult(result: Record<string, any>, sessionId: string, workflow: string, status: string, fileCount: number, durationMs: number): void {
+  process.stdout.write(`✅ Execution recorded (${result.decision.captureLevel} level)\n`);
+  process.stdout.write(`   Session: ${sessionId}\n`);
+  process.stdout.write(`   Workflow: ${workflow}\n`);
+  process.stdout.write(`   Status: ${status}\n`);
+  process.stdout.write(`   Files: ${fileCount}\n`);
+  process.stdout.write(`   Duration: ${formatDuration(durationMs)}\n`);
+  process.stdout.write(`   Saved to: ${result.filePath}\n`);
+}
+
+function recordFinishEvent(event: Record<string, any>, sessionId: string, workflow: string, status: string, fileCount: number, durationMs: number, cleanup: boolean): void {
+  const { recordExecutionMemory } = require('../skills/oh-my-engine/lib/memory-store');
+  const result = recordExecutionMemory(process.cwd(), event);
+
+  if (!result.persisted) {
+    process.stdout.write(`⚠️  Execution not persisted\n`);
+    process.stdout.write(`   Reason: ${result.decision?.reason || 'unknown'}\n`);
+    if (cleanup) cleanupSession();
+    return;
+  }
+
+  printFinishRecordResult(result, sessionId, workflow, status, fileCount, durationMs);
+
+  try {
+    const { autoAnalyzeEvolution } = require('../skills/oh-my-engine/lib/auto-evolution');
+    autoAnalyzeEvolution(process.cwd());
+  } catch (error) {
+    process.stderr.write(`\nWarning: Auto-analysis failed: ${error instanceof Error ? error.message : String(error)}\n`);
+  }
+
+  if (cleanup) cleanupSession();
+}
+
 function runFinish(args: string[]): void {
+  const finishOptions = parseFinishOptions(args);
   const session = getCurrentSession();
 
   if (!session) {
+    if (hasExplicitFinishPayload(finishOptions)) {
+      const workflow = finishOptions.workflow || 'bug';
+      const sessionId = `adhoc-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+      const summary = finishOptions.symptom ||
+        finishOptions['root-cause'] ||
+        finishOptions.fix ||
+        finishOptions.verification ||
+        'Ad-hoc workflow completion';
+      const event = {
+        id: `exec-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+        timestamp: new Date().toISOString(),
+        source: 'workflow_command',
+        workflow,
+        phase: 'execution',
+        changeId: sessionId,
+        changeSlug: workflow,
+        capability: workflow,
+        captureLevel: 'summary',
+        whyStored: 'Explicit finish payload recorded without active session',
+        summary,
+        status: 'success',
+        filesTouched: [],
+        testsRun: [],
+        symptom: finishOptions.symptom || summary,
+        impact: finishOptions.impact || '',
+        rootCause: finishOptions['root-cause'] || finishOptions.rootCause || '',
+        evidence: finishOptions.evidence,
+        fixSummary: finishOptions.fix || finishOptions['fix-summary'] || '',
+        verificationSummary: finishOptions.verification || '',
+        reusableLearning: finishOptions.learning || finishOptions['reusable-learning'] || '',
+        exclusions: finishOptions.exclusions,
+        durationMs: 0,
+        errors: [],
+        metadata: {
+          adHocFinish: true,
+          reason: 'no_active_session'
+        },
+        complexity: 'medium',
+        reusePotential: 0.8,
+        novelty: 0.8,
+        sensitivity: 0.0
+      };
+
+      recordFinishEvent(event, sessionId, workflow, 'success', 0, 0, false);
+      return;
+    }
+
     process.stderr.write('No active workflow session found.\n');
+    process.stderr.write('Run an OME workflow command first, or pass structured finish fields such as --symptom, --root-cause, --fix, or --verification to record an ad-hoc completion.\n');
     process.exitCode = 1;
     return;
   }
 
   // 收集执行信息
-  const finishOptions = parseFinishOptions(args);
   const executionInfo = collectExecutionInfo(session);
 
   // 智能推断状态
@@ -228,35 +324,7 @@ function runFinish(args: string[]): void {
     sensitivity: 0.0
   };
 
-  // 记录到记忆系统
-  const { recordExecutionMemory } = require('../skills/oh-my-engine/lib/memory-store');
-  const result = recordExecutionMemory(process.cwd(), event);
-
-  if (!result.persisted) {
-    process.stdout.write(`⚠️  Execution not persisted\n`);
-    process.stdout.write(`   Reason: ${result.decision?.reason || 'unknown'}\n`);
-    cleanupSession();
-    return;
-  }
-
-  process.stdout.write(`✅ Execution recorded (${result.decision.captureLevel} level)\n`);
-  process.stdout.write(`   Session: ${session.id}\n`);
-  process.stdout.write(`   Workflow: ${session.workflow}\n`);
-  process.stdout.write(`   Status: ${inferredStatus}\n`);
-  process.stdout.write(`   Files: ${executionInfo.filesTouched.length}\n`);
-  process.stdout.write(`   Duration: ${formatDuration(executionInfo.durationMs)}\n`);
-  process.stdout.write(`   Saved to: ${result.filePath}\n`);
-
-  // 自动触发增量分析
-  try {
-    const { autoAnalyzeEvolution } = require('../skills/oh-my-engine/lib/auto-evolution');
-    autoAnalyzeEvolution(process.cwd());
-  } catch (error) {
-    // 分析失败不影响记录流程
-    process.stderr.write(`\nWarning: Auto-analysis failed: ${error instanceof Error ? error.message : String(error)}\n`);
-  }
-
-  cleanupSession();
+  recordFinishEvent(event, session.id, session.workflow, inferredStatus, executionInfo.filesTouched.length, executionInfo.durationMs, true);
 }
 
 function runConfig(args: string[]): void {
