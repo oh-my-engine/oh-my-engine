@@ -55,6 +55,17 @@ function normalizeStringArray(value: unknown): string[] {
   return value.filter(item => typeof item === 'string');
 }
 
+function truncateList(items: string[], limit: number): { shown: string[]; omitted: number } {
+  if (items.length <= limit) {
+    return { shown: items, omitted: 0 };
+  }
+
+  return {
+    shown: items.slice(0, limit),
+    omitted: items.length - limit
+  };
+}
+
 // File path functions for Markdown format
 function executionFilePath(projectRoot: string, workflow: string, timestamp: string, summary: string, id?: string): string {
   const day = timestamp.slice(0, 10);
@@ -87,6 +98,12 @@ function generatedSkillFilePath(projectRoot: string, slug: string): string {
 
 // Markdown generation functions
 function buildExecutionMarkdown(record: MemoryRecord): string {
+  const filesTouched = normalizeStringArray(record.filesTouched);
+  const testsRun = normalizeStringArray(record.testsRun);
+  const errors = normalizeStringArray(record.errors);
+  const visibleFiles = truncateList(filesTouched, 12);
+  const visibleTests = truncateList(testsRun, 8);
+
   const frontmatter: MemoryRecord = {
     id: record.id,
     type: 'execution',
@@ -98,9 +115,13 @@ function buildExecutionMarkdown(record: MemoryRecord): string {
     captureLevel: record.captureLevel,
     source: record.source || undefined,
     whyStored: record.whyStored || undefined,
-    errors: record.errors || [],
-    filesTouched: record.filesTouched || [],
-    testsRun: record.testsRun || [],
+    errors,
+    filesTouched: visibleFiles.shown,
+    filesTouchedTotal: filesTouched.length,
+    filesTouchedOmitted: visibleFiles.omitted,
+    testsRun: visibleTests.shown,
+    testsRunTotal: testsRun.length,
+    testsRunOmitted: visibleTests.omitted,
     symptom: record.symptom || undefined,
     impact: record.impact || undefined,
     rootCause: record.rootCause || undefined,
@@ -161,27 +182,33 @@ function buildExecutionMarkdown(record: MemoryRecord): string {
     }
   }
 
-  if (record.errors && record.errors.length > 0) {
+  if (errors.length > 0) {
     content += `## Errors\n\n`;
-    record.errors.forEach((error: string) => {
+    errors.forEach((error: string) => {
       content += `- ${error}\n`;
     });
     content += `\n`;
   }
 
-  if (record.filesTouched && record.filesTouched.length > 0) {
+  if (filesTouched.length > 0) {
     content += `## Files Touched\n\n`;
-    record.filesTouched.forEach((file: string) => {
+    visibleFiles.shown.forEach((file: string) => {
       content += `- ${file}\n`;
     });
+    if (visibleFiles.omitted > 0) {
+      content += `- ... ${visibleFiles.omitted} more omitted from this memory file\n`;
+    }
     content += `\n`;
   }
 
-  if (record.testsRun && record.testsRun.length > 0) {
+  if (testsRun.length > 0) {
     content += `## Tests Run\n\n`;
-    record.testsRun.forEach((test: string) => {
+    visibleTests.shown.forEach((test: string) => {
       content += `- ${test}\n`;
     });
+    if (visibleTests.omitted > 0) {
+      content += `- ... ${visibleTests.omitted} more omitted from this memory file\n`;
+    }
     content += `\n`;
   }
 

@@ -363,6 +363,7 @@ You can add real project checks under `workflows.spec.options.verifyCommands` in
 - [Creating Custom Workflows](docs/custom-workflows.md)
 - [Configuration Guide](docs/configuration.md)
 - [Memory System](docs/memory-system.md)
+- [Memory Quality](docs/memory-quality.md)
 - [Evolution Mechanism](docs/evolution.md)
 
 ## 🎯 Examples

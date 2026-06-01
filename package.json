@@ -47,6 +47,7 @@
     "docs/framework-api.md",
     "docs/installation-and-usage.md",
     "docs/evolution.md",
+    "docs/memory-quality.md",
     "docs/skill-anatomy.md",
     "docs/lifecycle-workflows.md",
     "docs/skill-quality-gate.md",

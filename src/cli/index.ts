@@ -184,6 +184,19 @@ function hasExplicitFinishPayload(options: Record<string, any>): boolean {
   );
 }
 
+function hasCoreFinishPayload(options: Record<string, any>): boolean {
+  return Boolean(
+    options['root-cause'] ||
+    options.rootCause ||
+    options.fix ||
+    options['fix-summary'] ||
+    options.verification ||
+    options.learning ||
+    options['reusable-learning'] ||
+    options.evidence.length > 0
+  );
+}
+
 function printFinishRecordResult(result: Record<string, any>, sessionId: string, workflow: string, status: string, fileCount: number, durationMs: number): void {
   process.stdout.write(`✅ Execution recorded (${result.decision.captureLevel} level)\n`);
   process.stdout.write(`   Session: ${sessionId}\n`);
@@ -223,6 +236,13 @@ function runFinish(args: string[]): void {
 
   if (!session) {
     if (hasExplicitFinishPayload(finishOptions)) {
+      if (!hasCoreFinishPayload(finishOptions)) {
+        process.stderr.write('No active workflow session found.\n');
+        process.stderr.write('Sessionless finish memory requires core diagnostic fields such as --root-cause, --evidence, --fix, --verification, or --learning.\n');
+        process.exitCode = 1;
+        return;
+      }
+
       const workflow = finishOptions.workflow || 'bug';
       const sessionId = `adhoc-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
       const summary = finishOptions.symptom ||
@@ -277,6 +297,15 @@ function runFinish(args: string[]): void {
 
   // 收集执行信息
   const executionInfo = collectExecutionInfo(session);
+
+  if (session.workflow === 'bug' && !hasCoreFinishPayload(finishOptions)) {
+    process.stdout.write('⚠️  Execution not persisted\n');
+    process.stdout.write('   Reason: bug workflow memory requires core diagnostic fields.\n');
+    process.stdout.write('   Pass --root-cause, --evidence, --fix, --verification, or --learning to record a useful memory.\n');
+    process.stdout.write('   You can rerun ome finish with those fields even after this session is cleaned up.\n');
+    cleanupSession();
+    return;
+  }
 
   // 智能推断状态
   const inferredStatus = inferExecutionStatus(executionInfo);

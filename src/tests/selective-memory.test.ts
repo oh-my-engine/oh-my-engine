@@ -546,6 +546,31 @@ test('bug finish writes diagnostic memory and filters preexisting platform noise
   assert.match(content, /## Reusable Learning/);
 });
 
+test('bug finish refuses empty diagnostic memory without core fields', () => {
+  const workspace = createWorkspace();
+
+  runOme(workspace, ['init']);
+  fs.mkdirSync(path.join(workspace, 'src'), { recursive: true });
+  fs.writeFileSync(path.join(workspace, 'src', 'bug.ts'), 'export const value = 1;\n', 'utf8');
+
+  runGit(workspace, ['init']);
+  runGit(workspace, ['config', 'user.email', 'test@example.com']);
+  runGit(workspace, ['config', 'user.name', 'Test User']);
+  runGit(workspace, ['add', '.']);
+  runGit(workspace, ['commit', '-m', 'seed workspace']);
+
+  runOme(workspace, ['bug', 'Empty bug memory should not persist']);
+
+  fs.writeFileSync(path.join(workspace, 'src', 'bug.ts'), 'export const value = 2;\n', 'utf8');
+
+  const output = runOme(workspace, ['finish']);
+
+  assert.match(output, /Execution not persisted/);
+  assert.match(output, /requires core diagnostic fields/);
+  assert.equal(findExecutionFiles(workspace, 'bug').length, 0);
+  assert.equal(fs.existsSync(path.join(workspace, '.ome', '.session')), false);
+});
+
 test('finish records explicit diagnostic memory without an active session', () => {
   const workspace = createWorkspace();
 
@@ -585,6 +610,64 @@ test('finish records explicit diagnostic memory without an active session', () =
   assert.match(content, /finish required \.ome\/\.session/);
   assert.match(content, /## Verification/);
   assert.match(content, /node:test verifies ad-hoc memory rendering/);
+});
+
+test('sessionless finish refuses shallow diagnostic payloads', () => {
+  const workspace = createWorkspace();
+
+  runOme(workspace, ['init']);
+
+  assert.throws(
+    () => runOme(workspace, [
+      'finish',
+      '--symptom',
+      'Only a symptom was supplied'
+    ]),
+    /requires core diagnostic fields/
+  );
+
+  assert.equal(findExecutionFiles(workspace, 'bug').length, 0);
+});
+
+test('execution memory truncates large file lists but records totals', () => {
+  const workspace = createWorkspace();
+  const filesTouched = Array.from({ length: 20 }, (_, index) => `src/file-${index}.ts`);
+
+  recordExecutionEvent(workspace, {
+    source: 'workflow_command',
+    workflow: 'bug',
+    phase: 'execution',
+    changeId: 'large-file-list',
+    changeSlug: 'bug',
+    capability: 'bug',
+    complexity: 'medium',
+    confidence: 'high',
+    sensitivity: 'low',
+    reusePotential: 0.8,
+    stability: 0.8,
+    novelty: 0.6,
+    status: 'success',
+    summary: 'Large file list should not dominate memory',
+    filesTouched,
+    testsRun: [],
+    errors: [],
+    rootCause: 'file list rendering was too noisy',
+    evidence: ['sample memory was dominated by filesTouched'],
+    fixSummary: 'truncate file lists in rendered execution memory',
+    verificationSummary: 'node:test checks file list truncation'
+  });
+
+  const executionFiles = findExecutionFiles(workspace, 'bug');
+  assert.equal(executionFiles.length, 1);
+
+  const content = fs.readFileSync(executionFiles[0], 'utf8');
+  const parsed = matter(content);
+
+  assert.equal(parsed.data.filesTouchedTotal, 20);
+  assert.equal(parsed.data.filesTouchedOmitted, 8);
+  assert.equal(parsed.data.filesTouched.length, 12);
+  assert.match(content, /\.\.\. 8 more omitted from this memory file/);
+  assert.doesNotMatch(content, /src\/file-19\.ts/);
 });
 
 test('ome remember shortcuts store explicit preference memory', () => {
