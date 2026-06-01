@@ -30,6 +30,7 @@ interface AgentDefinition {
   id: string;
   name: string;
   globalCommandDirectory?: string;
+  legacyGlobalCommandDirectories?: string[];
   projectCommandDirectory?: string;
   projectSkillMirrorDirectory?: string;
   projectRules: string;
@@ -75,7 +76,7 @@ const WORKFLOWS: WorkflowDefinition[] = [
 
 export const AGENTS: AgentDefinition[] = [
   { id: 'claude-code', name: 'Claude Code', globalCommandDirectory: '.claude/commands', projectCommandDirectory: '.claude/commands', projectSkillMirrorDirectory: '.claude/skills', projectRules: 'CLAUDE.md', commandStyle: 'slash' },
-  { id: 'codex', name: 'Codex', globalCommandDirectory: '.agents/skills', projectCommandDirectory: '.agents/skills', projectRules: 'AGENTS.md', commandStyle: 'skill' },
+  { id: 'codex', name: 'Codex', globalCommandDirectory: '.codex/skills', legacyGlobalCommandDirectories: ['.agents/skills'], projectCommandDirectory: '.agents/skills', projectRules: 'AGENTS.md', commandStyle: 'skill' },
   { id: 'cursor', name: 'Cursor', globalCommandDirectory: '.cursor/commands', projectCommandDirectory: '.cursor/commands', projectRules: '.cursor/rules/*.mdc', commandStyle: 'slash' },
   { id: 'trae', name: 'Trae', globalCommandDirectory: '.trae/commands', projectCommandDirectory: '.trae/commands', projectRules: '.trae/rules/*.md', commandStyle: 'slash' },
   { id: 'windsurf', name: 'Windsurf', globalCommandDirectory: '.codeium/windsurf/global_workflows', projectCommandDirectory: '.windsurf/workflows', projectRules: '.windsurf/rules/*.md / .windsurfrules', commandStyle: 'workflow' },
@@ -91,6 +92,21 @@ function ensureDirectory(directoryPath: string): void {
 function writeFile(filePath: string, content: string): void {
   ensureDirectory(path.dirname(filePath));
   fs.writeFileSync(filePath, content.endsWith('\n') ? content : `${content}\n`, 'utf8');
+}
+
+function failedInstallResult(
+  agent: AgentDefinition,
+  filePath: string,
+  kind: 'global-command' | 'project-command',
+  error: unknown
+): AgentInstallResult {
+  return {
+    platform: agent.id,
+    target: filePath,
+    kind,
+    status: 'failed',
+    message: error instanceof Error ? error.message : String(error)
+  };
 }
 
 function writeManagedFileBlock(filePath: string, content: string): void {
@@ -152,16 +168,43 @@ function installForAgent(agent: AgentDefinition, options: AgentInstallOptions): 
     return [{ platform: agent.id, target: '(not supported)', kind: options.project ? 'project-command' : 'global-command', status: 'skipped' }];
   }
 
-  return WORKFLOWS.map(workflow => {
+  const primaryResults = WORKFLOWS.map(workflow => {
     const filePath = targetPath(base, agent, workflow);
-    writeFile(filePath, renderCommandPrompt(agent, workflow, options.projectRoot || process.cwd()));
-    return {
-      platform: agent.id,
-      target: filePath,
-      kind: options.project ? 'project-command' : 'global-command',
-      status: 'installed'
-    };
+    const kind = (options.project ? 'project-command' : 'global-command') as 'project-command' | 'global-command';
+    try {
+      writeFile(filePath, renderCommandPrompt(agent, workflow, options.projectRoot || process.cwd()));
+      return {
+        platform: agent.id,
+        target: filePath,
+        kind,
+        status: 'installed' as const
+      };
+    } catch (error) {
+      return failedInstallResult(agent, filePath, kind, error);
+    }
   });
+
+  if (options.project) return primaryResults;
+
+  const legacyResults = (agent.legacyGlobalCommandDirectories || []).flatMap(directory => {
+    const legacyBase = path.join(normalizeHome(options.home), directory);
+    return WORKFLOWS.map(workflow => {
+      const filePath = targetPath(legacyBase, agent, workflow);
+      try {
+        writeFile(filePath, renderCommandPrompt(agent, workflow, options.projectRoot || process.cwd()));
+        return {
+          platform: agent.id,
+          target: filePath,
+          kind: 'global-command' as const,
+          status: 'installed' as const
+        };
+      } catch (error) {
+        return failedInstallResult(agent, filePath, 'global-command', error);
+      }
+    });
+  });
+
+  return primaryResults.concat(legacyResults);
 }
 
 function parseInstallArgs(args: string[]): AgentInstallOptions {
@@ -389,13 +432,17 @@ export function syncExistingProjectSkillMirrors(projectRoot: string): AgentInsta
     return WORKFLOWS.map(workflow => {
       const sourceContent = resolveWorkflowSkillSource(projectRoot, workflow);
       const filePath = path.join(base, workflow.command, 'SKILL.md');
-      writeFile(filePath, sourceContent);
-      return {
-        platform: agent.id,
-        target: filePath,
-        kind: 'project-command' as const,
-        status: 'installed' as const
-      };
+      try {
+        writeFile(filePath, sourceContent);
+        return {
+          platform: agent.id,
+          target: filePath,
+          kind: 'project-command' as const,
+          status: 'installed' as const
+        };
+      } catch (error) {
+        return failedInstallResult(agent, filePath, 'project-command', error);
+      }
     });
   });
 }

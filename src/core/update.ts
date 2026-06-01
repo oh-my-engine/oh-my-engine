@@ -59,6 +59,7 @@ function updateGlobalPackage(): void {
 async function runUpdateCommand(args: string[] = []): Promise<void> {
   const isRecursive = args.includes('--all') || args.includes('-a');
   const isForce = args.includes('--force');
+  const forceRules = args.includes('--force-rules');
   const skipGlobalUpdate = args.includes('--project-only')
     || args.includes('--skip-global')
     || process.env.OME_SKIP_GLOBAL_UPDATE === '1';
@@ -77,7 +78,7 @@ async function runUpdateCommand(args: string[] = []): Promise<void> {
 
   if (isRecursive) {
     console.log(`📦 正在扫描工作区中的 OME 项目: ${process.cwd()}`);
-    const results: any[] = updateWorkspace(process.cwd(), { force: isForce });
+    const results: any[] = updateWorkspace(process.cwd(), { force: isForce, forceRules });
 
     console.log(`\n完成！共处理 ${results.length} 个项目`);
     results.forEach((res: any) => {
@@ -104,6 +105,7 @@ async function runUpdateCommand(args: string[] = []): Promise<void> {
     projectRoot: process.cwd(),
     repoRoot,
     force: isForce,
+    forceRules,
     sync: true
   });
   console.log('✅ 当前项目已同步。');
@@ -112,6 +114,8 @@ async function runUpdateCommand(args: string[] = []): Promise<void> {
   console.log(`   - Project command entries synced: ${result.projectPlatformTargets.length}`);
   console.log(`   - Rule integrations synced: ${result.syncedTargets.length}`);
   console.log(`   - Agent guidance files generated: ${result.agentGuidanceFiles.length}`);
+  console.log(`   - Rule source files: created ${result.rulesCreated}, overwritten ${result.rulesOverwritten}, preserved ${result.rulesPreserved}`);
+  if (result.rulesBackupPath) console.log(`   - Rule backup: ${result.rulesBackupPath}`);
   console.log(`   - Rule/context files updated: ${result.rulesUpdated + result.contextFilesUpdated}`);
 }
 

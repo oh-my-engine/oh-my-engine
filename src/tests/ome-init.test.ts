@@ -126,12 +126,25 @@ test('ome init scans TypeScript Node projects and writes agent personalization c
 
   const bugSkill = fs.readFileSync(path.join(workspace, '.ome', 'skills', 'ome-bug', 'SKILL.md'), 'utf8');
   assert.match(bugSkill, /## Purpose/);
+  assert.match(bugSkill, /## Workflow Session Start \(MANDATORY\)/);
+  assert.match(bugSkill, /ome bug \$ARGUMENTS/);
+  assert.match(bugSkill, /## Workflow Completion \(MANDATORY\)/);
+  assert.match(bugSkill, /ome finish/);
   assert.match(bugSkill, /## When to Use/);
   assert.match(bugSkill, /## Process/);
   assert.match(bugSkill, /## Red Flags/);
   assert.match(bugSkill, /## Common Rationalizations/);
   assert.match(bugSkill, /## Verification/);
   assert.match(bugSkill, /## Output Contract/);
+
+  const buildSkill = fs.readFileSync(path.join(workspace, '.ome', 'skills', 'ome-build', 'SKILL.md'), 'utf8');
+  assert.match(buildSkill, /## Workflow Session Start \(MANDATORY\)/);
+  assert.match(buildSkill, /ome build \$ARGUMENTS/);
+  assert.match(buildSkill, /## Workflow Completion \(MANDATORY\)/);
+
+  const memorySkill = fs.readFileSync(path.join(workspace, '.ome', 'skills', 'ome-memory', 'SKILL.md'), 'utf8');
+  assert.doesNotMatch(memorySkill, /## Workflow Session Start \(MANDATORY\)/);
+  assert.doesNotMatch(memorySkill, /## Workflow Completion \(MANDATORY\)/);
 
   assert.equal(fs.existsSync(path.join(workspace, '.ome', 'rules', 'theme.md')), false);
   assert.equal(fs.existsSync(path.join(workspace, '.ome', 'rules', 'design-tokens.md')), false);
@@ -292,6 +305,29 @@ test('ome init-rules refreshes scan context and local rule drafts', () => {
   assert.match(rulesInitOutput, /Initialized personalized rule context/);
 });
 
+test('ome init-rules preserves edited rule sources unless force is requested', () => {
+  const workspace = createWorkspace();
+  runOme(['init'], workspace);
+
+  const codeStylePath = path.join(workspace, '.ome', 'rules', 'code-style.md');
+  const customRule = '---\nrule: code-style\nversion: 1.0.0\n---\n\n# Hand-edited Code Style\n\n- User customized this rule.\n';
+  fs.writeFileSync(codeStylePath, customRule, 'utf8');
+
+  const preservedOutput = runOme(['init-rules'], workspace);
+  assert.match(preservedOutput, /Rule source files: created 0, overwritten 0, preserved [1-9]\d*/);
+  assert.equal(fs.readFileSync(codeStylePath, 'utf8'), customRule);
+
+  const forcedOutput = runOme(['init-rules', '--force'], workspace);
+  assert.match(forcedOutput, /Rule source files: created 0, overwritten [1-9]\d*, preserved/);
+  assert.match(forcedOutput, /Rule backup: /);
+  assert.notEqual(fs.readFileSync(codeStylePath, 'utf8'), customRule);
+
+  const backupsRoot = path.join(workspace, '.ome', 'backups', 'rules');
+  const backupDirectories = fs.readdirSync(backupsRoot);
+  assert.equal(backupDirectories.length, 1);
+  assert.equal(fs.readFileSync(path.join(backupsRoot, backupDirectories[0], 'code-style.md'), 'utf8'), customRule);
+});
+
 test('ome init preserves existing files unless force is set', () => {
   const workspace = createWorkspace();
 
@@ -317,6 +353,30 @@ custom: true
   assert.match(forcedOutput, /Config: created/);
   const forcedConfig = parseOMEConfig(workspace);
   assert.equal(forcedConfig.custom, undefined);
+});
+
+test('ome init sync preserves user-edited rules and only appends missing ones', () => {
+  const workspace = createWorkspace();
+
+  runOme(['init'], workspace);
+
+  const codeStylePath = path.join(workspace, '.ome', 'rules', 'code-style.md');
+  const customRule = '---\nrule: code-style\nversion: 1.0.0\n---\n\n# Hand-edited Code Style\n\n- User customized this rule.\n';
+  fs.writeFileSync(codeStylePath, customRule, 'utf8');
+
+  // Remove a generated rule to confirm sync re-creates missing files.
+  const securityPath = path.join(workspace, '.ome', 'rules', 'security.md');
+  fs.rmSync(securityPath, { force: true });
+
+  // `ome init` (no --force) runs through the same sync path as `ome update`.
+  runOme(['init'], workspace);
+
+  assert.equal(fs.readFileSync(codeStylePath, 'utf8'), customRule, 'user-edited rule must be preserved');
+  assert.equal(fs.existsSync(securityPath), true, 'missing rule must be re-created');
+
+  // --force still overwrites the hand-edited rule.
+  runOme(['init', '--force'], workspace);
+  assert.notEqual(fs.readFileSync(codeStylePath, 'utf8'), customRule, '--force must regenerate the rule');
 });
 
 test('ome init migrates legacy .oh-my-engine projects to .ome', () => {

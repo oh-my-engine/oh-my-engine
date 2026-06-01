@@ -4,6 +4,24 @@ description: Clarify goal, scope, success criteria, and assumptions before imple
 
 # ome-define
 
+## Workflow Session Start (MANDATORY)
+
+Before reading source files, planning, editing, or running verification for this workflow, you MUST start the OME workflow session by running:
+
+```bash
+ome define $ARGUMENTS
+```
+
+This creates `.ome/.session` so the final `ome finish` command can record the execution into `.ome/memory/executions/`.
+
+If a Windows PowerShell policy blocks the `ome` shim, run the same step through the cross-shell fallback: `cmd.exe /c ome.cmd define $ARGUMENTS`. Do not hardcode this fallback on non-Windows platforms.
+
+Claude Code fast path (other agents: ignore the leading `!` and run the bare command via your shell tool):
+
+```
+!ome define $ARGUMENTS
+```
+
 ## Purpose
 Clarify the task, lock scope, and produce a decision-ready problem statement before implementation.
 

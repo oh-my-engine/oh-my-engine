@@ -101,6 +101,12 @@ function buildExecutionMarkdown(record: MemoryRecord): string {
     errors: record.errors || [],
     filesTouched: record.filesTouched || [],
     testsRun: record.testsRun || [],
+    symptom: record.symptom || undefined,
+    impact: record.impact || undefined,
+    rootCause: record.rootCause || undefined,
+    fixSummary: record.fixSummary || undefined,
+    verificationSummary: record.verificationSummary || undefined,
+    reusableLearning: record.reusableLearning || undefined,
     metadata: record.metadata || undefined,
     changeId: record.changeId || undefined,
     changeSlug: record.changeSlug || undefined,
@@ -125,6 +131,34 @@ function buildExecutionMarkdown(record: MemoryRecord): string {
 
   if (record.whyStored) {
     content += `## Why Stored\n\n${record.whyStored}\n\n`;
+  }
+
+  if (record.workflow === 'bug') {
+    content += `## Symptom\n\n${record.symptom || record.summary || 'Not recorded.'}\n\n`;
+    content += `## Impact\n\n${record.impact || 'Not recorded.'}\n\n`;
+    content += `## Root Cause\n\n${record.rootCause || 'Not recorded.'}\n\n`;
+
+    content += `## Evidence\n\n`;
+    if (record.evidence && record.evidence.length > 0) {
+      record.evidence.forEach((item: string) => {
+        content += `- ${item}\n`;
+      });
+    } else {
+      content += `- Not recorded.\n`;
+    }
+    content += `\n`;
+
+    content += `## Fix\n\n${record.fixSummary || 'Not recorded.'}\n\n`;
+    content += `## Verification\n\n${record.verificationSummary || 'Not recorded.'}\n\n`;
+    content += `## Reusable Learning\n\n${record.reusableLearning || 'Not recorded.'}\n\n`;
+
+    if (record.exclusions && record.exclusions.length > 0) {
+      content += `## Noise Excluded\n\n`;
+      record.exclusions.forEach((item: string) => {
+        content += `- ${item}\n`;
+      });
+      content += `\n`;
+    }
   }
 
   if (record.errors && record.errors.length > 0) {
@@ -419,6 +453,14 @@ function recordExecutionMemory(projectRoot: string, event: MemoryRecord): Memory
     testsRun: normalizeStringArray(event.testsRun),
     durationMs: Number.isFinite(event.durationMs) ? event.durationMs : 0,
     errors: normalizeStringArray(event.errors),
+    symptom: typeof event.symptom === 'string' ? event.symptom : '',
+    impact: typeof event.impact === 'string' ? event.impact : '',
+    rootCause: typeof event.rootCause === 'string' ? event.rootCause : '',
+    evidence: normalizeStringArray(event.evidence),
+    fixSummary: typeof event.fixSummary === 'string' ? event.fixSummary : '',
+    verificationSummary: typeof event.verificationSummary === 'string' ? event.verificationSummary : '',
+    reusableLearning: typeof event.reusableLearning === 'string' ? event.reusableLearning : '',
+    exclusions: normalizeStringArray(event.exclusions),
     metadata: event.metadata && typeof event.metadata === 'object' ? event.metadata : {}
   };
 

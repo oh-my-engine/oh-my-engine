@@ -9,6 +9,7 @@ import type { ProjectScanSummary } from './project-scanner';
 
 export interface InitOptions {
   force: boolean;
+  forceRules?: boolean;
   template: string;
   projectRoot: string;
   repoRoot: string;
@@ -27,6 +28,10 @@ export interface InitResult {
   configCreated: boolean;
   projectCreated: boolean;
   rulesUpdated: number;
+  rulesCreated: number;
+  rulesOverwritten: number;
+  rulesPreserved: number;
+  rulesBackupPath?: string;
   directories: string[];
   migratedLegacy: boolean;
   syncedTargets: string[];
@@ -45,6 +50,10 @@ export interface InitRulesResult {
   scanSummary: string;
   contextFilesUpdated: number;
   rulesUpdated: number;
+  rulesCreated: number;
+  rulesOverwritten: number;
+  rulesPreserved: number;
+  rulesBackupPath?: string;
   promptPath: string;
   ruleNames: string[];
 }
@@ -75,6 +84,10 @@ function writeFileIfNeeded(filePath: string, content: string, force: boolean): b
   }
 
   return false;
+}
+
+function timestampForPath(date: Date = new Date()): string {
+  return date.toISOString().replace(/[:.]/g, '-');
 }
 
 function copyFileIfNeeded(sourcePath: string, targetPath: string, force: boolean): boolean {
@@ -833,17 +846,54 @@ function writeProjectContext(projectRoot: string, scan: ProjectScanSummary, forc
   return updated;
 }
 
-function writeGeneratedRules(projectRoot: string, scan: ProjectScanSummary, force: boolean): { updated: number; ruleNames: string[] } {
+function writeGeneratedRules(projectRoot: string, scan: ProjectScanSummary, force: boolean): {
+  updated: number;
+  created: number;
+  overwritten: number;
+  preserved: number;
+  backupPath?: string;
+  ruleNames: string[];
+} {
   const generatedRules = buildGeneratedRules(scan);
   let updated = 0;
+  let created = 0;
+  let overwritten = 0;
+  let preserved = 0;
+  let backupPath: string | undefined;
 
   for (const [rule, content] of Object.entries(generatedRules)) {
-    if (writeFileIfNeeded(currentEnginePath(projectRoot, 'rules', `${rule}.md`), content, force)) {
+    const rulePath = currentEnginePath(projectRoot, 'rules', `${rule}.md`);
+    const nextContent = content.endsWith('\n') ? content : `${content}\n`;
+    const exists = fs.existsSync(rulePath);
+
+    if (exists && !force) {
+      preserved += 1;
+      continue;
+    }
+
+    if (exists && fs.readFileSync(rulePath, 'utf8') === nextContent) {
+      preserved += 1;
+      continue;
+    }
+
+    if (exists && force) {
+      if (!backupPath) {
+        const createdBackupPath = currentEnginePath(projectRoot, 'backups', 'rules', timestampForPath());
+        backupPath = createdBackupPath;
+        ensureDirectory(createdBackupPath);
+      }
+      const targetBackupPath = backupPath;
+      fs.copyFileSync(rulePath, path.join(targetBackupPath, `${rule}.md`));
+    }
+
+    if (writeFileIfNeeded(rulePath, content, force)) {
       updated += 1;
+      if (exists) overwritten += 1;
+      else created += 1;
     }
   }
 
-  return { updated, ruleNames: Object.keys(generatedRules).sort() };
+  return { updated, created, overwritten, preserved, backupPath, ruleNames: Object.keys(generatedRules).sort() };
 }
 
 export function parseInitArgs(args: string[], defaults: Partial<InitOptions> = {}): InitOptions {
@@ -866,6 +916,11 @@ export function parseInitArgs(args: string[], defaults: Partial<InitOptions> = {
 
     if (argument === '--force') {
       options.force = true;
+      continue;
+    }
+
+    if (argument === '--force-rules') {
+      options.forceRules = true;
       continue;
     }
 
@@ -981,7 +1036,11 @@ export function initializeProject(options: InitOptions): InitResult {
     refreshManagedFiles
   );
 
-  const generatedRules = writeGeneratedRules(options.projectRoot, scan, refreshManagedFiles);
+  // `.ome/rules/*.md` 是项目本地的事实来源，用户会手工个性化编辑。
+  // sync/update 只追加新检测到的规则（writeFileIfNeeded 对缺失文件总会写入），
+  // 已存在的规则一律保留；仅 --force 才整体覆盖。skill 源与 context 快照仍随 sync 刷新。
+  const shouldForceRules = options.forceRules ?? options.force ?? false;
+  const generatedRules = writeGeneratedRules(options.projectRoot, scan, shouldForceRules);
   const rulesUpdated = generatedRules.updated;
 
   const contextFilesUpdated = writeProjectContext(options.projectRoot, scan, refreshManagedFiles);
@@ -1027,6 +1086,10 @@ export function initializeProject(options: InitOptions): InitResult {
     configCreated,
     projectCreated,
     rulesUpdated,
+    rulesCreated: generatedRules.created,
+    rulesOverwritten: generatedRules.overwritten,
+    rulesPreserved: generatedRules.preserved,
+    rulesBackupPath: generatedRules.backupPath,
     directories: createdDirectories,
     migratedLegacy: Boolean(migration.migrated),
     syncedTargets,
@@ -1041,7 +1104,7 @@ export function initializeProject(options: InitOptions): InitResult {
   };
 }
 
-export function initializeProjectRules(projectRoot: string = process.cwd(), force: boolean = true): InitRulesResult {
+export function initializeProjectRules(projectRoot: string = process.cwd(), force: boolean = false): InitRulesResult {
   ensureDirectory(currentEnginePath(projectRoot, 'rules'));
   ensureDirectory(currentEnginePath(projectRoot, 'context'));
 
@@ -1054,6 +1117,10 @@ export function initializeProjectRules(projectRoot: string = process.cwd(), forc
     scanSummary: renderScanSummary(scan),
     contextFilesUpdated,
     rulesUpdated: generatedRules.updated,
+    rulesCreated: generatedRules.created,
+    rulesOverwritten: generatedRules.overwritten,
+    rulesPreserved: generatedRules.preserved,
+    rulesBackupPath: generatedRules.backupPath,
     promptPath: currentEnginePath(projectRoot, 'context', 'rules-generation-prompt.md'),
     ruleNames: generatedRules.ruleNames
   };
@@ -1063,7 +1130,8 @@ export function renderInitRulesResult(result: InitRulesResult): string {
   return [
     `Initialized personalized rule context in ${result.projectRoot}`,
     `Project scan: ${result.scanSummary}`,
-    `Rule drafts updated: ${result.rulesUpdated}`,
+    `Rule source files: created ${result.rulesCreated}, overwritten ${result.rulesOverwritten}, preserved ${result.rulesPreserved}`,
+    ...(result.rulesBackupPath ? [`Rule backup: ${result.rulesBackupPath}`] : []),
     `Agent context files updated: ${result.contextFilesUpdated}`,
     `Rules: ${result.ruleNames.join(', ')}`,
     '',
@@ -1083,7 +1151,8 @@ export function renderInitResult(result: InitResult): string {
     `Legacy .oh-my-engine migration: ${result.migratedLegacy ? 'migrated to .ome' : 'not needed'}`,
     `Project scan: ${result.scanSummary}`,
     `Config: ${result.configCreated ? 'created' : 'preserved'}`,
-    `Rule files updated: ${result.rulesUpdated}`,
+    `Rule source files: created ${result.rulesCreated}, overwritten ${result.rulesOverwritten}, preserved ${result.rulesPreserved}`,
+    ...(result.rulesBackupPath ? [`Rule backup: ${result.rulesBackupPath}`] : []),
     `Agent context files updated: ${result.contextFilesUpdated}`,
     `Agent guidance files generated: ${result.agentGuidanceFiles.length}`,
     ...result.agentGuidanceFiles.map(file => `  - ${file}`),

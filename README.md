@@ -195,6 +195,10 @@ ome init-rules
 ome rules preview codex
 ome rules sync
 
+# Refresh generated OME assets without losing local rule edits
+ome update --project-only
+ome update --project-only --force-rules
+
 # Install Superpowers bridge wrappers
 ome superpowers install all
 ome superpowers doctor all
@@ -206,6 +210,10 @@ ome mcp doctor
 ```
 
 Rules sync is implemented in `src/core/rules.ts`; use `ome rules sync` instead of removed compatibility entrypoints.
+
+`ome update` refreshes generated project assets such as `.ome/context/`, `.ome/skills/`, platform command entries, mirrored skills, and rule integrations. Existing `.ome/rules/*.md` files are treated as user-owned source rules: default update and `--force` preserve edited rules and only recreate missing rule files. Use `--force-rules` only when you intentionally want OME to overwrite rule sources from the latest scan; overwritten rule files are backed up under `.ome/backups/rules/<timestamp>/`.
+
+`ome init-rules` follows the same safe default. It refreshes scan context and creates missing rule drafts without replacing existing rules. Pass `--force` or `--force-rules` to regenerate rule drafts, with the same backup behavior.
 
 ```bash
 # Run TypeScript-backed spec workflow commands

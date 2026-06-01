@@ -37,6 +37,10 @@ function runOme(workspace: string, args: string[]): string {
   return run(OME_BIN, omeArgs(args), workspace);
 }
 
+function runGit(workspace: string, args: string[]): string {
+  return run('git', args, workspace);
+}
+
 function recordExecutionEvent(workspace: string, event: Record<string, any>): void {
   recordExecutionMemory(workspace, event);
 }
@@ -476,6 +480,70 @@ test('explicit remembered preferences are stored and visible in the memory viewe
   assert.equal(report.records[0].source, 'explicit_remember');
   assert.equal(report.records[0].whyStored, 'explicit_remember');
   assert.equal(report.records[0].evidenceCount, 2);
+});
+
+test('bug finish writes diagnostic memory and filters preexisting platform noise', () => {
+  const workspace = createWorkspace();
+
+  runOme(workspace, ['init']);
+  fs.mkdirSync(path.join(workspace, 'src', 'core'), { recursive: true });
+  fs.writeFileSync(path.join(workspace, 'src', 'core', 'memory.ts'), 'export const value = 1;\n', 'utf8');
+
+  runGit(workspace, ['init']);
+  runGit(workspace, ['config', 'user.email', 'test@example.com']);
+  runGit(workspace, ['config', 'user.name', 'Test User']);
+  runGit(workspace, ['add', '.']);
+  runGit(workspace, ['commit', '-m', 'seed workspace']);
+
+  const platformNoisePath = path.join(workspace, '.claude', 'commands', 'ome-bug.md');
+  fs.mkdirSync(path.dirname(platformNoisePath), { recursive: true });
+  fs.writeFileSync(
+    platformNoisePath,
+    'preexisting platform noise\n',
+    'utf8'
+  );
+
+  runOme(workspace, ['bug', 'Bug memory records noise instead of root cause']);
+
+  fs.writeFileSync(
+    path.join(workspace, 'src', 'core', 'memory.ts'),
+    'export const value = 2;\n',
+    'utf8'
+  );
+
+  runOme(workspace, [
+    'finish',
+    '--root-cause',
+    'finish only wrote git status metadata and omitted diagnostic fields',
+    '--evidence',
+    'sample bug execution contained files touched but no root cause',
+    '--fix',
+    'render bug execution memory as a diagnostic case card',
+    '--verification',
+    'node:test coverage checked rendered memory content',
+    '--learning',
+    'Bug memories should preserve symptom, evidence, root cause, fix, and verification'
+  ]);
+
+  const executionFiles = findExecutionFiles(workspace, 'bug');
+  assert.equal(executionFiles.length, 1);
+
+  const content = fs.readFileSync(executionFiles[0], 'utf8');
+  const parsed = matter(content);
+
+  assert.deepEqual(parsed.data.filesTouched, ['src/core/memory.ts']);
+  assert.ok(
+    parsed.data.metadata.noiseFilesIgnored.includes('.ome/.session'),
+    'expected session file to be tracked as ignored noise'
+  );
+  assert.doesNotMatch(content, /\.claude\/commands\/ome-bug\.md/);
+  assert.match(content, /## Symptom/);
+  assert.match(content, /Bug memory records noise instead of root cause/);
+  assert.match(content, /## Root Cause/);
+  assert.match(content, /finish only wrote git status metadata/);
+  assert.match(content, /## Evidence/);
+  assert.match(content, /sample bug execution contained files touched/);
+  assert.match(content, /## Reusable Learning/);
 });
 
 test('ome remember shortcuts store explicit preference memory', () => {

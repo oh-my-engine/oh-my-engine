@@ -4,6 +4,24 @@ description: Analyze, diagnose, and plan a bug fix using project rules.
 
 # ome-bug
 
+## Workflow Session Start (MANDATORY)
+
+Before reading source files, planning, editing, or running verification for this workflow, you MUST start the OME workflow session by running:
+
+```bash
+ome bug $ARGUMENTS
+```
+
+This creates `.ome/.session` so the final `ome finish` command can record the execution into `.ome/memory/executions/`.
+
+If a Windows PowerShell policy blocks the `ome` shim, run the same step through the cross-shell fallback: `cmd.exe /c ome.cmd bug $ARGUMENTS`. Do not hardcode this fallback on non-Windows platforms.
+
+Claude Code fast path (other agents: ignore the leading `!` and run the bare command via your shell tool):
+
+```
+!ome bug $ARGUMENTS
+```
+
 ## Purpose
 Diagnose a reported bug, identify the root cause, apply a focused fix, and prove the behavior with regression evidence.
 
@@ -52,3 +70,27 @@ Final response must include:
 - Root cause and fix summary
 - Verification
 - Remaining risks
+
+## Workflow Completion (MANDATORY)
+
+After you finish the work for this workflow — successful or not — you MUST run the following shell command as the very last step, AFTER you have reported results to the user:
+
+```bash
+ome finish
+```
+
+This records the execution into `.ome/memory/executions/` so the engine can learn from it.
+
+Skip ONLY if all of these are true:
+- The user explicitly said "do not record" or "just testing".
+- You made zero file changes.
+- You wrote zero new code.
+- You ran zero verifications.
+
+Do NOT skip because "the task was small" or "nothing interesting happened" — the engine's policy gate decides what to keep, not you.
+
+Claude Code fast path (other agents: ignore the leading `!` and run the bare command via your shell tool):
+
+```
+!ome finish
+```

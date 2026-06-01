@@ -8,6 +8,24 @@ tags: [ome, test, workflow]
 
 # ome-test
 
+## Workflow Session Start (MANDATORY)
+
+Before reading source files, planning, editing, or running verification for this workflow, you MUST start the OME workflow session by running:
+
+```bash
+ome test $ARGUMENTS
+```
+
+This creates `.ome/.session` so the final `ome finish` command can record the execution into `.ome/memory/executions/`.
+
+If a Windows PowerShell policy blocks the `ome` shim, run the same step through the cross-shell fallback: `cmd.exe /c ome.cmd test $ARGUMENTS`. Do not hardcode this fallback on non-Windows platforms.
+
+Claude Code fast path (other agents: ignore the leading `!` and run the bare command via your shell tool):
+
+```
+!ome test $ARGUMENTS
+```
+
 ## Purpose
 Design behavior-focused tests and regression coverage that prove the intended project behavior.
 

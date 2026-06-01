@@ -19,6 +19,7 @@ export interface WorkflowSession {
 
 export interface ExecutionInfo {
   filesTouched: string[];
+  noiseFilesIgnored: string[];
   linesChanged: number;
   durationMs: number;
   gitDiff: string;
@@ -37,12 +38,13 @@ function getSessionPath(projectRoot: string = process.cwd()): string {
   return enginePath(projectRoot, '.session');
 }
 
-function collectGitState(): { branch: string; commit: string; status: string; diff: string } {
+function collectGitState(projectRoot: string = process.cwd()): { branch: string; commit: string; status: string; diff: string } {
   try {
-    const branch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8' }).trim();
-    const commit = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
-    const status = execSync('git status --short', { encoding: 'utf8' });
-    const diff = execSync('git diff HEAD', { encoding: 'utf8' });
+    const options = { encoding: 'utf8' as BufferEncoding, cwd: projectRoot };
+    const branch = execSync('git rev-parse --abbrev-ref HEAD', options).trim();
+    const commit = execSync('git rev-parse HEAD', options).trim();
+    const status = execSync('git status --short', options);
+    const diff = execSync('git diff HEAD', options);
 
     return { branch, commit, status, diff };
   } catch (error) {
@@ -56,7 +58,7 @@ export function createSession(workflow: string, input: string, projectRoot: stri
     workflow,
     startTime: new Date().toISOString(),
     input,
-    initialGitState: collectGitState(),
+    initialGitState: collectGitState(projectRoot),
     metadata: {}
   };
 
@@ -106,6 +108,96 @@ function parseFilesFromGitStatus(gitStatus: string): string[] {
   return files;
 }
 
+interface GitStatusEntry {
+  status: string;
+  file: string;
+}
+
+function normalizeStatusPath(filePath: string): string {
+  return filePath
+    .replace(/^"|"$/g, '')
+    .replace(/\\/g, '/')
+    .replace(/^\.\/+/, '');
+}
+
+function parseGitStatusEntries(gitStatus: string): GitStatusEntry[] {
+  return gitStatus
+    .split('\n')
+    .filter(line => line.trim())
+    .map(line => {
+      const match = line.match(/^..\s+(.+)$/);
+      if (!match) return null;
+      const file = match[1].includes(' -> ')
+        ? match[1].split(' -> ').pop() || match[1]
+        : match[1];
+      return {
+        status: line.slice(0, 2),
+        file: normalizeStatusPath(file)
+      };
+    })
+    .filter(Boolean) as GitStatusEntry[];
+}
+
+function changedFilesSinceSessionStart(currentStatus: string, initialStatus: string): string[] {
+  const initialEntries = new Map(
+    parseGitStatusEntries(initialStatus).map(entry => [entry.file, entry.status])
+  );
+
+  return parseGitStatusEntries(currentStatus)
+    .filter(entry => initialEntries.get(entry.file) !== entry.status)
+    .map(entry => entry.file);
+}
+
+function isTemporaryNoiseFile(filePath: string): boolean {
+  const normalized = normalizeStatusPath(filePath).toLowerCase();
+  const baseName = path.basename(normalized);
+
+  return normalized === '.ome/.session' ||
+    normalized.endsWith('/.phpunit.result.cache') ||
+    normalized.endsWith('.phpunit.result.cache') ||
+    baseName.startsWith('~$') ||
+    baseName.endsWith('.tmp');
+}
+
+function isGeneratedPlatformSyncFile(filePath: string): boolean {
+  const normalized = normalizeStatusPath(filePath).toLowerCase();
+
+  return normalized === 'agents.md' ||
+    normalized === 'claude.md' ||
+    normalized.startsWith('.agent/') ||
+    normalized.startsWith('.agents/') ||
+    normalized.startsWith('.claude/commands/') ||
+    normalized.startsWith('.claude/skills/') ||
+    normalized.startsWith('.cursor/commands/') ||
+    normalized.startsWith('.cursor/skills/') ||
+    normalized.startsWith('.kiro/prompts/') ||
+    normalized.startsWith('.kiro/skills/') ||
+    normalized.startsWith('.opencode/command/') ||
+    normalized.startsWith('.qoder/commands/') ||
+    normalized.startsWith('.qoder/skills/') ||
+    normalized.startsWith('.trae/commands/') ||
+    normalized.startsWith('.trae/skills/') ||
+    normalized.startsWith('.windsurf/workflows/') ||
+    normalized.startsWith('.ome/context/') ||
+    normalized.startsWith('.ome/skills/') ||
+    normalized === '.ome/platforms.json';
+}
+
+function filterExecutionFiles(files: string[], workflow: string): { filesTouched: string[]; noiseFilesIgnored: string[] } {
+  const filesTouched: string[] = [];
+  const noiseFilesIgnored: string[] = [];
+
+  for (const file of files) {
+    if (isTemporaryNoiseFile(file) || (workflow === 'bug' && isGeneratedPlatformSyncFile(file))) {
+      noiseFilesIgnored.push(file);
+    } else {
+      filesTouched.push(file);
+    }
+  }
+
+  return { filesTouched, noiseFilesIgnored };
+}
+
 function countLinesChanged(gitDiff: string): number {
   const lines = gitDiff.split('\n');
   let added = 0;
@@ -122,7 +214,7 @@ function countLinesChanged(gitDiff: string): number {
   return added + removed;
 }
 
-export function collectExecutionInfo(session: WorkflowSession): ExecutionInfo {
+export function collectExecutionInfo(session: WorkflowSession, projectRoot: string = process.cwd()): ExecutionInfo {
   const endTime = Date.now();
   const startTime = new Date(session.startTime).getTime();
   const durationMs = endTime - startTime;
@@ -131,17 +223,27 @@ export function collectExecutionInfo(session: WorkflowSession): ExecutionInfo {
   let gitStatus = '';
 
   try {
-    gitDiff = execSync('git diff HEAD', { encoding: 'utf8' });
-    gitStatus = execSync('git status --short', { encoding: 'utf8' });
+    const options = { encoding: 'utf8' as BufferEncoding, cwd: projectRoot };
+    gitDiff = execSync('git diff HEAD', options);
+    gitStatus = execSync('git status --short', options);
   } catch (error) {
     // Git 命令失败，可能不在 git 仓库中
   }
 
-  const filesTouched = parseFilesFromGitStatus(gitStatus);
+  const changedFiles = changedFilesSinceSessionStart(
+    gitStatus,
+    session.initialGitState?.status || ''
+  );
+  const fallbackFiles = parseFilesFromGitStatus(gitStatus).map(normalizeStatusPath);
+  const { filesTouched, noiseFilesIgnored } = filterExecutionFiles(
+    changedFiles.length > 0 ? changedFiles : fallbackFiles,
+    session.workflow
+  );
   const linesChanged = countLinesChanged(gitDiff);
 
   return {
     filesTouched,
+    noiseFilesIgnored,
     linesChanged,
     durationMs,
     gitDiff,

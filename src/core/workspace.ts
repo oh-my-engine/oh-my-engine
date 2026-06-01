@@ -64,6 +64,7 @@ function updateWorkspace(root: string, options: any = {}): any[] {
         projectRoot: projectPath,
         repoRoot: repoRoot, // 注入必要的 repoRoot
         force: options.force || false,
+        forceRules: options.forceRules || false,
         sync: true,
         installAgents: false,
         template: 'default'

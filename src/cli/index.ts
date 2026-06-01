@@ -50,7 +50,7 @@ function runInit(args: string[]): void {
 }
 
 function runInitRules(args: string[]): void {
-  const force = !args.includes('--preserve');
+  const force = args.includes('--force') || args.includes('--force-rules');
   const result = initializeProjectRules(process.cwd(), force);
   process.stdout.write(renderInitRulesResult(result));
 }
@@ -140,6 +140,35 @@ function runAdapters(args: string[]): void {
   }
 }
 
+function parseFinishOptions(args: string[]): Record<string, any> {
+  const options: Record<string, any> = {
+    evidence: [],
+    exclusions: []
+  };
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (!arg.startsWith('--')) continue;
+
+    const key = arg.slice(2);
+    const value = args[index + 1] && !args[index + 1].startsWith('--')
+      ? args[index + 1]
+      : 'true';
+
+    if (value !== 'true') index += 1;
+
+    if (key === 'evidence') {
+      options.evidence.push(value);
+    } else if (key === 'exclude' || key === 'exclusion') {
+      options.exclusions.push(value);
+    } else {
+      options[key] = value;
+    }
+  }
+
+  return options;
+}
+
 function runFinish(args: string[]): void {
   const session = getCurrentSession();
 
@@ -150,6 +179,7 @@ function runFinish(args: string[]): void {
   }
 
   // 收集执行信息
+  const finishOptions = parseFinishOptions(args);
   const executionInfo = collectExecutionInfo(session);
 
   // 智能推断状态
@@ -175,9 +205,22 @@ function runFinish(args: string[]): void {
     status: inferredStatus,
     filesTouched: executionInfo.filesTouched,
     testsRun: [],
+    symptom: finishOptions.symptom || session.input,
+    impact: finishOptions.impact || '',
+    rootCause: finishOptions['root-cause'] || finishOptions.rootCause || '',
+    evidence: finishOptions.evidence,
+    fixSummary: finishOptions.fix || finishOptions['fix-summary'] || '',
+    verificationSummary: finishOptions.verification || '',
+    reusableLearning: finishOptions.learning || finishOptions['reusable-learning'] || '',
+    exclusions: [
+      ...finishOptions.exclusions,
+      ...executionInfo.noiseFilesIgnored
+    ],
     durationMs: executionInfo.durationMs,
     errors: executionInfo.errorMessages,
-    metadata: {},
+    metadata: {
+      noiseFilesIgnored: executionInfo.noiseFilesIgnored
+    },
     // 添加用于决策的字段
     complexity,
     reusePotential,

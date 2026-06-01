@@ -135,9 +135,12 @@ ome rules init
 ome rules validate
 ome rules sync
 ome agents list
+ome update --project-only
 ```
 
-`ome init-rules` refreshes `.ome/context/project-scan.json`, rewrites local deterministic rule drafts, and tells the active Agent editor to inspect the latest source before final personalization. It does not call an AI API or require network access.
+`ome init-rules` refreshes `.ome/context/project-scan.json`, creates any missing local deterministic rule drafts, and tells the active Agent editor to inspect the latest source before final personalization. Existing `.ome/rules/*.md` files are preserved by default because they are user-owned source rules. Use `ome init-rules --force` only when you intentionally want to regenerate rule drafts; overwritten rules are backed up under `.ome/backups/rules/<timestamp>/`.
+
+`ome update` refreshes generated project assets without replacing local rule edits. It updates `.ome/context/`, `.ome/skills/`, platform command entries, mirrored skills, and rule integrations while preserving existing `.ome/rules/*.md` files. Use `ome update --force-rules` to overwrite rule sources from the latest scan; `--force` alone still preserves source rules.
 
 Spec workflow (optional, disabled by default):
 

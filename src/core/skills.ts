@@ -37,10 +37,46 @@ const ACTION_SKILLS: Record<string, { cli: string; humanLabel: string }> = {
   evolve: { cli: 'ome evolve analyze', humanLabel: 'evolution analysis' }
 };
 
-const COMPLETION_LIFECYCLE_IDS = new Set([
+const SESSION_MANAGED_WORKFLOW_IDS = new Set([
   'define', 'plan', 'build', 'test', 'review', 'ship',
   'bug', 'ui', 'comp', 'api'
 ]);
+
+const COMPLETION_LIFECYCLE_IDS = SESSION_MANAGED_WORKFLOW_IDS;
+
+function isSessionManagedWorkflow(workflow: WorkflowDefinition): boolean {
+  return SESSION_MANAGED_WORKFLOW_IDS.has(workflow.id);
+}
+
+function workflowSessionCommand(workflow: WorkflowDefinition): string {
+  return `ome ${workflow.id}`;
+}
+
+function renderWorkflowStartSection(workflow: WorkflowDefinition): string {
+  const command = workflowSessionCommand(workflow);
+  const windowsFallback = `cmd.exe /c ome.cmd ${workflow.id} $ARGUMENTS`;
+
+  return [
+    '## Workflow Session Start (MANDATORY)',
+    '',
+    'Before reading source files, planning, editing, or running verification for this workflow, you MUST start the OME workflow session by running:',
+    '',
+    '```bash',
+    `${command} $ARGUMENTS`,
+    '```',
+    '',
+    'This creates `.ome/.session` so the final `ome finish` command can record the execution into `.ome/memory/executions/`.',
+    '',
+    `If a Windows PowerShell policy blocks the \`ome\` shim, run the same step through the cross-shell fallback: \`${windowsFallback}\`. Do not hardcode this fallback on non-Windows platforms.`,
+    '',
+    'Claude Code fast path (other agents: ignore the leading `!` and run the bare command via your shell tool):',
+    '',
+    '```',
+    `!${command} $ARGUMENTS`,
+    '```',
+    ''
+  ].join('\n');
+}
 
 function renderWorkflowCompletionSection(): string {
   return [
@@ -69,6 +105,30 @@ function renderWorkflowCompletionSection(): string {
     '```',
     ''
   ].join('\n');
+}
+
+function insertAfterPrimaryHeading(content: string, section: string): string {
+  const headingPattern = /^# [^\r\n]+(?:\r?\n|$)/m;
+  if (!headingPattern.test(content)) {
+    return `${content.trimEnd()}\n\n${section.trimEnd()}\n`;
+  }
+
+  return content.replace(headingPattern, match => `${match}\n${section.trimEnd()}\n`);
+}
+
+function ensureWorkflowSessionSections(workflow: WorkflowDefinition, content: string): string {
+  if (!isSessionManagedWorkflow(workflow)) return content;
+
+  let next = content;
+  if (!next.includes('## Workflow Session Start (MANDATORY)')) {
+    next = insertAfterPrimaryHeading(next, renderWorkflowStartSection(workflow));
+  }
+
+  if (!next.includes('## Workflow Completion (MANDATORY)')) {
+    next = `${next.trimEnd()}\n\n${renderWorkflowCompletionSection().trimEnd()}\n`;
+  }
+
+  return next.endsWith('\n') ? next : `${next}\n`;
 }
 
 function repoRoot(): string {
@@ -729,8 +789,7 @@ export function buildWorkflowSkillSource(workflow: WorkflowDefinition): string {
     return renderActionSkillSource(workflow, action);
   }
   const template = templateSkillContent(workflow);
-  if (template) return template;
-  return genericSkillSource(workflow);
+  return ensureWorkflowSessionSections(workflow, template || genericSkillSource(workflow));
 }
 
 export function skillSourcePath(projectRoot: string, workflow: WorkflowDefinition): string {
@@ -740,7 +799,7 @@ export function skillSourcePath(projectRoot: string, workflow: WorkflowDefinitio
 export function resolveWorkflowSkillSource(projectRoot: string, workflow: WorkflowDefinition): string {
   const projectSourcePath = skillSourcePath(projectRoot, workflow);
   const projectSource = readFileIfExists(projectSourcePath);
-  if (projectSource) return projectSource;
+  if (projectSource) return ensureWorkflowSessionSections(workflow, projectSource);
   return buildWorkflowSkillSource(workflow);
 }
 
@@ -762,13 +821,14 @@ export function initializeWorkflowSkillSources(projectRoot: string, workflows: W
 }
 
 export function renderPlatformSkillEntry(options: PlatformSkillEntryOptions, workflow: WorkflowDefinition, sourceContent: string): string {
-  const isAction = sourceContent.includes(OME_ACTION_MARKER);
+  const preparedContent = ensureWorkflowSessionSections(workflow, sourceContent);
+  const isAction = preparedContent.includes(OME_ACTION_MARKER);
 
   if (options.style === 'skill') {
-    return sourceContent.endsWith('\n') ? sourceContent : `${sourceContent}\n`;
+    return preparedContent.endsWith('\n') ? preparedContent : `${preparedContent}\n`;
   }
 
-  const body = stripFrontmatter(sourceContent).trimEnd();
+  const body = stripFrontmatter(preparedContent).trimEnd();
   const sections: string[] = [];
 
   if (isAction && options.platformId === 'claude-code') {

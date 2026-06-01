@@ -299,6 +299,11 @@ test('ome update refreshes managed project assets beyond .ome skills', () => {
   fs.writeFileSync(path.join(workspace, '.ome', 'skills', 'ome-bug', 'SKILL.md'), 'stale skill\n', 'utf8');
   fs.writeFileSync(path.join(workspace, 'AGENTS.md'), '# Local agent notes\n\nstale guidance\n', 'utf8');
   fs.writeFileSync(path.join(workspace, 'CLAUDE.md'), '# Local claude notes\n\nstale guidance\n', 'utf8');
+  const codeStylePath = path.join(workspace, '.ome', 'rules', 'code-style.md');
+  const customCodeStyle = '---\nrule: code-style\nversion: 1.0.0\n---\n\n# Custom Code Style\n\n- Keep my local rule.\n';
+  fs.writeFileSync(codeStylePath, customCodeStyle, 'utf8');
+  const securityPath = path.join(workspace, '.ome', 'rules', 'security.md');
+  fs.rmSync(securityPath, { force: true });
   fs.writeFileSync(path.join(workspace, '.ome', 'context', 'rules-generation-prompt.md'), 'stale context\n', 'utf8');
   fs.mkdirSync(path.join(workspace, '.claude', 'commands'), { recursive: true });
   fs.writeFileSync(path.join(workspace, '.claude', 'commands', 'ome-bug.md'), 'stale project command\n', 'utf8');
@@ -319,10 +324,23 @@ test('ome update refreshes managed project assets beyond .ome skills', () => {
   assert.match(fs.readFileSync(path.join(workspace, '.claude', 'commands', 'ome-bug.md'), 'utf8'), /## Purpose/);
   assert.match(fs.readFileSync(path.join(workspace, '.claude', 'skills', 'ome-bug', 'SKILL.md'), 'utf8'), /## Purpose/);
   assert.match(fs.readFileSync(path.join(workspace, '.windsurf', 'workflows', 'ome-bug.md'), 'utf8'), /## Purpose/);
+  assert.equal(fs.readFileSync(codeStylePath, 'utf8'), customCodeStyle);
+  assert.equal(fs.existsSync(securityPath), true);
   assert.match(result.stdout, /Project skills updated: /);
   assert.match(result.stdout, /Project skill mirrors synced: [1-9]\d*/);
   assert.match(result.stdout, /Project command entries synced: [1-9]\d*/);
   assert.match(result.stdout, /Rule integrations synced: [1-9]\d*/);
+  assert.match(result.stdout, /Rule source files: created [1-9]\d*, overwritten 0, preserved [1-9]\d*/);
+
+  const forcedResult = spawnSync(OME_BIN, omeArgs(['update', '--project-only', '--force']), {
+    cwd: workspace,
+    encoding: 'utf8',
+    env
+  });
+
+  assert.equal(forcedResult.status, 0);
+  assert.equal(fs.readFileSync(codeStylePath, 'utf8'), customCodeStyle);
+  assert.match(forcedResult.stdout, /Rule source files: created 0, overwritten 0, preserved [1-9]\d*/);
 
   const agents = fs.readFileSync(path.join(workspace, 'AGENTS.md'), 'utf8');
   const claude = fs.readFileSync(path.join(workspace, 'CLAUDE.md'), 'utf8');
@@ -332,6 +350,43 @@ test('ome update refreshes managed project assets beyond .ome skills', () => {
   assert.match(claude, /# Local claude notes/);
   assert.match(claude, /<!-- OME:START -->/);
   assert.match(claude, /Rule source: `\.ome\/rules\/`/);
+});
+
+test('ome update force-rules overwrites rule sources after backing them up', () => {
+  const workspace = createWorkspace('ome-update-force-rules-');
+  const env: NodeJS.ProcessEnv = { ...process.env, OME_REPO_ROOT: REPO_ROOT };
+  if (process.platform === 'win32') {
+    env.Path = '';
+  } else {
+    env.PATH = '';
+  }
+
+  execFileSync(OME_BIN, omeArgs(['init']), {
+    cwd: workspace,
+    encoding: 'utf8',
+    env: { ...process.env, OME_REPO_ROOT: REPO_ROOT }
+  });
+
+  const codeStylePath = path.join(workspace, '.ome', 'rules', 'code-style.md');
+  const customCodeStyle = '---\nrule: code-style\nversion: 1.0.0\n---\n\n# Custom Code Style\n\n- This should be backed up.\n';
+  fs.writeFileSync(codeStylePath, customCodeStyle, 'utf8');
+
+  const result = spawnSync(OME_BIN, omeArgs(['update', '--project-only', '--force-rules']), {
+    cwd: workspace,
+    encoding: 'utf8',
+    env
+  });
+
+  assert.equal(result.status, 0);
+  assert.notEqual(fs.readFileSync(codeStylePath, 'utf8'), customCodeStyle);
+  assert.match(result.stdout, /Rule source files: created 0, overwritten [1-9]\d*, preserved/);
+  assert.match(result.stdout, /Rule backup: /);
+
+  const backupsRoot = path.join(workspace, '.ome', 'backups', 'rules');
+  const backupDirectories = fs.readdirSync(backupsRoot);
+  assert.equal(backupDirectories.length, 1);
+  const backupCodeStyle = path.join(backupsRoot, backupDirectories[0], 'code-style.md');
+  assert.equal(fs.readFileSync(backupCodeStyle, 'utf8'), customCodeStyle);
 });
 
 test('ome update uses cmd wrapper for npm install on Windows', () => {

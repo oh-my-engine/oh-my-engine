@@ -51,7 +51,12 @@
       "PowerShell(Join-Path *)",
       "PowerShell(npm run *)",
       "PowerShell(npm test *)",
-      "PowerShell(node dist/bin/ome.js init --force)"
+      "PowerShell(node dist/bin/ome.js init --force)",
+      "Bash(git -C /Users/tzt97h rev-parse --show-toplevel)",
+      "PowerShell(node --test dist/tests/ome-init.test.js 2>&1 | Select-Object -Last 35)",
+      "Bash(echo \"exit:$?\")",
+      "PowerShell(npm link *)",
+      "PowerShell(ome *)"
     ]
   }
 }

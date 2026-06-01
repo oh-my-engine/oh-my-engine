@@ -8,6 +8,24 @@ tags: [ome, ui, design, workflow]
 
 # ome-ui
 
+## Workflow Session Start (MANDATORY)
+
+Before reading source files, planning, editing, or running verification for this workflow, you MUST start the OME workflow session by running:
+
+```bash
+ome ui $ARGUMENTS
+```
+
+This creates `.ome/.session` so the final `ome finish` command can record the execution into `.ome/memory/executions/`.
+
+If a Windows PowerShell policy blocks the `ome` shim, run the same step through the cross-shell fallback: `cmd.exe /c ome.cmd ui $ARGUMENTS`. Do not hardcode this fallback on non-Windows platforms.
+
+Claude Code fast path (other agents: ignore the leading `!` and run the bare command via your shell tool):
+
+```
+!ome ui $ARGUMENTS
+```
+
 ## Purpose
 Restore or implement UI from a design source while preserving project layout, theme, i18n, accessibility, responsiveness, and component conventions.
 
@@ -54,3 +72,27 @@ Final response must include:
 - UI implementation summary
 - Verification
 - Remaining risks
+
+## Workflow Completion (MANDATORY)
+
+After you finish the work for this workflow — successful or not — you MUST run the following shell command as the very last step, AFTER you have reported results to the user:
+
+```bash
+ome finish
+```
+
+This records the execution into `.ome/memory/executions/` so the engine can learn from it.
+
+Skip ONLY if all of these are true:
+- The user explicitly said "do not record" or "just testing".
+- You made zero file changes.
+- You wrote zero new code.
+- You ran zero verifications.
+
+Do NOT skip because "the task was small" or "nothing interesting happened" — the engine's policy gate decides what to keep, not you.
+
+Claude Code fast path (other agents: ignore the leading `!` and run the bare command via your shell tool):
+
+```
+!ome finish
+```
