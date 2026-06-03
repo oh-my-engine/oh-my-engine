@@ -1076,82 +1076,53 @@ rg "authentication" .ome/memory/
 
 ## Evolution System
 
-Oh My Engine 的自主进化系统能够自动学习项目模式、生成规则和技能，并智能决策是否应用这些改进。详细文档请参�?[Evolution System](evolution.md)�?
+Oh My Engine's evolution system is evidence-based and candidate-first. It uses
+substantive workflow records as evidence, then promotes only repeated,
+meaningful patterns into reviewable learning or skill candidates.
 
-### 自动工作流程
+Detailed documentation: [Evolution System](evolution.md).
 
-系统完全自动化运行：
+### Controlled workflow
 
-1. **自动记忆记录**：每次完成工作流任务后，Agent 自动执行 `ome finish` 记录执行信息
-2. **自动后台分析**：系统自动识别重复模式和错误模式
-3. **自动生成规则**：从错误记录生成预防性规则到 `.ome/rules/learned/`
-4. **自动生成技�?*：从成功模式生成可复用技能到 `.agent/workflows/learned/`
-5. **智能自主决策**：基于信心评分和风险评估自动应用或请求审�?
-6. **效果跟踪**：持续监控已应用规则和技能的效果
-7. **自动清理**：定期清理无效或过时的内�?
+1. **Selective execution recording**: agents run `ome finish` only after a
+   substantive workflow loop, not after ordinary chat or quick explanations.
+2. **Pattern analysis**: `ome evolve analyze` scans selected execution memory for
+   repeated, reusable signals.
+3. **Candidate generation**: useful repeated patterns can become learning
+   candidates or skill candidates.
+4. **Verification and adoption**: candidates must be reviewed and verified before
+   they become durable guidance or generated skills.
+5. **Noise filtering**: low-information records such as `current diff`, `diff`,
+   `review`, or `done` should not become evolution candidates.
 
-### 决策矩阵
-
-| 信心分数 | 风险等级 | 决策 |
-|---------|---------|------|
-| �?0% | �?(<30%) | 🟢 自动应用 |
-| �?0% | �?(30-60%) | 🟡 请求审核 |
-| 60-80% | �?| 🟡 请求审核 |
-| <60% | 任何 | 🔴 自动拒绝 |
-
-### 命令
+### Commands
 
 ```bash
-# 查看所有需要人工审核的候�?
-ome evolve review
-
-# 手动触发分析
 ome evolve analyze
-
-# 查看效果统计
+ome evolve review
+ome evolve verify-learning --slug <learning-slug>
+ome evolve adopt-learning --slug <learning-slug>
+ome evolve verify-skill --slug <skill-slug>
+ome evolve adopt-skill --slug <skill-slug>
 ome evolve stats
 ```
 
-### 生成的内�?
+### Configuration
 
-**规则文件** (`.ome/rules/learned/*.md`)�?
-- 从错误模式自动生�?
-- 包含问题描述、解决方案、示�?
-- 自动应用到未来的工作�?
-
-**技能文�?* (`.agent/workflows/learned/*.md`)�?
-- 从成功模式自动生�?
-- 包含执行指令、最佳实�?
-- 可在未来工作流中复用
-
-### 配置
-
-```json
-{
-  "evolution": {
-    "enabled": true,
-    "autoAnalyze": true,
-    "autoApply": {
-      "enabled": true,
-      "minConfidence": 80,
-      "maxRisk": 30
-    },
-    "thresholds": {
-      "learningCandidateMinEvidence": 3,
-      "skillCandidateMinEvidence": 3
-    },
-    "cleanup": {
-      "enabled": true,
-      "minApplications": 10,
-      "minSuccessRate": 40,
-      "unusedDays": 90
-    }
-  }
-}
+```yaml
+evolution:
+  enabled: true
+  autoApply: false
+  requireVerification: true
+  candidateOnly: true
+  thresholds:
+    learningCandidateMinEvidence: 3
+    skillCandidateMinEvidence: 3
 ```
 
-更多详细信息，请参�?[Evolution System 文档](evolution.md)�?
-
+The default posture is conservative: evolution creates candidates, not automatic
+project-wide behavior changes. Adopted learnings and generated skills are loaded
+by later workflows only after review.
 ## Choosing Between ome-plan and ome-spec
 
 ### Quick Comparison

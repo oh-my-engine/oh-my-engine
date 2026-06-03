@@ -4,10 +4,25 @@ OME memory is meant to preserve reusable project knowledge, not raw command nois
 Execution records should explain what happened, why it happened, how it was fixed,
 and how the result was verified.
 
+## Selective Workflow Finish
+
+`ome finish` is for substantive workflow completions, not ordinary chat.
+
+Run it when the workflow produced at least one durable outcome:
+
+- code, docs, config, tests, or generated artifacts changed
+- verification was run and the result matters
+- a root cause, fix, technical decision, or reusable learning was produced
+- a complete bug/build/test/review/ship loop has evidence worth preserving
+
+Skip it for quick explanations, casual conversation, inconclusive brainstorming,
+or read-only exploration that produced no reusable outcome. This keeps execution
+memory from becoming a transcript log.
+
 ## Bug Finish Requirements
 
-`ome finish` still records normal workflow sessions, but bug workflow records now
-need at least one core diagnostic field before they are persisted:
+When a bug workflow is substantive, the record should include at least one core
+diagnostic field before it is persisted:
 
 - `--root-cause`
 - `--evidence`
@@ -29,8 +44,10 @@ ome finish `
   --learning "Already-generated pages need style data refresh before visual changes appear"
 ```
 
-If a bug workflow has no core diagnostic field, `ome finish` clears the active
-session and prints guidance instead of writing a low-value memory file.
+If a bug workflow has no core diagnostic field, `ome finish` keeps the active
+session and prints guidance instead of writing a low-value memory file. Rerun
+`ome finish` with the structured fields above to record the same workflow
+session.
 
 ## Sessionless Finish
 
@@ -52,3 +69,13 @@ ome finish `
 Changed files and tests are supporting metadata. Memory rendering truncates long
 file and test lists and stores total/omitted counts in frontmatter, so the body
 stays focused on diagnosis, fix, verification, and reusable learning.
+
+## Evolution Candidate Quality
+
+Execution memory is not the same as evolution. The evolve analyzer should promote
+only repeated records with meaningful signal, such as root cause, evidence, fix,
+verification, reusable learning, or concrete workflow details.
+
+Low-information records such as `current diff`, `diff`, `review`, `execution`,
+or `done` can remain as execution records when useful for workflow history, but
+they should not become learning candidates or generated skill candidates.

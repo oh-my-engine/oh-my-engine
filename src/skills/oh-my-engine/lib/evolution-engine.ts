@@ -49,6 +49,20 @@ const DEFAULT_THRESHOLDS = {
   adoptedPreferenceMinEvidence: 2
 };
 
+const LOW_INFORMATION_SUMMARIES = new Set([
+  'current diff',
+  'diff',
+  'review',
+  'code review',
+  'execution',
+  'work completed',
+  'task completed',
+  'completed',
+  'done',
+  'changes',
+  'updates'
+]);
+
 const BEHAVIORAL_ANTIPATTERNS: BehavioralAntipattern[] = [
   {
     id: 'agent-behavior-overengineering',
@@ -89,19 +103,46 @@ function loadEvolutionThresholds(projectRoot: string): EvolutionThresholds {
   };
 }
 
+function normalizeSummary(summary: unknown): string {
+  return String(summary || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+}
+
+function isLowInformationSummary(summary: unknown): boolean {
+  const normalized = normalizeSummary(summary);
+  if (!normalized || normalized.length < 12) return true;
+  if (LOW_INFORMATION_SUMMARIES.has(normalized)) return true;
+  return /^(current\s+)?(diff|review|execution|changes?|updates?)$/i.test(normalized);
+}
+
+function hasMeaningfulLearningSignal(record: MemoryRecord): boolean {
+  if (record.reusableLearning || record.verificationSummary || record.rootCause || record.fixSummary) {
+    return true;
+  }
+
+  if (Array.isArray(record.testsRun) && record.testsRun.length > 0) {
+    return true;
+  }
+
+  const category = record.metadata && record.metadata.patternCategory;
+  return typeof category === 'string' && category !== 'bug_fix' && category !== 'generic';
+}
+
+function isLearningCandidateRecord(record: MemoryRecord): boolean {
+  if (!isSuccessfulExecution(record)) return false;
+  if (record.metadata && record.metadata.patternCategory === 'bug_fix') return false;
+  if (!record.summary || !record.workflow || !record.phase) return false;
+  if (isLowInformationSummary(record.summary)) return false;
+  return hasMeaningfulLearningSignal(record);
+}
+
 function buildLearningGroups(executionRecords: MemoryRecord[], thresholds: EvolutionThresholds): EvolutionGroup[] {
   const groups = new Map<string, EvolutionGroup>();
 
   for (const record of executionRecords) {
-    if (!isSuccessfulExecution(record)) {
-      continue;
-    }
-
-    if (record.metadata && record.metadata.patternCategory === 'bug_fix') {
-      continue;
-    }
-
-    if (!record.summary || !record.workflow || !record.phase) {
+    if (!isLearningCandidateRecord(record)) {
       continue;
     }
 

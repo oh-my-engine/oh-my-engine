@@ -67,7 +67,10 @@ function updateWorkspace(root: string, options: any = {}): any[] {
         forceRules: options.forceRules || false,
         sync: true,
         installAgents: false,
-        template: 'default'
+        template: 'default',
+        projectEntries: options.projectEntries,
+        outputLanguage: options.outputLanguage,
+        defaultProjectPlatforms: false
       });
       results.push({ path: projectPath, success: true, result });
     } catch (error: any) {

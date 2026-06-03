@@ -5,7 +5,9 @@ const yaml = require('js-yaml');
 const { ENGINE_DIR, currentEnginePath, migrateLegacyEngineDirectory, repoEnginePath } = require('./paths');
 const { syncRules } = require('./rules');
 const { renderScanSummary, scanProject } = require('./project-scanner');
+const { outputLanguageDisplayName, resolveOutputLanguage, isOutputLanguageChinese } = require('./output-language');
 import type { ProjectScanSummary } from './project-scanner';
+import type { OutputLanguageResolution } from './output-language';
 
 export interface InitOptions {
   force: boolean;
@@ -14,12 +16,15 @@ export interface InitOptions {
   projectRoot: string;
   repoRoot: string;
   sync?: boolean;
+  projectEntries?: boolean;
   migrate?: boolean;
   installAgents?: boolean;
   installOpenSpec?: boolean;
   home?: string;
   specRoot?: string;
   openspecInit?: boolean;
+  outputLanguage?: string;
+  defaultProjectPlatforms?: boolean;
 }
 
 export interface InitResult {
@@ -43,6 +48,8 @@ export interface InitResult {
   agentGuidanceFiles: string[];
   scanSummary: string;
   contextFilesUpdated: number;
+  outputLanguage: string;
+  outputLanguageSource: string;
 }
 
 export interface InitRulesResult {
@@ -56,6 +63,8 @@ export interface InitRulesResult {
   rulesBackupPath?: string;
   promptPath: string;
   ruleNames: string[];
+  outputLanguage: string;
+  outputLanguageSource: string;
 }
 
 const ENGINE_DIRECTORIES = [
@@ -185,7 +194,12 @@ function planRuleNames(scan: ProjectScanSummary): string[] {
   return Array.from(rules).sort();
 }
 
-function buildDefaultConfig(scan: ProjectScanSummary, template: string, specRoot: string): any {
+function buildDefaultConfig(
+  scan: ProjectScanSummary,
+  template: string,
+  specRoot: string,
+  outputLanguage: OutputLanguageResolution
+): any {
   const ruleSet = new Set(planRuleNames(scan));
   const allRules = Array.from(ruleSet);
   const uiRules = ['theme', 'design-tokens', 'i18n', 'views-static-assets', 'styling-assets'].filter(rule => ruleSet.has(rule));
@@ -208,6 +222,13 @@ function buildDefaultConfig(scan: ProjectScanSummary, template: string, specRoot
       buildTools: scan.buildTools,
       filesScanned: scan.filesScanned,
       detectedPatterns: scan.detectedPatterns
+    },
+    output: {
+      language: outputLanguage.code,
+      languageSource: outputLanguage.source,
+      displayName: outputLanguageDisplayName(outputLanguage),
+      ...(outputLanguage.requested ? { requested: outputLanguage.requested } : {}),
+      ...(outputLanguage.systemLocale ? { systemLocale: outputLanguage.systemLocale } : {})
     },
     version: '1.0.0',
     workflows: {
@@ -281,15 +302,73 @@ function buildDefaultConfig(scan: ProjectScanSummary, template: string, specRoot
   };
 }
 
-function buildOMEMarkdown(scan: ProjectScanSummary, template: string, specRoot: string): string {
-  const config = buildDefaultConfig(scan, template, specRoot);
+function buildOMEMarkdown(
+  scan: ProjectScanSummary,
+  template: string,
+  specRoot: string,
+  outputLanguage: OutputLanguageResolution
+): string {
+  const config = buildDefaultConfig(scan, template, specRoot, outputLanguage);
   const frontmatter = yaml.dump(config, {
     indent: 2,
     lineWidth: 120,
     noRefs: true,
   });
 
-  const docs = `# Oh My Engine Configuration
+  const docs = isOutputLanguageChinese(outputLanguage)
+    ? `# Oh My Engine 配置
+
+## 项目信息
+
+- **项目名称**: ${scan.projectName}
+- **模板**: ${template}
+- **项目类型**: ${scan.projectType}
+- **框架**: ${formatList(scan.frameworks)}
+- **语言**: ${scan.language}
+- **包管理器**: ${scan.packageManager}
+- **版本**: 1.0.0
+- **输出语言**: ${outputLanguageDisplayName(outputLanguage)} (${outputLanguage.code})
+
+## 项目扫描
+
+- **扫描文件数**: ${scan.filesScanned}
+- **源码目录**: ${formatList(scan.sourceDirectories)}
+- **入口文件**: ${formatList(scan.entrypoints)}
+- **测试框架**: ${formatList(scan.testFrameworks)}
+- **工具链**: ${formatList(scan.tooling)}
+- **构建工具**: ${formatList(scan.buildTools)}
+- **检测到的模式**: ${formatList(scan.detectedPatterns)}
+
+## 工作流
+
+当前项目启用以下工作流：
+
+- **ui-restore**: ${scan.hasUi ? '使用 UI 规则的界面恢复工作流' : '未检测到 UI 框架，默认禁用'}
+- **bug-analysis**: 结合项目代码、架构和工具链规则的缺陷分析工作流
+- **component-gen**: 组件生成工作流
+- **api-integration**: API 集成工作流
+- **spec**: 默认禁用；仅在需要高级兼容流程时使用 \`ome spec\`
+
+## 记忆系统
+
+记忆系统已启用选择性捕获模式，会记录：
+- 工作流命令执行
+- 显式记忆请求
+- 运行后的候选提升
+
+## 演进系统
+
+演进系统会分析模式并提出改进建议，采纳前需要验证。
+
+## Agent 个性化
+
+如需更深入的 AI 辅助个性化，请让 Agent 编辑器遵循 \`${ENGINE_DIR}/context/rules-generation-prompt.md\`。
+
+## 开始使用
+
+运行 \`ome help\` 查看可用命令。
+`
+    : `# Oh My Engine Configuration
 
 ## Project Information
 
@@ -300,6 +379,7 @@ function buildOMEMarkdown(scan: ProjectScanSummary, template: string, specRoot: 
 - **Language**: ${scan.language}
 - **Package Manager**: ${scan.packageManager}
 - **Version**: 1.0.0
+- **Output Language**: ${outputLanguageDisplayName(outputLanguage)} (${outputLanguage.code})
 
 ## Project Scan
 
@@ -396,6 +476,59 @@ function renderProjectProfile(scan: ProjectScanSummary): string {
   ].join('\n');
 }
 
+function formatListZh(values: string[], fallback: string = '未检测到'): string {
+  return values.length > 0 ? values.join(', ') : fallback;
+}
+
+function renderProjectProfileZh(scan: ProjectScanSummary): string {
+  const extensions = Object.entries(scan.sourceExtensions)
+    .map(([extension, count]) => `${extension}: ${count}`)
+    .join(', ') || '未检测到';
+
+  const sampleFiles = scan.sampleFiles.slice(0, 24).map(file => `  - ${file}`).join('\n') || '  - 未检测到';
+  const configFiles = scan.configFiles.slice(0, 24).map(file => `  - ${file}`).join('\n') || '  - 未检测到';
+
+  return [
+    '## 项目画像',
+    '',
+    `- 项目类型: ${scan.projectType}`,
+    `- 主要框架: ${scan.framework}`,
+    `- 框架: ${formatListZh(scan.frameworks)}`,
+    `- 语言: ${scan.language}`,
+    `- 包管理器: ${scan.packageManager}`,
+    `- 扫描文件数: ${scan.filesScanned}`,
+    `- 源码目录: ${formatListZh(scan.sourceDirectories)}`,
+    `- 入口文件: ${formatListZh(scan.entrypoints)}`,
+    `- 路由文件: ${formatListZh(scan.routeFiles.slice(0, 12))}`,
+    `- 中间件文件: ${formatListZh(scan.middlewareFiles.slice(0, 12))}`,
+    `- 测试框架: ${formatListZh(scan.testFrameworks)}`,
+    `- 测试文件: ${formatListZh(scan.testFiles.slice(0, 12))}`,
+    `- 工具链: ${formatListZh(scan.tooling)}`,
+    `- 构建工具: ${formatListZh(scan.buildTools)}`,
+    `- 服务端框架: ${formatListZh(scan.serverFrameworks)}`,
+    `- UI 框架: ${formatListZh(scan.uiFrameworks)}`,
+    `- 移动端框架: ${formatListZh(scan.mobileFrameworks)}`,
+    `- 模板引擎: ${formatListZh(scan.templateEngines)}`,
+    `- 样式系统: ${formatListZh(scan.styleSystems)}`,
+    `- i18n 信号: ${formatListZh(scan.i18nSignals)}`,
+    `- 数据库信号: ${formatListZh(scan.databaseSignals)}`,
+    `- 部署信号: ${formatListZh(scan.deploymentSignals)}`,
+    `- 源码信号: ${formatListZh(scan.sourceSignals)}`,
+    `- 源码扩展名: ${extensions}`,
+    `- 已有规则文件: ${formatListZh(scan.existingRuleFiles)}`,
+    `- 检测到的模式: ${formatListZh(scan.detectedPatterns)}`,
+    '',
+    '## 代表性文件',
+    '',
+    sampleFiles,
+    '',
+    '## 配置文件',
+    '',
+    configFiles,
+    ''
+  ].join('\n');
+}
+
 function buildRule(ruleName: string, description: string, category: string, body: string): string {
   return `---
 rule: ${ruleName}
@@ -412,10 +545,19 @@ function ruleList(values: string[], fallback: string = '- None detected.'): stri
   return values.length > 0 ? values.map(value => `- \`${value}\``).join('\n') : fallback;
 }
 
+function ruleListZh(values: string[], fallback: string = '- 未检测到。'): string {
+  return values.length > 0 ? values.map(value => `- \`${value}\``).join('\n') : fallback;
+}
+
 function commandFor(scan: ProjectScanSummary, scriptName: string): string {
   if (!scan.scripts[scriptName]) return 'not configured';
   if (scriptName === 'test' && scan.packageManager === 'npm') return '`npm test`';
   return `\`${scan.packageManager} run ${scriptName}\``;
+}
+
+function commandForZh(scan: ProjectScanSummary, scriptName: string): string {
+  const command = commandFor(scan, scriptName);
+  return command === 'not configured' ? '未配置' : command;
 }
 
 function buildAgentBehaviorRule(): string {
@@ -773,7 +915,390 @@ ${renderProjectProfile(scan)}
 `);
 }
 
-function buildGeneratedRules(scan: ProjectScanSummary): Record<string, string> {
+function buildAgentBehaviorRuleZh(): string {
+  return buildRule('agent-behavior', '面向简单、聚焦、可验证变更的 Agent 行为规则', 'agent-behavior', `
+# Agent 行为
+
+## 目标
+
+让 AI 辅助实现保持谨慎、简单、范围明确并可验证。这些规则基于 Oh My Engine 工作流对常见编码 Agent 指南的项目化改写。
+
+## 规则
+
+- 当需求存在歧义时，先说明关键假设。
+- 面对会明显影响实现方向的不同选择时，先澄清而不是静默决定。
+- 当请求路径明显过度设计时，说明更简单方案和取舍。
+- 优先采用满足当前需求的最小实现。
+- 不添加当前任务不需要的推测性功能、抽象、配置或错误处理。
+- 只修改完成任务所需的文件和代码行。
+- 除非任务要求，不重构邻近代码、注释、格式或命名。
+- 即使个人偏好不同，也要匹配现有风格。
+- 只删除本次改动导致未使用的 import、变量、文件或函数。
+- 不主动删除既有死代码，除非明确要求。
+- 每一行改动都应能追溯到用户请求、已接受方案或必要验证。
+- 编码前把实现工作转化为可验证目标。
+- 修复缺陷时，在可行情况下先复现问题。
+- 重构前后都要验证行为。
+- 如实报告验证结果，包括无法运行的检查。
+
+## 行为质量门
+
+最终交付前检查：
+
+- 假设：重要假设已确认或已说明。
+- 简洁：方案是当前需要的最小代码。
+- 范围：diff 避免无关编辑和顺手清理。
+- 验证：测试或检查能证明行为，未验证缺口已说明。
+
+## 取舍
+
+这些规则偏向谨慎而不是速度。对明显的一行修正或拼写修复，可按常识裁剪流程。
+
+## 来源
+
+受 \`https://github.com/multica-ai/andrej-karpathy-skills\` 中 Karpathy 风格编码 Agent 指南启发。
+原始许可证：MIT。已为 Oh My Engine 规则工作流改写。
+`);
+}
+
+function buildProjectOverviewRuleZh(scan: ProjectScanSummary): string {
+  return buildRule('project-overview', `${scan.projectName} 的仓库画像`, 'project-profile', `
+# 项目概览
+
+${renderProjectProfileZh(scan)}
+## 规则
+
+- 将 \`${ENGINE_DIR}/context/project-scan.json\` 作为机器可读基线，再查看当前源码后再做架构判断。
+- 优先使用能指出实际目录、入口、脚本、依赖和框架信号的规则。
+- 平台生成文件必须通过 \`ome rules sync\` 从 \`${ENGINE_DIR}/rules/\` 派生。
+- 除非扫描结果列出相关框架或信号，不要假设 React、React Native、移动端或 UI 约定。
+
+## 更新清单
+
+- 重大目录、框架或构建系统变化后，运行 \`ome init-rules\` 刷新此规则。
+- 编辑任何规则文件后，运行 \`ome rules sync\` 重新生成 Agent 平台文件。
+`);
+}
+
+function buildCodeStyleRuleZh(scan: ProjectScanSummary): string {
+  return buildRule('code-style', `${scan.language} ${scan.framework} 项目的代码风格规则`, 'code-quality', `
+# 代码风格
+
+${renderProjectProfileZh(scan)}
+## 规则
+
+- 匹配 ${formatListZh(scan.sourceDirectories, '仓库源码目录')} 中现有的 ${scan.language} 风格。
+- 修改共享代码时，优先使用类型化接口和明确返回形状。
+- 保持模块边界与当前目录结构一致。
+- 使用现有包管理器（${scan.packageManager}）和脚本，不新增并行工具链。
+- 保留源码中检测到的模块约定：${formatListZh(scan.sourceSignals.filter(signal => signal.includes('commonjs') || signal.includes('esm')), '编辑前检查 import/export')}.
+- 让改动贴近扫描出的代表性源码文件和命名模式，不引入泛化模板。
+
+## 验证
+
+- 检查脚本: ${commandForZh(scan, 'check')}。
+- Lint 脚本: ${commandForZh(scan, 'lint')}。
+- 构建脚本: ${commandForZh(scan, 'build')}。
+`);
+}
+
+function buildTestingRuleZh(scan: ProjectScanSummary): string {
+  return buildRule('testing', `${formatListZh(scan.testFrameworks, scan.language)} 的测试规则`, 'testing', `
+# 测试
+
+${renderProjectProfileZh(scan)}
+## 规则
+
+- 在行为附近新增或更新测试。
+- 优先使用检测到的测试框架：${formatListZh(scan.testFrameworks)}。
+- 扫描到的现有测试文件：
+${ruleListZh(scan.testFiles.slice(0, 20))}
+- 保持测试 fixture 小而确定。
+- 如果修改代码但未检测到测试框架，添加最小的本地测试，并遵循最接近的现有文件命名约定。
+
+## 验证
+
+- 主要测试命令: ${commandForZh(scan, 'test')}。
+- 完整验证命令: ${commandForZh(scan, 'verify')}。
+`);
+}
+
+function buildArchitectureRuleZh(scan: ProjectScanSummary): string {
+  return buildRule('architecture', `${scan.projectType} 项目的架构规则`, 'architecture', `
+# 架构
+
+${renderProjectProfileZh(scan)}
+## 规则
+
+- 将改动保持在现有顶层职责内：${formatListZh(scan.sourceDirectories)}。
+- 修改跨切面行为前，先用检测到的入口文件定位：${formatListZh(scan.entrypoints)}。
+- 框架特定行为应留在已经承载该框架、路由或中间件职责的文件里。
+- 将生成的项目上下文放在 \`${ENGINE_DIR}/context/\`，将源规则放在 \`${ENGINE_DIR}/rules/\`。
+- 平台特定生成文件必须通过 \`ome rules sync\` 从 \`${ENGINE_DIR}/rules/\` 派生。
+`);
+}
+
+function buildToolingRuleZh(scan: ProjectScanSummary): string {
+  const scriptLines = Object.entries(scan.scripts)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([name, command]) => `- \`${name}\`: \`${command}\``)
+    .join('\n') || '- 未检测到 package scripts。';
+
+  return buildRule('tooling', `${scan.packageManager} 工具链规则`, 'toolchain', `
+# 工具链
+
+${renderProjectProfileZh(scan)}
+## Package Scripts
+
+${scriptLines}
+
+## 规则
+
+- 依赖和脚本命令使用 ${scan.packageManager}。
+- 优先使用现有构建工具：${formatListZh(scan.buildTools)}。
+- 扫描到的配置文件：
+${ruleListZh(scan.configFiles.slice(0, 24))}
+- 让生成文件保持确定性，便于测试断言精确行为。
+- 不为本地项目扫描新增运行时依赖。
+`);
+}
+
+function buildServerRuleZh(ruleName: string, framework: string, scan: ProjectScanSummary): string {
+  return buildRule(ruleName, `${framework} 服务端规则`, 'server', `
+# ${framework} 服务端
+
+${renderProjectProfileZh(scan)}
+## 规则
+
+- 遵循检测到的 ${framework} 应用形态，不替换为其他服务端框架。
+- 新增中间件前，先检查入口文件和路由注册：${formatListZh(scan.entrypoints)}。
+- 保持请求生命周期行为与检测到的源码信号一致：${formatListZh(scan.sourceSignals.filter(signal => signal.includes('routing') || signal.includes('context') || signal.includes('handlers') || signal.includes('body')), '先检查服务端文件')}。
+- 当已有对应目录时，将新 handler、service 和 middleware 放回现有目录。
+
+## 服务端文件
+
+${ruleListZh([...scan.entrypoints, ...scan.routeFiles.slice(0, 16), ...scan.middlewareFiles.slice(0, 16)])}
+`);
+}
+
+function buildRoutingMiddlewareRuleZh(scan: ProjectScanSummary): string {
+  return buildRule('routing-middleware', '路由和中间件规则', 'server', `
+# 路由与中间件
+
+${renderProjectProfileZh(scan)}
+## 规则
+
+- 新增 endpoint 前先阅读现有路由和中间件文件。
+- 明确保持路由注册顺序；只有属于现有服务启动路径的行为才添加为全局中间件。
+- 保持请求上下文、params、query、body 解析、状态码和错误传播的框架约定。
+- 当具名 handler 或 service 更符合项目结构时，不要把业务行为藏进匿名中间件。
+
+## 路由文件
+
+${ruleListZh(scan.routeFiles.slice(0, 30))}
+
+## 中间件文件
+
+${ruleListZh(scan.middlewareFiles.slice(0, 30))}
+`);
+}
+
+function buildViewsStaticAssetsRuleZh(scan: ProjectScanSummary): string {
+  return buildRule('views-static-assets', '服务端渲染视图和静态资源规则', 'ui', `
+# 视图与静态资源
+
+${renderProjectProfileZh(scan)}
+## 规则
+
+- 当存在模板引擎或静态资源目录时，将项目视为服务端渲染或资源托管项目。
+- 复用检测到的模板引擎：${formatListZh(scan.templateEngines)}。
+- 保持 public/static/assets 路径与现有中间件和构建脚本兼容。
+- 除非检测到相关框架，否则不要生成 React Native、移动端或 app-router 假设。
+
+## 相关信号
+
+- 模板引擎: ${formatListZh(scan.templateEngines)}
+- 样式系统: ${formatListZh(scan.styleSystems)}
+- 静态托管信号: ${formatListZh(scan.sourceSignals.filter(signal => signal.includes('static')))}
+`);
+}
+
+function buildGulpRuleZh(scan: ProjectScanSummary): string {
+  return buildRule('build-gulp', 'Gulp 构建流水线规则', 'toolchain', `
+# Gulp 构建流水线
+
+${renderProjectProfileZh(scan)}
+## 规则
+
+- 编辑构建行为时保留现有 Gulp 流水线和任务名。
+- 修改资源处理前，先检查 \`gulpfile.*\` 以及调用 \`gulp\` 的脚本。
+- 保持生成资源、watch 任务和生产构建任务确定。
+- 除非仓库已经使用或任务明确要求迁移，不要新增并行的 Vite/Webpack 流水线。
+
+## 验证
+
+- 构建命令: ${commandForZh(scan, 'build')}。
+- 测试命令: ${commandForZh(scan, 'test')}。
+`);
+}
+
+function buildStylingAssetsRuleZh(scan: ProjectScanSummary): string {
+  return buildRule('styling-assets', '样式和前端资源规则', 'ui', `
+# 样式与资源
+
+${renderProjectProfileZh(scan)}
+## 规则
+
+- 复用检测到的样式系统：${formatListZh(scan.styleSystems)}。
+- 将样式放在现有资源目录和扩展名约定内。
+- 当存在模板和 public/static 目录时，保留服务端渲染模板兼容性。
+- 除非仓库已经有 token、UI 框架约定或任务明确要求，不要引入 design token 层。
+`);
+}
+
+function buildI18nRuleZh(scan: ProjectScanSummary): string {
+  return buildRule('i18n', '国际化规则', 'localization', `
+# 国际化
+
+${renderProjectProfileZh(scan)}
+## 规则
+
+- 遵循现有本地化信号：${formatListZh(scan.i18nSignals)}。
+- 复用当前 locale 目录、消息格式和翻译 helper 名称。
+- 除非项目已有本地化用法，不要向无关 UI 或后端文件添加 i18n 脚手架。
+- 用户可见字符串要与检测到的模板、组件或服务端渲染层保持一致。
+`);
+}
+
+function buildThemeRuleZh(scan: ProjectScanSummary): string {
+  return buildRule('theme', `${formatListZh(scan.uiFrameworks.concat(scan.templateEngines), scan.framework)} 的主题规则`, 'ui', `
+# 主题
+
+${renderProjectProfileZh(scan)}
+## 规则
+
+- 主题变更必须基于本仓库实际存在的 UI、模板和样式文件。
+- 保留现有 CSS、Sass、Less、Tailwind 或组件样式约定。
+- 除非检测到 React Native 或 Expo，不要假设 React Native 主题 API。
+`);
+}
+
+function buildDesignTokensRuleZh(scan: ProjectScanSummary): string {
+  return buildRule('design-tokens', '设计令牌规则', 'ui', `
+# 设计令牌
+
+${renderProjectProfileZh(scan)}
+## 规则
+
+- 只有当仓库已有 token 类来源、theme config、Tailwind config、CSS 变量，或任务明确要求时，才新增或修改 token。
+- Token 命名要兼容现有样式系统：${formatListZh(scan.styleSystems)}。
+- 除非扫描检测到 React Native 或 Expo，不要创建移动端特定 token 规则。
+`);
+}
+
+function buildConfigurationEnvRuleZh(scan: ProjectScanSummary): string {
+  return buildRule('configuration-env', '配置和环境变量规则', 'configuration', `
+# 配置与环境
+
+${renderProjectProfileZh(scan)}
+## 规则
+
+- 新增设置前先检查配置文件。
+- 环境变量命名要与现有 \`process.env\` 用法和 env 模板文件保持一致。
+- 不要把密钥或 API key 写入规则、配置、示例或 prompt。
+- 新增必需配置时，优先提供文档化默认值和显式校验。
+
+## 配置文件
+
+${ruleListZh(scan.configFiles.slice(0, 40))}
+`);
+}
+
+function buildDataAccessRuleZh(scan: ProjectScanSummary): string {
+  return buildRule('data-access', '数据访问规则', 'data', `
+# 数据访问
+
+${renderProjectProfileZh(scan)}
+## 规则
+
+- 遵循检测到的数据访问层和依赖信号：${formatListZh(scan.databaseSignals)}。
+- 查询、迁移、模型和 repository 改动应贴近现有目录。
+- 除非仓库已经混用，不要混合 ORM 和 raw-driver 模式。
+- 修改 schema、查询或 repository 边界时，补充围绕持久化行为的测试或 fixture。
+`);
+}
+
+function buildDeploymentRuleZh(scan: ProjectScanSummary): string {
+  return buildRule('deployment', '部署和运行时规则', 'deployment', `
+# 部署与运行时
+
+${renderProjectProfileZh(scan)}
+## 规则
+
+- 保留现有部署目标和运行时假设：${formatListZh(scan.deploymentSignals)}。
+- 修改端口、构建输出、public path 或进程命令前，先检查 Docker、Nginx、PM2 和 CI 文件。
+- 保持本地脚本和生产命令一致。
+`);
+}
+
+function buildSecurityRuleZh(scan: ProjectScanSummary): string {
+  return buildRule('security', '安全规则', 'security', `
+# 安全
+
+${renderProjectProfileZh(scan)}
+## 规则
+
+- 新增服务端行为时，在路由或服务边界验证请求输入。
+- 不记录 secret、token、password、原始授权头或完整请求体。
+- 保持认证、授权、CORS、body parsing、静态托管和文件上传行为与现有中间件一致。
+- 除非是明确示例，否则将环境变量和部署配置视为敏感信息。
+`);
+}
+
+function buildLoggingErrorHandlingRuleZh(scan: ProjectScanSummary): string {
+  return buildRule('logging-error-handling', '日志和错误处理规则', 'observability', `
+# 日志与错误处理
+
+${renderProjectProfileZh(scan)}
+## 规则
+
+- 保留路由、中间件、CLI 和 service 代码中的现有错误传播约定。
+- 日志要可行动，避免在库代码或测试代码中制造噪音 console 输出。
+- 新增日志依赖前，先使用仓库当前 logger 或 console 约定。
+- 将预期的校验错误或用户错误转换为框架合适的响应；只有异常路径才抛出错误。
+`);
+}
+
+function buildGeneratedRules(scan: ProjectScanSummary, outputLanguage: OutputLanguageResolution): Record<string, string> {
+  if (isOutputLanguageChinese(outputLanguage)) {
+    const rules: Record<string, string> = {
+      'agent-behavior': buildAgentBehaviorRuleZh(),
+      'project-overview': buildProjectOverviewRuleZh(scan),
+      'code-style': buildCodeStyleRuleZh(scan),
+      testing: buildTestingRuleZh(scan),
+      architecture: buildArchitectureRuleZh(scan),
+      tooling: buildToolingRuleZh(scan),
+      security: buildSecurityRuleZh(scan),
+      'logging-error-handling': buildLoggingErrorHandlingRuleZh(scan)
+    };
+
+    if (scan.serverFrameworks.includes('Koa')) rules['server-koa'] = buildServerRuleZh('server-koa', 'Koa', scan);
+    if (scan.serverFrameworks.includes('Express')) rules['server-express'] = buildServerRuleZh('server-express', 'Express', scan);
+    if (scan.serverFrameworks.includes('Fastify')) rules['server-fastify'] = buildServerRuleZh('server-fastify', 'Fastify', scan);
+    if (scan.routeFiles.length > 0 || scan.middlewareFiles.length > 0 || scan.sourceSignals.includes('http-routing')) rules['routing-middleware'] = buildRoutingMiddlewareRuleZh(scan);
+    if (scan.templateEngines.length > 0 || scan.sourceSignals.includes('static-file-serving')) rules['views-static-assets'] = buildViewsStaticAssetsRuleZh(scan);
+    if (scan.buildTools.includes('gulp')) rules['build-gulp'] = buildGulpRuleZh(scan);
+    if (scan.styleSystems.length > 0) rules['styling-assets'] = buildStylingAssetsRuleZh(scan);
+    if (scan.i18nSignals.length > 0) rules.i18n = buildI18nRuleZh(scan);
+    if (scan.uiFrameworks.length > 0 || scan.mobileFrameworks.length > 0) rules.theme = buildThemeRuleZh(scan);
+    if (scan.uiFrameworks.length > 0 || scan.mobileFrameworks.length > 0 || scan.styleSystems.includes('tailwind')) rules['design-tokens'] = buildDesignTokensRuleZh(scan);
+    if (scan.sourceSignals.includes('environment-variables') || scan.deploymentSignals.includes('env-template') || scan.configFiles.length > 0) rules['configuration-env'] = buildConfigurationEnvRuleZh(scan);
+    if (scan.databaseSignals.length > 0) rules['data-access'] = buildDataAccessRuleZh(scan);
+    if (scan.deploymentSignals.length > 0) rules.deployment = buildDeploymentRuleZh(scan);
+
+    return rules;
+  }
+
   const rules: Record<string, string> = {
     'agent-behavior': buildAgentBehaviorRule(),
     'project-overview': buildProjectOverviewRule(scan),
@@ -802,7 +1327,40 @@ function buildGeneratedRules(scan: ProjectScanSummary): Record<string, string> {
   return rules;
 }
 
-function buildRulesGenerationPrompt(scan: ProjectScanSummary): string {
+function buildRulesGenerationPrompt(scan: ProjectScanSummary, outputLanguage: OutputLanguageResolution): string {
+  if (isOutputLanguageChinese(outputLanguage)) {
+    return `# 生成个性化 Oh My Engine 规则
+
+你正在 Codex、Claude Code 或 Antigravity 等 AI Agent 编辑器中运行。
+
+## 目标
+
+重写 \`${ENGINE_DIR}/rules/\` 下的 Markdown 文件，使其反映此仓库最新的代码、架构、工具链和团队约定。
+
+## 必需上下文
+
+- 先阅读 \`${ENGINE_DIR}/context/project-scan.json\`。
+- 检查扫描结果中的代表性源码文件，包括入口、路由文件、中间件文件、配置文件、测试和样例文件。
+- 修改 testing 或 tooling 规则前，先检查 package scripts 和现有测试。
+- 保留 \`${ENGINE_DIR}/rules/\` 作为项目规则的唯一事实来源。
+- 编辑规则后运行 \`ome rules sync\`，重新生成平台文件。
+- 所有人类可读的规则正文、标题和说明必须使用 ${outputLanguageDisplayName(outputLanguage)}（${outputLanguage.code}）。
+- 保留代码标识符、命令、路径、frontmatter 键和机器可读 schema 字段的原始英文形式。
+
+## 当前扫描摘要
+
+${renderProjectProfileZh(scan)}
+## 输出期望
+
+- 规则必须贴合此仓库，不要写成通用框架建议。
+- 根据项目实际需要生成任意数量的规则文件，不要强行塞进四个模板文件。
+- 当源码支持时，添加框架或领域规则文件，例如 \`server-koa.md\`、\`routing-middleware.md\`、\`build-gulp.md\`、\`views-static-assets.md\`、\`data-access.md\` 或 \`deployment.md\`。
+- 当仓库没有对应框架或资源时，移除或避免 UI/mobile 规则。
+- 当仓库定义了验证命令时，写入具体命令。
+- 不要向 CLI 添加 API key、模型调用或外部网络依赖。
+`;
+  }
+
   return `# Generate Personalized Oh My Engine Rules
 
 You are running inside an AI agent editor such as Codex, Claude Code, or Antigravity.
@@ -818,6 +1376,8 @@ Rewrite the Markdown files under \`${ENGINE_DIR}/rules/\` so they reflect this r
 - Inspect package scripts and existing tests before changing testing or tooling rules.
 - Preserve \`${ENGINE_DIR}/rules/\` as the only source of truth for project rules.
 - After editing rules, run \`ome rules sync\` so platform files are regenerated.
+- Generate human-readable rule prose, titles, and descriptions in ${outputLanguageDisplayName(outputLanguage)} (${outputLanguage.code}).
+- Keep code identifiers, commands, paths, frontmatter keys, and machine-readable schema fields in their original English form.
 
 ## Current Scan Summary
 
@@ -833,20 +1393,56 @@ ${renderProjectProfile(scan)}
 `;
 }
 
+function updateOMEMarkdownOutputLanguage(projectRoot: string, outputLanguage: OutputLanguageResolution): boolean {
+  const omemdPath = path.join(projectRoot, 'OME.md');
+  if (!fs.existsSync(omemdPath)) {
+    return false;
+  }
+
+  const current = fs.readFileSync(omemdPath, 'utf8');
+  const frontmatterMatch = current.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!frontmatterMatch) {
+    return false;
+  }
+
+  const config = (yaml.load(frontmatterMatch[1]) || {}) as Record<string, any>;
+  const nextOutput = {
+    language: outputLanguage.code,
+    languageSource: outputLanguage.source,
+    displayName: outputLanguageDisplayName(outputLanguage),
+    ...(outputLanguage.requested ? { requested: outputLanguage.requested } : {}),
+    ...(outputLanguage.systemLocale ? { systemLocale: outputLanguage.systemLocale } : {})
+  };
+
+  if (JSON.stringify(config.output || {}) === JSON.stringify(nextOutput)) {
+    return false;
+  }
+
+  config.output = nextOutput;
+  const nextFrontmatter = yaml.dump(config, {
+    indent: 2,
+    lineWidth: 120,
+    noRefs: true
+  });
+  const next = current.replace(frontmatterMatch[0], `---\n${nextFrontmatter}---`);
+  fs.writeFileSync(omemdPath, next, 'utf8');
+  return true;
+}
+
 function defaultSpecRoot(projectRoot: string, requested?: string): string {
   if (requested) return requested;
   if (fs.existsSync(path.join(projectRoot, '.ome', 'omespec'))) return '.ome/omespec';
   return 'openspec';
 }
 
-function writeProjectContext(projectRoot: string, scan: ProjectScanSummary, force: boolean): number {
+function writeProjectContext(projectRoot: string, scan: ProjectScanSummary, force: boolean, outputLanguage: OutputLanguageResolution): number {
   let updated = 0;
   if (writeFileIfNeeded(currentEnginePath(projectRoot, 'context', 'project-scan.json'), JSON.stringify(scan, null, 2), force)) updated += 1;
-  if (writeFileIfNeeded(currentEnginePath(projectRoot, 'context', 'rules-generation-prompt.md'), buildRulesGenerationPrompt(scan), force)) updated += 1;
+  if (writeFileIfNeeded(currentEnginePath(projectRoot, 'context', 'rules-generation-prompt.md'), buildRulesGenerationPrompt(scan, outputLanguage), force)) updated += 1;
   return updated;
 }
 
-function writeGeneratedRules(projectRoot: string, scan: ProjectScanSummary, force: boolean): {
+function writeGeneratedRules(projectRoot: string, scan: ProjectScanSummary, force: boolean, outputLanguage: OutputLanguageResolution): {
   updated: number;
   created: number;
   overwritten: number;
@@ -854,7 +1450,7 @@ function writeGeneratedRules(projectRoot: string, scan: ProjectScanSummary, forc
   backupPath?: string;
   ruleNames: string[];
 } {
-  const generatedRules = buildGeneratedRules(scan);
+  const generatedRules = buildGeneratedRules(scan, outputLanguage);
   let updated = 0;
   let created = 0;
   let overwritten = 0;
@@ -903,12 +1499,15 @@ export function parseInitArgs(args: string[], defaults: Partial<InitOptions> = {
     projectRoot: defaults.projectRoot || process.cwd(),
     repoRoot: defaults.repoRoot || process.env.OME_REPO_ROOT || path.resolve(__dirname, '..', '..'),
     sync: defaults.sync ?? true,
+    projectEntries: defaults.projectEntries ?? false,
     migrate: defaults.migrate ?? true,
     installAgents: defaults.installAgents ?? false,
     installOpenSpec: defaults.installOpenSpec ?? false,
     home: defaults.home,
     specRoot: defaults.specRoot,
-    openspecInit: defaults.openspecInit ?? false
+    openspecInit: defaults.openspecInit ?? false,
+    outputLanguage: defaults.outputLanguage,
+    defaultProjectPlatforms: defaults.defaultProjectPlatforms ?? true
   };
 
   for (let index = 0; index < args.length; index += 1) {
@@ -926,6 +1525,11 @@ export function parseInitArgs(args: string[], defaults: Partial<InitOptions> = {
 
     if (argument === '--no-sync') {
       options.sync = false;
+      continue;
+    }
+
+    if (argument === '--project-entries' || argument === '--sync-project-entries') {
+      options.projectEntries = true;
       continue;
     }
 
@@ -972,6 +1576,15 @@ export function parseInitArgs(args: string[], defaults: Partial<InitOptions> = {
       continue;
     }
 
+    if (argument === '--language' || argument === '--output-language') {
+      if (index + 1 >= args.length) {
+        throw new Error(`Missing value for ${argument}`);
+      }
+      options.outputLanguage = args[index + 1];
+      index += 1;
+      continue;
+    }
+
     if (argument === '--project-root') {
       if (index + 1 >= args.length) {
         throw new Error('Missing value for --project-root');
@@ -1013,6 +1626,9 @@ export function initializeProject(options: InitOptions): InitResult {
   const scan = scanProject(options.projectRoot) as ProjectScanSummary;
   const createdDirectories: string[] = [];
   const specRoot = defaultSpecRoot(options.projectRoot, options.specRoot);
+  const outputLanguage = resolveOutputLanguage(options.projectRoot, {
+    explicit: options.outputLanguage
+  });
 
   for (const directory of ENGINE_DIRECTORIES) {
     const target = path.join(options.projectRoot, directory);
@@ -1022,9 +1638,12 @@ export function initializeProject(options: InitOptions): InitResult {
 
   const configCreated = writeFileIfNeeded(
     path.join(options.projectRoot, 'OME.md'),
-    buildOMEMarkdown(scan, options.template, specRoot),
+    buildOMEMarkdown(scan, options.template, specRoot, outputLanguage),
     options.force
   );
+  if (!configCreated) {
+    updateOMEMarkdownOutputLanguage(options.projectRoot, outputLanguage);
+  }
 
   const { initializeOpenSpecWorkspace } = require('./openspec');
   const openspec = initializeOpenSpecWorkspace(options.projectRoot, specRoot, options.force, options.openspecInit !== false);
@@ -1038,42 +1657,71 @@ export function initializeProject(options: InitOptions): InitResult {
 
   // `.ome/rules/*.md` 是项目本地的事实来源，用户会手工个性化编辑。
   // sync/update 只追加新检测到的规则（writeFileIfNeeded 对缺失文件总会写入），
-  // 已存在的规则一律保留；仅 --force 才整体覆盖。skill 源与 context 快照仍随 sync 刷新。
-  const shouldForceRules = options.forceRules ?? options.force ?? false;
-  const generatedRules = writeGeneratedRules(options.projectRoot, scan, shouldForceRules);
+  // 已存在的规则一律保留；仅 --force-rules 才整体覆盖。skill 源与 context 快照仍随 sync 刷新。
+  const shouldForceRules = options.forceRules === true;
+  const generatedRules = writeGeneratedRules(options.projectRoot, scan, shouldForceRules, outputLanguage);
   const rulesUpdated = generatedRules.updated;
 
-  const contextFilesUpdated = writeProjectContext(options.projectRoot, scan, refreshManagedFiles);
+  const contextFilesUpdated = writeProjectContext(options.projectRoot, scan, refreshManagedFiles, outputLanguage);
 
   appendGitignoreOnce(options.projectRoot, `${ENGINE_DIR}/memory/`);
 
   // 生成所有平台的 skill 源和平台入口
-  const { generateAllAgentGuidanceFiles, initializeProjectSkillSources, installAgents, syncExistingProjectAgents, syncExistingProjectSkillMirrors } = require('./agents');
-  const skillSourceResults = initializeProjectSkillSources(options.projectRoot, refreshManagedFiles);
+  const {
+    DEFAULT_PROJECT_AGENT_PLATFORMS,
+    detectInitializedAgentPlatforms,
+    generateAllAgentGuidanceFiles,
+    initializeProjectSkillSources,
+    installAgents,
+    syncExistingProjectAgents,
+    syncExistingProjectSkillMirrors
+  } = require('./agents');
+  const initializedPlatforms = detectInitializedAgentPlatforms(options.projectRoot);
+  const projectPlatforms = initializedPlatforms.length > 0
+    ? initializedPlatforms
+    : options.defaultProjectPlatforms !== false
+      ? DEFAULT_PROJECT_AGENT_PLATFORMS
+      : [];
+  const skillSourceResults = initializeProjectSkillSources(options.projectRoot, refreshManagedFiles, outputLanguage);
   const projectSkillTargets = skillSourceResults
     .filter((result: Record<string, any>) => result.action !== 'skipped')
     .map((result: Record<string, any>) => `${result.workflow}: ${result.path}`);
 
   const syncedTargets = options.sync !== false
-    ? syncRules([], options.projectRoot).map((result: Record<string, any>) => `${result.platform}: ${result.target}`)
+    ? projectPlatforms.length > 0
+      ? syncRules(projectPlatforms, options.projectRoot, {
+      outputLanguage,
+      preserveExistingMultiFile: options.forceRules !== true
+    }).map((result: Record<string, any>) => `${result.platform}: ${result.target}`)
+      : []
     : [];
 
-  const agentGuidanceResults = generateAllAgentGuidanceFiles(options.projectRoot, scan);
+  const agentGuidanceResults = generateAllAgentGuidanceFiles(options.projectRoot, scan, {
+    outputLanguage,
+    preserveExistingMultiFile: options.forceRules !== true,
+    platforms: projectPlatforms
+  });
   const agentGuidanceFiles = agentGuidanceResults
     .filter((r: any) => r.action !== 'skipped')
     .map((r: any) => `${r.platform}: ${r.path}`);
 
-  const projectPlatformTargets = options.sync
-    ? syncExistingProjectAgents(options.projectRoot).map((result: Record<string, any>) => `${result.platform}: ${result.target}`)
+  const projectPlatformTargets = options.sync && options.projectEntries === true
+    ? syncExistingProjectAgents(options.projectRoot, outputLanguage).map((result: Record<string, any>) => `${result.platform}: ${result.target}`)
     : [];
 
-  const projectSkillMirrorTargets = options.sync
-    ? syncExistingProjectSkillMirrors(options.projectRoot).map((result: Record<string, any>) => `${result.platform}: ${result.target}`)
+  const projectSkillMirrorTargets = options.sync && options.projectEntries === true
+    ? syncExistingProjectSkillMirrors(options.projectRoot, outputLanguage).map((result: Record<string, any>) => `${result.platform}: ${result.target}`)
     : [];
 
   let installedAgentTargets: string[] = [];
   if (options.installAgents === true) {
-    const agentResults = installAgents({ platforms: [], all: true, home: options.home, installOpenSpec: options.installOpenSpec });
+    const agentResults = installAgents({
+      platforms: [],
+      all: true,
+      home: options.home,
+      installOpenSpec: options.installOpenSpec,
+      outputLanguage
+    });
     installedAgentTargets = agentResults.map((result: Record<string, any>) => {
       if (result.kind === 'openspec-cli') return `${result.tool}: ${result.status} ${result.target}`;
       return `${result.platform}: ${result.target}`;
@@ -1100,17 +1748,23 @@ export function initializeProject(options: InitOptions): InitResult {
     openspecStatus: `${openspec.initializedBy}: ${openspec.message}`,
     agentGuidanceFiles,
     scanSummary: renderScanSummary(scan),
-    contextFilesUpdated
+    contextFilesUpdated,
+    outputLanguage: outputLanguage.code,
+    outputLanguageSource: outputLanguage.source
   };
 }
 
-export function initializeProjectRules(projectRoot: string = process.cwd(), force: boolean = false): InitRulesResult {
+export function initializeProjectRules(projectRoot: string = process.cwd(), force: boolean = false, outputLanguageOption?: string): InitRulesResult {
   ensureDirectory(currentEnginePath(projectRoot, 'rules'));
   ensureDirectory(currentEnginePath(projectRoot, 'context'));
 
   const scan = scanProject(projectRoot) as ProjectScanSummary;
-  const generatedRules = writeGeneratedRules(projectRoot, scan, force);
-  const contextFilesUpdated = writeProjectContext(projectRoot, scan, force);
+  const outputLanguage = resolveOutputLanguage(projectRoot, {
+    explicit: outputLanguageOption
+  });
+  updateOMEMarkdownOutputLanguage(projectRoot, outputLanguage);
+  const generatedRules = writeGeneratedRules(projectRoot, scan, force, outputLanguage);
+  const contextFilesUpdated = writeProjectContext(projectRoot, scan, force, outputLanguage);
 
   return {
     projectRoot,
@@ -1122,7 +1776,9 @@ export function initializeProjectRules(projectRoot: string = process.cwd(), forc
     rulesPreserved: generatedRules.preserved,
     rulesBackupPath: generatedRules.backupPath,
     promptPath: currentEnginePath(projectRoot, 'context', 'rules-generation-prompt.md'),
-    ruleNames: generatedRules.ruleNames
+    ruleNames: generatedRules.ruleNames,
+    outputLanguage: outputLanguage.code,
+    outputLanguageSource: outputLanguage.source
   };
 }
 
@@ -1130,6 +1786,7 @@ export function renderInitRulesResult(result: InitRulesResult): string {
   return [
     `Initialized personalized rule context in ${result.projectRoot}`,
     `Project scan: ${result.scanSummary}`,
+    `Output language: ${result.outputLanguage} (${result.outputLanguageSource})`,
     `Rule source files: created ${result.rulesCreated}, overwritten ${result.rulesOverwritten}, preserved ${result.rulesPreserved}`,
     ...(result.rulesBackupPath ? [`Rule backup: ${result.rulesBackupPath}`] : []),
     `Agent context files updated: ${result.contextFilesUpdated}`,
@@ -1150,6 +1807,7 @@ export function renderInitResult(result: InitResult): string {
     `Template: ${result.template}`,
     `Legacy .oh-my-engine migration: ${result.migratedLegacy ? 'migrated to .ome' : 'not needed'}`,
     `Project scan: ${result.scanSummary}`,
+    `Output language: ${result.outputLanguage} (${result.outputLanguageSource})`,
     `Config: ${result.configCreated ? 'created' : 'preserved'}`,
     `Rule source files: created ${result.rulesCreated}, overwritten ${result.rulesOverwritten}, preserved ${result.rulesPreserved}`,
     ...(result.rulesBackupPath ? [`Rule backup: ${result.rulesBackupPath}`] : []),
@@ -1172,6 +1830,6 @@ export function renderInitResult(result: InitResult): string {
     `  - Run \`ome init-rules\` after major code changes to refresh the dynamic rule set`,
     `  - Review ${ENGINE_DIR}/rules/ for the local scan-based rule drafts`,
     `  - In any Agent editor, run \`ome-init-rules\` or load ${ENGINE_DIR}/context/rules-generation-prompt.md to personalize rules from the latest source code`,
-    `  - All ${result.agentGuidanceFiles.length} Agent platforms now have auto-detection rules for automatic OME command usage`
+    `  - ${result.agentGuidanceFiles.length} configured Agent platform(s) now have auto-detection rules for automatic OME command usage`
   ].join('\n') + '\n';
 }

@@ -5,6 +5,8 @@ const yaml = require('js-yaml');
 const { fileExists, listMarkdownFiles, projectPath, readJsonFile } = require('./project');
 const { ENGINE_DIR, enginePath } = require('./paths');
 const { loadConfig, loadPlatformsConfig } = require('./config-loader');
+const { isOutputLanguageChinese, outputLanguageDisplayName, resolveOutputLanguage } = require('./output-language');
+import type { OutputLanguageResolution } from './output-language';
 
 export interface RulesValidationIssue {
   severity: 'error' | 'warning';
@@ -31,6 +33,11 @@ export interface RulesSyncResult {
   message?: string;
 }
 
+export interface RulesSyncOptions {
+  outputLanguage?: OutputLanguageInput;
+  preserveExistingMultiFile?: boolean;
+}
+
 export interface RuleMetadata {
   rule: string;
   version?: string;
@@ -46,6 +53,40 @@ export interface RuleMetadata {
     'project.language'?: string | string[];
   };
   autoApply?: boolean;
+}
+
+type OutputLanguageInput = string | OutputLanguageResolution;
+
+type RulesSyncInput = OutputLanguageInput | RulesSyncOptions;
+
+function isOutputLanguageResolution(value: unknown): value is OutputLanguageResolution {
+  return Boolean(
+    value &&
+    typeof value === 'object' &&
+    typeof (value as Record<string, unknown>).code === 'string' &&
+    typeof (value as Record<string, unknown>).source === 'string'
+  );
+}
+
+function normalizeRulesSyncOptions(input?: RulesSyncInput): RulesSyncOptions {
+  if (!input) return {};
+  if (typeof input === 'string' || isOutputLanguageResolution(input)) return { outputLanguage: input };
+  return input;
+}
+
+function normalizeOutputLanguageInput(
+  root: string,
+  config: Record<string, any>,
+  outputLanguage?: OutputLanguageInput
+): OutputLanguageResolution {
+  if (outputLanguage && typeof outputLanguage === 'object') {
+    return outputLanguage;
+  }
+
+  return resolveOutputLanguage(root, {
+    explicit: outputLanguage,
+    config
+  });
 }
 
 function loadProjectConfig(root: string = process.cwd()): Record<string, any> {
@@ -255,10 +296,17 @@ function generatePlatformFooter(platform: string, platformConfig: Record<string,
   return footer;
 }
 
-function generateRulesEntryContent(platform: string, platformConfig: Record<string, any>, config: Record<string, any>, rules: Record<string, string>): string {
+function generateRulesEntryContent(
+  platform: string,
+  platformConfig: Record<string, any>,
+  config: Record<string, any>,
+  rules: Record<string, string>,
+  outputLanguage: OutputLanguageResolution
+): string {
   const project = config.project || {};
   const ruleNames = Object.keys(rules).sort();
   const lines: string[] = [];
+  const useChinese = isOutputLanguageChinese(outputLanguage);
 
   if (platformConfig.format === 'mdc') {
     lines.push('---');
@@ -269,60 +317,98 @@ function generateRulesEntryContent(platform: string, platformConfig: Record<stri
     lines.push('');
   }
 
+  if (platform === 'qoder') {
+    lines.push('---');
+    lines.push('trigger: always_on');
+    lines.push('---');
+  }
+
   lines.push(`# ${platformConfig.name} OME Rules Entry`);
   lines.push('');
-  lines.push('This file is a generated entry point. It does not contain the full rules.');
+  lines.push(useChinese
+    ? `此文件是生成的入口文件，不包含完整规则。人类可读说明使用 ${outputLanguageDisplayName(outputLanguage)}。`
+    : 'This file is a generated entry point. It does not contain the full rules.');
   lines.push('');
-  lines.push('## Project');
+  lines.push(useChinese ? '## 项目' : '## Project');
   lines.push('');
-  lines.push(`- Project name: ${project.name || ''}`);
-  lines.push(`- Project type: ${project.type || ''}`);
-  lines.push(`- Framework: ${project.framework || ''}`);
-  lines.push('- Config: `OME.md`');
-  lines.push('- Rule source: `.ome/rules/`');
+  lines.push(useChinese ? `- 项目名称: ${project.name || ''}` : `- Project name: ${project.name || ''}`);
+  lines.push(useChinese ? `- 项目类型: ${project.type || ''}` : `- Project type: ${project.type || ''}`);
+  lines.push(useChinese ? `- 框架: ${project.framework || ''}` : `- Framework: ${project.framework || ''}`);
+  lines.push(useChinese ? '- 配置文件: `OME.md`' : '- Config: `OME.md`');
+  lines.push(useChinese ? '- 规则源: `.ome/rules/`' : '- Rule source: `.ome/rules/`');
   lines.push('');
-  lines.push('## Required Behavior');
+  lines.push(useChinese ? '## 必需行为' : '## Required Behavior');
   lines.push('');
-  lines.push('- Before editing, read `OME.md` and the relevant files under `.ome/rules/`.');
-  lines.push('- Select rule files by task domain instead of loading unrelated rules.');
-  lines.push('- Treat `.ome/rules/` as the canonical source; platform files are generated views only.');
-  lines.push('- Run `ome rules sync` after changing rule source files.');
+  if (useChinese) {
+    lines.push('- 编辑前先阅读 `OME.md` 以及 `.ome/rules/` 下的相关文件。');
+    lines.push('- 按任务领域选择规则文件，不要加载无关规则。');
+    lines.push('- 将 `.ome/rules/` 视为规范来源；平台文件只是生成视图。');
+    lines.push('- 修改规则源文件后运行 `ome rules sync`。');
+  } else {
+    lines.push('- Before editing, read `OME.md` and the relevant files under `.ome/rules/`.');
+    lines.push('- Select rule files by task domain instead of loading unrelated rules.');
+    lines.push('- Treat `.ome/rules/` as the canonical source; platform files are generated views only.');
+    lines.push('- Run `ome rules sync` after changing rule source files.');
+  }
   lines.push('');
-  lines.push('## Available Rules');
+  lines.push(useChinese ? '## 可用规则' : '## Available Rules');
   lines.push('');
   if (ruleNames.length === 0) {
-    lines.push('- No rule files found under `.ome/rules/`.');
+    lines.push(useChinese ? '- `.ome/rules/` 下未找到规则文件。' : '- No rule files found under `.ome/rules/`.');
   } else {
     for (const ruleName of ruleNames) lines.push(`- \`.ome/rules/${ruleName}.md\``);
   }
   lines.push('');
-  lines.push(`## Platform`);
+  lines.push(useChinese ? '## 平台' : '## Platform');
   lines.push('');
-  lines.push(`- Platform id: ${platform}`);
-  lines.push(`- Platform name: ${platformConfig.name}`);
+  lines.push(useChinese ? `- 平台 id: ${platform}` : `- Platform id: ${platform}`);
+  lines.push(useChinese ? `- 平台名称: ${platformConfig.name}` : `- Platform name: ${platformConfig.name}`);
 
   return lines.join('\n');
 }
 
-function processSingleFilePlatform(platform: string, platformConfig: Record<string, any>, config: Record<string, any>, rules: Record<string, string>, root: string): RulesSyncResult {
+function processSingleFilePlatform(
+  platform: string,
+  platformConfig: Record<string, any>,
+  config: Record<string, any>,
+  rules: Record<string, string>,
+  root: string,
+  outputLanguage: OutputLanguageResolution
+): RulesSyncResult {
   const filePath = path.join(root, platformConfig.file);
-  const content = generateRulesEntryContent(platform, platformConfig, config, rules);
+  const content = generateRulesEntryContent(platform, platformConfig, config, rules, outputLanguage);
   const status = writeManagedFileBlock(filePath, content);
   return status === 'skipped'
     ? { platform, target: path.relative(root, filePath), status: 'skipped', message: 'permission denied' }
     : { platform, target: path.relative(root, filePath), status: 'synced' };
 }
 
-function processMultiFilePlatform(platform: string, platformConfig: Record<string, any>, config: Record<string, any>, rules: Record<string, string>, platformsConfig: Record<string, any>, root: string): RulesSyncResult {
+function processMultiFilePlatform(
+  platform: string,
+  platformConfig: Record<string, any>,
+  config: Record<string, any>,
+  rules: Record<string, string>,
+  platformsConfig: Record<string, any>,
+  root: string,
+  outputLanguage: OutputLanguageResolution,
+  preserveExisting: boolean = false
+): RulesSyncResult {
   const directory = path.join(root, platformConfig.directory);
   const extension = platformConfig.extension || '.md';
   const fileName = `00-ome-rules${extension}`;
-  const content = generateRulesEntryContent(platform, platformConfig, config, rules);
-  const status = writeFile(path.join(directory, fileName), content);
+  const filePath = path.join(directory, fileName);
+  const target = `${path.relative(root, directory)}/${fileName}`;
+
+  if (preserveExisting && fs.existsSync(filePath)) {
+    return { platform, target, files: [fileName], status: 'skipped', message: 'preserved existing rule file' };
+  }
+
+  const content = generateRulesEntryContent(platform, platformConfig, config, rules, outputLanguage);
+  const status = writeFile(filePath, content);
 
   return status === 'skipped'
-    ? { platform, target: `${path.relative(root, directory)}/${fileName}`, files: [fileName], status: 'skipped', message: 'permission denied' }
-    : { platform, target: `${path.relative(root, directory)}/${fileName}`, files: [fileName], status: 'synced' };
+    ? { platform, target, files: [fileName], status: 'skipped', message: 'permission denied' }
+    : { platform, target, files: [fileName], status: 'synced' };
 }
 
 export function validateRules(): RulesValidationReport {
@@ -362,8 +448,10 @@ export function previewRulesSync(platformFilter?: string): RulesPreviewTarget[] 
   });
 }
 
-export function syncRules(platforms: string[] = [], root: string = process.cwd()): RulesSyncResult[] {
+export function syncRules(platforms: string[] = [], root: string = process.cwd(), syncOptions?: RulesSyncInput): RulesSyncResult[] {
   const config = loadProjectConfig(root);
+  const options = normalizeRulesSyncOptions(syncOptions);
+  const outputLanguage = normalizeOutputLanguageInput(root, config, options.outputLanguage);
   const platformsConfig = loadPlatformsConfig(root);
   const rules = loadRules(root);
   const targetPlatforms = platforms.length > 0 ? platforms : platformsConfig.enabled || Object.keys(platformsConfig.platforms || {});
@@ -372,21 +460,45 @@ export function syncRules(platforms: string[] = [], root: string = process.cwd()
   for (const platform of targetPlatforms) {
     const platformConfig = platformsConfig.platforms?.[platform];
     if (!platformConfig) continue;
-    if (platformConfig.type === 'single-file') results.push(processSingleFilePlatform(platform, platformConfig, config, rules, root));
-    else if (platformConfig.type === 'multi-file') results.push(processMultiFilePlatform(platform, platformConfig, config, rules, platformsConfig, root));
+    if (platformConfig.type === 'single-file') results.push(processSingleFilePlatform(platform, platformConfig, config, rules, root, outputLanguage));
+    else if (platformConfig.type === 'multi-file') results.push(processMultiFilePlatform(platform, platformConfig, config, rules, platformsConfig, root, outputLanguage, options.preserveExistingMultiFile === true));
   }
 
   return results;
 }
 
 export function syncRulesInherit(platforms: string[] = []): void {
+  let outputLanguage: string | undefined;
+  const targetPlatforms: string[] = [];
+
+  for (let index = 0; index < platforms.length; index += 1) {
+    const argument = platforms[index];
+    if (argument === '--language' || argument === '--output-language') {
+      if (index + 1 >= platforms.length) {
+        throw new Error(`Missing value for ${argument}`);
+      }
+      outputLanguage = platforms[index + 1];
+      index += 1;
+      continue;
+    }
+    targetPlatforms.push(argument);
+  }
+
   process.stdout.write('🔄 开始同步 rules...\n\n');
   const rules = loadRules();
   process.stdout.write(`📚 找到 ${Object.keys(rules).length} 个规则文件:\n`);
   for (const ruleName of Object.keys(rules)) process.stdout.write(`   - ${ruleName}.md\n`);
   process.stdout.write('\n');
 
-  for (const result of syncRules(platforms)) {
+  const platformsToSync = targetPlatforms.length > 0
+    ? targetPlatforms
+    : (() => {
+      const { DEFAULT_PROJECT_AGENT_PLATFORMS, detectInitializedAgentPlatforms } = require('./agents');
+      const initialized = detectInitializedAgentPlatforms(process.cwd());
+      return initialized.length > 0 ? initialized : DEFAULT_PROJECT_AGENT_PLATFORMS;
+    })();
+
+  for (const result of syncRules(platformsToSync, process.cwd(), outputLanguage)) {
     const suffix = result.files ? ` (${result.files.length} 个文件)` : '';
     process.stdout.write(`✅ ${result.platform}: ${result.target}${suffix}\n`);
   }

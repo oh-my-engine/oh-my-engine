@@ -25,7 +25,7 @@ project:
     - node:test
   buildTools:
     - typescript
-  filesScanned: 571
+  filesScanned: 572
   detectedPatterns:
     - automated-tests
     - build-script
@@ -132,6 +132,11 @@ evolution:
     adoptedPreferenceMinEvidence: 2
   evaluationInterval: daily
   optimizationThreshold: 85
+output:
+  language: en-US
+  languageSource: explicit
+  displayName: English (US)
+  requested: en-US
 ---
 
 # Oh My Engine Configuration
@@ -148,7 +153,7 @@ evolution:
 
 ## Project Scan
 
-- **Files Scanned**: 571
+- **Files Scanned**: 572
 - **Source Directories**: src, docs, schemas, skills, examples, bin
 - **Entrypoints**: dist/index.d.ts, dist/index.js, src/index.ts
 - **Test Frameworks**: node:test

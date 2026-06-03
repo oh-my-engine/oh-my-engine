@@ -23,9 +23,21 @@ function findRepoRoot(startDirectory: string): string {
 const REPO_ROOT = findRepoRoot(__dirname);
 const RUNTIME_ROOT = path.join(REPO_ROOT, 'dist');
 
+if (!process.env.OME_OUTPUT_LANGUAGE) {
+  process.env.OME_OUTPUT_LANGUAGE = 'en-US';
+}
+
 function omeArgs(args: string[]): string[] {
   if (process.platform === 'win32') return [path.join(RUNTIME_ROOT, 'bin', 'ome.js'), ...args];
   return args;
+}
+
+function omeTestEnv(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
+  return {
+    ...process.env,
+    OME_OUTPUT_LANGUAGE: 'en-US',
+    ...overrides
+  };
 }
 
 const OME_BIN = process.platform === 'win32' ? process.execPath : path.join(REPO_ROOT, 'bin', 'ome');
@@ -43,6 +55,7 @@ module.exports = {
   REPO_ROOT,
   RUNTIME_ROOT,
   omeArgs,
+  omeTestEnv,
   repoPath,
   runtimePath
 };

@@ -6,6 +6,8 @@ const {
   resolveWorkflowSkillSource,
   renderPlatformSkillEntry
 } = require('./skills');
+const { isOutputLanguageChinese, outputLanguageDisplayName, resolveOutputLanguage } = require('./output-language');
+import type { OutputLanguageResolution } from './output-language';
 
 export interface AgentInstallOptions {
   platforms: string[];
@@ -15,6 +17,7 @@ export interface AgentInstallOptions {
   home?: string;
   projectRoot?: string;
   installOpenSpec?: boolean;
+  outputLanguage?: OutputLanguageInput;
 }
 
 export interface AgentInstallResult {
@@ -23,6 +26,14 @@ export interface AgentInstallResult {
   target: string;
   kind: 'global-command' | 'project-command' | 'openspec-cli';
   status: 'installed' | 'skipped' | 'present' | 'failed';
+  message?: string;
+}
+
+export interface AgentCleanResult {
+  platform: string;
+  target: string;
+  kind: 'project-command' | 'project-skill-mirror';
+  status: 'removed' | 'missing' | 'skipped' | 'failed';
   message?: string;
 }
 
@@ -54,6 +65,35 @@ interface WorkflowDefinition {
   description: string;
 }
 
+type OutputLanguageInput = string | OutputLanguageResolution;
+
+type AgentGuidanceInput = OutputLanguageInput | AgentGuidanceOptions;
+
+function isOutputLanguageResolution(value: unknown): value is OutputLanguageResolution {
+  return Boolean(
+    value &&
+    typeof value === 'object' &&
+    typeof (value as Record<string, unknown>).code === 'string' &&
+    typeof (value as Record<string, unknown>).source === 'string'
+  );
+}
+
+function normalizeAgentGuidanceOptions(input?: AgentGuidanceInput): AgentGuidanceOptions {
+  if (!input) return {};
+  if (typeof input === 'string' || isOutputLanguageResolution(input)) return { outputLanguage: input };
+  return input;
+}
+
+function normalizeOutputLanguageInput(projectRoot: string, outputLanguage?: OutputLanguageInput): OutputLanguageResolution {
+  if (outputLanguage && typeof outputLanguage === 'object') {
+    return outputLanguage;
+  }
+
+  return resolveOutputLanguage(projectRoot, {
+    explicit: outputLanguage
+  });
+}
+
 const WORKFLOWS: WorkflowDefinition[] = [
   { id: 'init', command: 'ome-init', title: 'Initialize Oh My Engine', usage: 'ome-init [--install-agents]', description: 'Initialize .ome project configuration and Agent rules.' },
   { id: 'init-rules', command: 'ome-init-rules', title: 'Personalize Oh My Engine Rules', usage: 'ome init-rules', description: 'Refresh scan context, inspect current source code, rewrite .ome/rules, and sync Agent rules.' },
@@ -73,6 +113,8 @@ const WORKFLOWS: WorkflowDefinition[] = [
   { id: 'review', command: 'ome-review', title: 'Review Workflow', usage: 'ome review "<path, diff, or PR description>"', description: 'Review correctness, readability, architecture, security, performance, and tests.' },
   { id: 'ship', command: 'ome-ship', title: 'Ship Workflow', usage: 'ome ship "<completed change>"', description: 'Run final readiness checks and prepare user-facing handoff or commit notes.' }
 ];
+
+export const DEFAULT_PROJECT_AGENT_PLATFORMS = ['claude-code', 'codex'];
 
 export const AGENTS: AgentDefinition[] = [
   { id: 'claude-code', name: 'Claude Code', globalCommandDirectory: '.claude/commands', projectCommandDirectory: '.claude/commands', projectSkillMirrorDirectory: '.claude/skills', projectRules: 'CLAUDE.md', commandStyle: 'slash' },
@@ -137,9 +179,14 @@ function selectedAgents(platforms: string[], all?: boolean): AgentDefinition[] {
   return AGENTS.filter(agent => wanted.has(agent.id));
 }
 
-function renderCommandPrompt(agent: AgentDefinition, workflow: WorkflowDefinition, projectRoot: string): string {
-  const sourceContent = resolveWorkflowSkillSource(projectRoot, workflow);
-  return renderPlatformSkillEntry({ style: agent.commandStyle, platformId: agent.id }, workflow, sourceContent);
+function renderCommandPrompt(
+  agent: AgentDefinition,
+  workflow: WorkflowDefinition,
+  projectRoot: string,
+  outputLanguage?: OutputLanguageResolution
+): string {
+  const sourceContent = resolveWorkflowSkillSource(projectRoot, workflow, outputLanguage);
+  return renderPlatformSkillEntry({ style: agent.commandStyle, platformId: agent.id, outputLanguage }, workflow, sourceContent);
 }
 
 function targetPath(baseDirectory: string, agent: AgentDefinition, workflow: WorkflowDefinition): string {
@@ -160,8 +207,10 @@ function projectSkillMirrorBase(projectRoot: string, agent: AgentDefinition): st
 }
 
 function installForAgent(agent: AgentDefinition, options: AgentInstallOptions): AgentInstallResult[] {
+  const projectRoot = options.projectRoot || process.cwd();
+  const outputLanguage = normalizeOutputLanguageInput(projectRoot, options.outputLanguage);
   const base = options.project
-    ? projectCommandBase(options.projectRoot || process.cwd(), agent)
+    ? projectCommandBase(projectRoot, agent)
     : agent.globalCommandDirectory && path.join(normalizeHome(options.home), agent.globalCommandDirectory);
 
   if (!base) {
@@ -172,7 +221,7 @@ function installForAgent(agent: AgentDefinition, options: AgentInstallOptions): 
     const filePath = targetPath(base, agent, workflow);
     const kind = (options.project ? 'project-command' : 'global-command') as 'project-command' | 'global-command';
     try {
-      writeFile(filePath, renderCommandPrompt(agent, workflow, options.projectRoot || process.cwd()));
+      writeFile(filePath, renderCommandPrompt(agent, workflow, projectRoot, outputLanguage));
       return {
         platform: agent.id,
         target: filePath,
@@ -191,7 +240,7 @@ function installForAgent(agent: AgentDefinition, options: AgentInstallOptions): 
     return WORKFLOWS.map(workflow => {
       const filePath = targetPath(legacyBase, agent, workflow);
       try {
-        writeFile(filePath, renderCommandPrompt(agent, workflow, options.projectRoot || process.cwd()));
+        writeFile(filePath, renderCommandPrompt(agent, workflow, projectRoot, outputLanguage));
         return {
           platform: agent.id,
           target: filePath,
@@ -205,6 +254,87 @@ function installForAgent(agent: AgentDefinition, options: AgentInstallOptions): 
   });
 
   return primaryResults.concat(legacyResults);
+}
+
+function removeFileAndEmptySkillDirectory(filePath: string): void {
+  fs.rmSync(filePath, { force: true });
+  const directory = path.dirname(filePath);
+  if (path.basename(filePath) === 'SKILL.md' && fs.existsSync(directory) && fs.readdirSync(directory).length === 0) {
+    fs.rmdirSync(directory);
+  }
+}
+
+function isManagedProjectAgentEntry(filePath: string, workflow: WorkflowDefinition): boolean {
+  const content = fs.readFileSync(filePath, 'utf8');
+  return content.includes(`# ${workflow.command}`) && (
+    content.includes('<!-- OME:ACTION -->') ||
+    content.includes('## Workflow Session Start (MANDATORY)') ||
+    content.includes('## Purpose') ||
+    content.includes('Antigravity workflow notes:')
+  );
+}
+
+function cleanProjectTarget(agent: AgentDefinition, filePath: string, kind: AgentCleanResult['kind'], workflow: WorkflowDefinition): AgentCleanResult {
+  if (!fs.existsSync(filePath)) {
+    return {
+      platform: agent.id,
+      target: filePath,
+      kind,
+      status: 'missing'
+    };
+  }
+
+  try {
+    if (!isManagedProjectAgentEntry(filePath, workflow)) {
+      return {
+        platform: agent.id,
+        target: filePath,
+        kind,
+        status: 'skipped',
+        message: 'not recognized as an OME-generated project entry'
+      };
+    }
+
+    removeFileAndEmptySkillDirectory(filePath);
+    return {
+      platform: agent.id,
+      target: filePath,
+      kind,
+      status: 'removed'
+    };
+  } catch (error) {
+    return {
+      platform: agent.id,
+      target: filePath,
+      kind,
+      status: 'failed',
+      message: error instanceof Error ? error.message : String(error)
+    };
+  }
+}
+
+export function cleanProjectAgentEntries(options: AgentInstallOptions): AgentCleanResult[] {
+  const projectRoot = options.projectRoot || process.cwd();
+  const agents = selectedAgents(options.platforms, options.all || options.platforms.length === 0);
+  const results: AgentCleanResult[] = [];
+
+  for (const agent of agents) {
+    const commandBase = projectCommandBase(projectRoot, agent);
+    if (commandBase) {
+      for (const workflow of WORKFLOWS) {
+        results.push(cleanProjectTarget(agent, targetPath(commandBase, agent, workflow), 'project-command', workflow));
+      }
+    }
+
+    const mirrorBase = projectSkillMirrorBase(projectRoot, agent);
+    if (mirrorBase) {
+      for (const workflow of WORKFLOWS) {
+        results.push(cleanProjectTarget(agent, path.join(mirrorBase, workflow.command, 'SKILL.md'), 'project-skill-mirror', workflow));
+      }
+    }
+  }
+
+  return results;
 }
 
 function parseInstallArgs(args: string[]): AgentInstallOptions {
@@ -242,6 +372,12 @@ function parseInstallArgs(args: string[]): AgentInstallOptions {
     if (argument === '--project-root') {
       if (index + 1 >= args.length) throw new Error('Missing value for --project-root');
       options.projectRoot = args[index + 1];
+      index += 1;
+      continue;
+    }
+    if (argument === '--language' || argument === '--output-language') {
+      if (index + 1 >= args.length) throw new Error(`Missing value for ${argument}`);
+      options.outputLanguage = args[index + 1];
       index += 1;
       continue;
     }
@@ -407,7 +543,7 @@ export function installAgents(options: AgentInstallOptions): AgentInstallResult[
   return results;
 }
 
-export function syncExistingProjectAgents(projectRoot: string): AgentInstallResult[] {
+export function syncExistingProjectAgents(projectRoot: string, outputLanguage?: OutputLanguageInput): AgentInstallResult[] {
   return AGENTS.flatMap(agent => {
     const base = projectCommandBase(projectRoot, agent);
     if (!base || !fs.existsSync(base)) {
@@ -417,12 +553,14 @@ export function syncExistingProjectAgents(projectRoot: string): AgentInstallResu
     return installForAgent(agent, {
       platforms: [agent.id],
       project: true,
-      projectRoot
+      projectRoot,
+      outputLanguage
     });
   });
 }
 
-export function syncExistingProjectSkillMirrors(projectRoot: string): AgentInstallResult[] {
+export function syncExistingProjectSkillMirrors(projectRoot: string, outputLanguage?: OutputLanguageInput): AgentInstallResult[] {
+  const resolvedLanguage = normalizeOutputLanguageInput(projectRoot, outputLanguage);
   return AGENTS.flatMap(agent => {
     const base = projectSkillMirrorBase(projectRoot, agent);
     if (!base || !fs.existsSync(base)) {
@@ -430,7 +568,7 @@ export function syncExistingProjectSkillMirrors(projectRoot: string): AgentInsta
     }
 
     return WORKFLOWS.map(workflow => {
-      const sourceContent = resolveWorkflowSkillSource(projectRoot, workflow);
+      const sourceContent = resolveWorkflowSkillSource(projectRoot, workflow, resolvedLanguage);
       const filePath = path.join(base, workflow.command, 'SKILL.md');
       try {
         writeFile(filePath, sourceContent);
@@ -502,6 +640,19 @@ export function runAgentsCommand(args: string[]): void {
     return;
   }
 
+  if (subcommand === 'clean-project') {
+    const results = cleanProjectAgentEntries(parseInstallArgs(args.slice(1)));
+    const reported = results.filter(result => result.status !== 'missing');
+    process.stdout.write('Oh My Engine project Agent entry cleanup\n');
+    process.stdout.write(`Removed: ${results.filter(result => result.status === 'removed').length}\n`);
+    for (const result of reported) {
+      const detail = result.message ? ` - ${result.message}` : '';
+      process.stdout.write(`${result.status} ${result.platform}: ${result.target}${detail}\n`);
+    }
+    if (results.some(result => result.status === 'failed')) process.exitCode = 1;
+    return;
+  }
+
   throw new Error(`Unknown agents command: ${subcommand}`);
 }
 
@@ -509,8 +660,12 @@ export function workflowCommands(): string[] {
   return WORKFLOWS.map(workflow => workflow.command);
 }
 
-export function initializeProjectSkillSources(projectRoot: string, force: boolean = false): { workflow: string; path: string; action: 'created' | 'updated' | 'skipped' }[] {
-  return initializeWorkflowSkillSources(projectRoot, WORKFLOWS, force);
+export function initializeProjectSkillSources(
+  projectRoot: string,
+  force: boolean = false,
+  outputLanguage?: OutputLanguageInput
+): { workflow: string; path: string; action: 'created' | 'updated' | 'skipped' }[] {
+  return initializeWorkflowSkillSources(projectRoot, WORKFLOWS, force, normalizeOutputLanguageInput(projectRoot, outputLanguage));
 }
 
 // ============================================================================
@@ -521,15 +676,20 @@ export interface AgentGuidanceResult {
   platform: string;
   path: string;
   action: 'created' | 'updated' | 'skipped';
+  message?: string;
+}
+
+export interface AgentGuidanceOptions {
+  outputLanguage?: OutputLanguageInput;
+  preserveExistingMultiFile?: boolean;
+  platforms?: string[];
 }
 
 /**
  * 判断平台是单文件还是多文件类型
  */
 function isSingleFilePlatform(platform: AgentDefinition): boolean {
-  // 单文件平台使用根目录的单个文件
-  const singleFilePatterns = ['CLAUDE.md', 'AGENTS.md', '.windsurfrules', 'GEMINI.md'];
-  return singleFilePatterns.some(pattern => platform.projectRules.includes(pattern) && !platform.projectRules.includes('*'));
+  return ['claude-code', 'codex', 'opencode', 'windsurf'].includes(platform.id);
 }
 
 /**
@@ -561,6 +721,44 @@ function getAutoDetectionFilePath(projectRoot: string, platform: AgentDefinition
   return path.join(projectRoot, 'AGENTS.md'); // fallback
 }
 
+function hasProjectDirectory(projectRoot: string, directory?: string): boolean {
+  return Boolean(directory && fs.existsSync(path.join(projectRoot, directory)));
+}
+
+function hasPlatformSpecificFootprint(projectRoot: string, platform: AgentDefinition): boolean {
+  if (hasProjectDirectory(projectRoot, platform.projectCommandDirectory)) return true;
+  if (hasProjectDirectory(projectRoot, platform.projectSkillMirrorDirectory)) return true;
+  if (platform.id === 'cursor') {
+    return fs.existsSync(path.join(projectRoot, '.cursor', 'rules', '00-ome-rules.mdc'));
+  }
+  if (platform.id === 'trae') {
+    return fs.existsSync(path.join(projectRoot, '.trae', 'rules', '00-ome-rules.md'));
+  }
+  if (platform.id === 'qoder') {
+    return fs.existsSync(path.join(projectRoot, '.qoder', 'rules', '00-ome-rules.md'));
+  }
+  if (platform.id === 'windsurf') {
+    return hasProjectDirectory(projectRoot, '.windsurf') || fs.existsSync(path.join(projectRoot, '.windsurfrules'));
+  }
+  if (platform.id === 'opencode') return hasProjectDirectory(projectRoot, '.opencode');
+  if (platform.id === 'antigravity') {
+    return hasProjectDirectory(projectRoot, '.agent') ||
+      fs.existsSync(path.join(projectRoot, '.agents', 'rules', '00-ome-rules.md')) ||
+      fs.existsSync(path.join(projectRoot, 'GEMINI.md'));
+  }
+  return false;
+}
+
+export function detectInitializedAgentPlatforms(projectRoot: string): string[] {
+  return AGENTS
+    .filter(agent => {
+      if (hasPlatformSpecificFootprint(projectRoot, agent)) return true;
+      if (agent.id === 'opencode') return false;
+      return fs.existsSync(getAutoDetectionFilePath(projectRoot, agent));
+    })
+    .map(agent => agent.id);
+}
+
 /**
  * 构建命令示例（根据平台风格）
  */
@@ -572,7 +770,7 @@ function buildCommandExample(platform: AgentDefinition, command: string): string
 /**
  * 构建自动检测规则内容
  */
-function buildAgentGuidanceContent(platform: AgentDefinition, scan: any): string {
+function buildAgentGuidanceContent(platform: AgentDefinition, scan: any, outputLanguage: OutputLanguageResolution): string {
   const cmdBug = buildCommandExample(platform, 'ome-bug');
   const cmdUi = buildCommandExample(platform, 'ome-ui');
   const cmdApi = buildCommandExample(platform, 'ome-api');
@@ -585,6 +783,7 @@ function buildAgentGuidanceContent(platform: AgentDefinition, scan: any): string
   const cmdShip = buildCommandExample(platform, 'ome-ship');
 
   const lines: string[] = [];
+  const useChinese = isOutputLanguageChinese(outputLanguage);
 
   if (platform.id === 'cursor') {
     lines.push('---');
@@ -594,50 +793,91 @@ function buildAgentGuidanceContent(platform: AgentDefinition, scan: any): string
     lines.push('');
   }
 
+  if (platform.id === 'qoder') {
+    lines.push('---');
+    lines.push('trigger: always_on');
+    lines.push('---');
+  }
+
   lines.push(`# Oh My Engine - ${platform.name} Integration`);
   lines.push('');
-  lines.push('## Project Context');
+  lines.push(useChinese ? '## 项目上下文' : '## Project Context');
   lines.push('');
-  lines.push(`- Project name: ${scan.projectName || 'Unknown'}`);
-  lines.push(`- Project type: ${scan.projectType || 'Unknown'}`);
-  lines.push(`- Framework: ${scan.framework || 'Unknown'}`);
-  lines.push('- Project config: `OME.md`');
-  lines.push('- Rule source: `.ome/rules/`');
-  lines.push('- Skill source: `.ome/skills/`');
+  lines.push(useChinese ? `- 项目名称: ${scan.projectName || 'Unknown'}` : `- Project name: ${scan.projectName || 'Unknown'}`);
+  lines.push(useChinese ? `- 项目类型: ${scan.projectType || 'Unknown'}` : `- Project type: ${scan.projectType || 'Unknown'}`);
+  lines.push(useChinese ? `- 框架: ${scan.framework || 'Unknown'}` : `- Framework: ${scan.framework || 'Unknown'}`);
+  lines.push(useChinese ? `- 输出语言: ${outputLanguageDisplayName(outputLanguage)} (${outputLanguage.code})` : `- Output language: ${outputLanguageDisplayName(outputLanguage)} (${outputLanguage.code})`);
+  lines.push(useChinese ? '- 项目配置: `OME.md`' : '- Project config: `OME.md`');
+  lines.push(useChinese ? '- 规则源: `.ome/rules/`' : '- Rule source: `.ome/rules/`');
+  lines.push(useChinese ? '- Skill 源: `.ome/skills/`' : '- Skill source: `.ome/skills/`');
   lines.push('');
-  lines.push('## Operating Contract');
+  lines.push(useChinese ? '## 操作契约' : '## Operating Contract');
   lines.push('');
-  lines.push('- Keep this file as a platform entry point only.');
-  lines.push('- Before executing a task, read `OME.md`, the relevant `.ome/rules/*.md` files, and the matching `.ome/skills/ome-*/SKILL.md` file.');
-  lines.push('- Treat `.ome/rules/` and `.ome/skills/` as the project-local source of truth.');
-  lines.push('- Do not copy full rule or skill content into platform files; regenerate platform views from `.ome` instead.');
+  if (useChinese) {
+    lines.push('- 仅将此文件作为平台入口。');
+    lines.push('- 执行任务前，先阅读 `OME.md`、相关 `.ome/rules/*.md` 文件，以及匹配的 `.ome/skills/ome-*/SKILL.md` 文件。');
+    lines.push('- 将 `.ome/rules/` 和 `.ome/skills/` 视为项目本地事实来源。');
+    lines.push('- 不要把完整规则或 skill 内容复制进平台文件；平台视图应从 `.ome` 重新生成。');
+  } else {
+    lines.push('- Keep this file as a platform entry point only.');
+    lines.push('- Before executing a task, read `OME.md`, the relevant `.ome/rules/*.md` files, and the matching `.ome/skills/ome-*/SKILL.md` file.');
+    lines.push('- Treat `.ome/rules/` and `.ome/skills/` as the project-local source of truth.');
+    lines.push('- Do not copy full rule or skill content into platform files; regenerate platform views from `.ome` instead.');
+  }
   lines.push('');
-  lines.push('## Default Delivery Workflow');
+  lines.push(useChinese ? '## 默认交付工作流' : '## Default Delivery Workflow');
   lines.push('');
-  lines.push(`1. Define requirements: \`${cmdDefine} "<task>"\` -> read \`.ome/skills/ome-define/SKILL.md\``);
-  lines.push(`2. Explore code and plan: \`${cmdPlan} "<task>"\` -> read \`.ome/skills/ome-plan/SKILL.md\``);
-  lines.push(`3. Implement in small slices: \`${cmdBuild} "<task>"\` -> read \`.ome/skills/ome-build/SKILL.md\``);
-  lines.push(`4. Self-test and review: \`${cmdTest} "<target>"\` and \`${cmdReview} "<diff>"\``);
-  lines.push(`5. Ship handoff: \`${cmdShip} "<change>"\` -> read \`.ome/skills/ome-ship/SKILL.md\``);
+  if (useChinese) {
+    lines.push(`1. 定义需求: \`${cmdDefine} "<task>"\` -> 阅读 \`.ome/skills/ome-define/SKILL.md\``);
+    lines.push(`2. 探索代码并制定计划: \`${cmdPlan} "<task>"\` -> 阅读 \`.ome/skills/ome-plan/SKILL.md\``);
+    lines.push(`3. 小步实现: \`${cmdBuild} "<task>"\` -> 阅读 \`.ome/skills/ome-build/SKILL.md\``);
+    lines.push(`4. 自测与评审: \`${cmdTest} "<target>"\` 和 \`${cmdReview} "<diff>"\``);
+    lines.push(`5. 准备交付: \`${cmdShip} "<change>"\` -> 阅读 \`.ome/skills/ome-ship/SKILL.md\``);
+  } else {
+    lines.push(`1. Define requirements: \`${cmdDefine} "<task>"\` -> read \`.ome/skills/ome-define/SKILL.md\``);
+    lines.push(`2. Explore code and plan: \`${cmdPlan} "<task>"\` -> read \`.ome/skills/ome-plan/SKILL.md\``);
+    lines.push(`3. Implement in small slices: \`${cmdBuild} "<task>"\` -> read \`.ome/skills/ome-build/SKILL.md\``);
+    lines.push(`4. Self-test and review: \`${cmdTest} "<target>"\` and \`${cmdReview} "<diff>"\``);
+    lines.push(`5. Ship handoff: \`${cmdShip} "<change>"\` -> read \`.ome/skills/ome-ship/SKILL.md\``);
+  }
   lines.push('');
-  lines.push('## Workflow Routing');
+  lines.push(useChinese ? '## 工作流路由' : '## Workflow Routing');
   lines.push('');
-  lines.push(`- Bug investigation or fix planning: \`${cmdBug} "<issue description>"\` -> read \`.ome/skills/ome-bug/SKILL.md\``);
-  lines.push(`- API client, service, or contract work: \`${cmdApi} "<api or contract>"\` -> read \`.ome/skills/ome-api/SKILL.md\``);
-  lines.push(`- UI restoration from a design source: \`${cmdUi} "<design source>"\` -> read \`.ome/skills/ome-ui/SKILL.md\``);
-  lines.push(`- Reusable component work: \`${cmdComp} "<component>"\` -> read \`.ome/skills/ome-comp/SKILL.md\``);
-  lines.push(`- Clarify scope and success criteria: \`${cmdDefine} "<task>"\` -> read \`.ome/skills/ome-define/SKILL.md\``);
-  lines.push(`- Plan implementation and tests: \`${cmdPlan} "<task>"\` -> read \`.ome/skills/ome-plan/SKILL.md\``);
-  lines.push(`- Implement a scoped change: \`${cmdBuild} "<task>"\` -> read \`.ome/skills/ome-build/SKILL.md\``);
-  lines.push(`- Design or run tests: \`${cmdTest} "<target>"\` -> read \`.ome/skills/ome-test/SKILL.md\``);
-  lines.push(`- Review code or a diff: \`${cmdReview} "<target>"\` -> read \`.ome/skills/ome-review/SKILL.md\``);
-  lines.push(`- Prepare final handoff or release checks: \`${cmdShip} "<change>"\` -> read \`.ome/skills/ome-ship/SKILL.md\``);
+  if (useChinese) {
+    lines.push(`- 缺陷调查或修复规划: \`${cmdBug} "<issue description>"\` -> 阅读 \`.ome/skills/ome-bug/SKILL.md\``);
+    lines.push(`- API 客户端、服务或契约工作: \`${cmdApi} "<api or contract>"\` -> 阅读 \`.ome/skills/ome-api/SKILL.md\``);
+    lines.push(`- 从设计源恢复 UI: \`${cmdUi} "<design source>"\` -> 阅读 \`.ome/skills/ome-ui/SKILL.md\``);
+    lines.push(`- 可复用组件工作: \`${cmdComp} "<component>"\` -> 阅读 \`.ome/skills/ome-comp/SKILL.md\``);
+    lines.push(`- 澄清范围和成功标准: \`${cmdDefine} "<task>"\` -> 阅读 \`.ome/skills/ome-define/SKILL.md\``);
+    lines.push(`- 规划实现和测试: \`${cmdPlan} "<task>"\` -> 阅读 \`.ome/skills/ome-plan/SKILL.md\``);
+    lines.push(`- 实现有边界的改动: \`${cmdBuild} "<task>"\` -> 阅读 \`.ome/skills/ome-build/SKILL.md\``);
+    lines.push(`- 设计或运行测试: \`${cmdTest} "<target>"\` -> 阅读 \`.ome/skills/ome-test/SKILL.md\``);
+    lines.push(`- 评审代码或 diff: \`${cmdReview} "<target>"\` -> 阅读 \`.ome/skills/ome-review/SKILL.md\``);
+    lines.push(`- 准备最终交付检查: \`${cmdShip} "<change>"\` -> 阅读 \`.ome/skills/ome-ship/SKILL.md\``);
+  } else {
+    lines.push(`- Bug investigation or fix planning: \`${cmdBug} "<issue description>"\` -> read \`.ome/skills/ome-bug/SKILL.md\``);
+    lines.push(`- API client, service, or contract work: \`${cmdApi} "<api or contract>"\` -> read \`.ome/skills/ome-api/SKILL.md\``);
+    lines.push(`- UI restoration from a design source: \`${cmdUi} "<design source>"\` -> read \`.ome/skills/ome-ui/SKILL.md\``);
+    lines.push(`- Reusable component work: \`${cmdComp} "<component>"\` -> read \`.ome/skills/ome-comp/SKILL.md\``);
+    lines.push(`- Clarify scope and success criteria: \`${cmdDefine} "<task>"\` -> read \`.ome/skills/ome-define/SKILL.md\``);
+    lines.push(`- Plan implementation and tests: \`${cmdPlan} "<task>"\` -> read \`.ome/skills/ome-plan/SKILL.md\``);
+    lines.push(`- Implement a scoped change: \`${cmdBuild} "<task>"\` -> read \`.ome/skills/ome-build/SKILL.md\``);
+    lines.push(`- Design or run tests: \`${cmdTest} "<target>"\` -> read \`.ome/skills/ome-test/SKILL.md\``);
+    lines.push(`- Review code or a diff: \`${cmdReview} "<target>"\` -> read \`.ome/skills/ome-review/SKILL.md\``);
+    lines.push(`- Prepare final handoff or release checks: \`${cmdShip} "<change>"\` -> read \`.ome/skills/ome-ship/SKILL.md\``);
+  }
   lines.push('');
-  lines.push('## Rule Loading');
+  lines.push(useChinese ? '## 规则加载' : '## Rule Loading');
   lines.push('');
-  lines.push('- Load general rules from `.ome/rules/agent-behavior.md`, `.ome/rules/project-overview.md`, `.ome/rules/code-style.md`, `.ome/rules/architecture.md`, `.ome/rules/testing.md`, and `.ome/rules/tooling.md` when they exist.');
-  lines.push('- Load domain rules only when the task touches that domain, such as security, API routing, data access, deployment, UI, accessibility, performance, or i18n.');
-  lines.push('- If a needed rule or skill file is missing, continue with the nearest available `.ome` guidance and report the gap.');
+  if (useChinese) {
+    lines.push('- 当存在 `.ome/rules/agent-behavior.md`、`.ome/rules/project-overview.md`、`.ome/rules/code-style.md`、`.ome/rules/architecture.md`、`.ome/rules/testing.md` 和 `.ome/rules/tooling.md` 时，加载这些通用规则。');
+    lines.push('- 只有任务触及安全、API 路由、数据访问、部署、UI、可访问性、性能或 i18n 等领域时，才加载对应领域规则。');
+    lines.push('- 如果需要的规则或 skill 文件缺失，使用最接近的 `.ome` 指南继续，并报告缺口。');
+  } else {
+    lines.push('- Load general rules from `.ome/rules/agent-behavior.md`, `.ome/rules/project-overview.md`, `.ome/rules/code-style.md`, `.ome/rules/architecture.md`, `.ome/rules/testing.md`, and `.ome/rules/tooling.md` when they exist.');
+    lines.push('- Load domain rules only when the task touches that domain, such as security, API routing, data access, deployment, UI, accessibility, performance, or i18n.');
+    lines.push('- If a needed rule or skill file is missing, continue with the nearest available `.ome` guidance and report the gap.');
+  }
 
   return lines.join('\n');
 
@@ -647,13 +887,23 @@ function buildAgentGuidanceContent(platform: AgentDefinition, scan: any): string
 export function generateAgentGuidanceFile(
   projectRoot: string,
   platform: AgentDefinition,
-  scan: any
+  scan: any,
+  guidanceInput?: AgentGuidanceInput
 ): AgentGuidanceResult {
+  const options = normalizeAgentGuidanceOptions(guidanceInput);
+  const outputLanguage = normalizeOutputLanguageInput(projectRoot, options.outputLanguage);
   const managedFilePath = getAutoDetectionFilePath(projectRoot, platform);
   const managedFileExists = fs.existsSync(managedFilePath);
-  const managedContent = buildAgentGuidanceContent(platform, scan);
+  const managedContent = buildAgentGuidanceContent(platform, scan, outputLanguage);
   if (isSingleFilePlatform(platform)) {
     writeManagedFileBlock(managedFilePath, managedContent);
+  } else if (options.preserveExistingMultiFile === true && managedFileExists) {
+    return {
+      platform: platform.id,
+      path: managedFilePath,
+      action: 'skipped',
+      message: 'preserved existing rule file'
+    };
   } else {
     writeFile(managedFilePath, managedContent);
   }
@@ -667,12 +917,20 @@ export function generateAgentGuidanceFile(
 
 export function generateAllAgentGuidanceFiles(
   projectRoot: string,
-  scan: any
+  scan: any,
+  guidanceInput?: AgentGuidanceInput
 ): AgentGuidanceResult[] {
+  const options = normalizeAgentGuidanceOptions(guidanceInput);
+  const outputLanguage = normalizeOutputLanguageInput(projectRoot, options.outputLanguage);
   const results: AgentGuidanceResult[] = [];
   const createdFiles = new Set<string>();
+  const targetPlatforms = options.platforms ? new Set(options.platforms) : undefined;
 
   for (const platform of AGENTS) {
+    if (targetPlatforms && !targetPlatforms.has(platform.id)) {
+      continue;
+    }
+
     const filePath = getAutoDetectionFilePath(projectRoot, platform);
 
     // 跳过已创建的共享文件
@@ -681,7 +939,10 @@ export function generateAllAgentGuidanceFiles(
       continue;
     }
 
-    const result = generateAgentGuidanceFile(projectRoot, platform, scan);
+    const result = generateAgentGuidanceFile(projectRoot, platform, scan, {
+      outputLanguage,
+      preserveExistingMultiFile: options.preserveExistingMultiFile === true
+    });
     results.push(result);
 
     if (result.action !== 'skipped') {

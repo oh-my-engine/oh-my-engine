@@ -6,12 +6,12 @@
 
 > A self-evolving workflow engine with memory and learning capabilities for Claude Code and Codex
 
-Oh My Engine is a powerful framework that transforms Claude Code and Codex into intelligent workflow systems. It learns from your patterns, remembers your preferences, and evolves to create custom workflows automatically.
+Oh My Engine is a powerful framework that transforms Claude Code and Codex into intelligent workflow systems. It remembers substantive workflow evidence, learns from repeated patterns, and proposes verified workflow improvements as candidates before adoption.
 
 ## ✨ Features
 
 - **🧠 Memory System**: Remembers execution history, learnings, and user preferences in human-readable Markdown format
-- **🔄 Self-Evolution**: Automatically learns from patterns, generates rules and skills, and intelligently decides when to apply improvements
+- **🔄 Self-Evolution**: Promotes repeated, meaningful workflow evidence into reviewable learning and skill candidates
 - **🤖 Auto-Detection**: AI agents automatically recognize task types and invoke the right OME commands without manual prompting
 - **⚙️ Project Configuration**: Per-project workflow customization with `.ome/`
 - **📋 Rich Workflows**: Pre-built workflows for UI restoration, bug analysis, component generation, and API integration

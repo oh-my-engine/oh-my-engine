@@ -11,6 +11,10 @@ const {
   recordExecutionMemory,
   recordPreferenceMemory
 } = require('../skills/oh-my-engine/lib/memory-store');
+const {
+  autoAnalyzeEvolution,
+  loadAnalysisState
+} = require('../skills/oh-my-engine/lib/auto-evolution');
 
 function createWorkspace() {
   const workspace = fs.mkdtempSync(
@@ -505,6 +509,30 @@ test('bug finish writes diagnostic memory and filters preexisting platform noise
 
   runOme(workspace, ['bug', 'Bug memory records noise instead of root cause']);
 
+  const generatedNoiseFiles = [
+    '.codex/skills/openspec-explore/SKILL.md',
+    '.codex/skills/openspec-propose/SKILL.md',
+    '.cursor/rules/00-ome-auto-detection.mdc',
+    '.gitignore',
+    '.ome/context/project-scan.json',
+    '.ome/context/rules-generation-prompt.md',
+    '.ome/platforms.json',
+    '.ome/rules/testing.md',
+    '.ome/skills/ome-bug/SKILL.md',
+    '.qoder/rules/00-ome-auto-detection.md',
+    '.trae/rules/00-ome-auto-detection.md',
+    '.trae/skills/openspec-apply-change/SKILL.md',
+    'AGENTS.md',
+    'CLAUDE.md',
+    'GEMINI.md'
+  ];
+
+  for (const generatedFile of generatedNoiseFiles) {
+    const filePath = path.join(workspace, generatedFile);
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, `generated noise ${generatedFile}\n`, 'utf8');
+  }
+
   fs.writeFileSync(
     path.join(workspace, 'src', 'core', 'memory.ts'),
     'export const value = 2;\n',
@@ -530,13 +558,44 @@ test('bug finish writes diagnostic memory and filters preexisting platform noise
 
   const content = fs.readFileSync(executionFiles[0], 'utf8');
   const parsed = matter(content);
+  const ignoredNoise = parsed.data.metadata.noiseFilesIgnored || [];
+  const filesTouchedSection = content.match(/## Files Touched\n\n([\s\S]*?)(?:\n## |\n```json|$)/)?.[1] || '';
+  const noiseCovers = (expectedPath: string) =>
+    ignoredNoise.some((ignoredPath: string) =>
+      ignoredPath === expectedPath || expectedPath.startsWith(ignoredPath)
+    );
 
   assert.deepEqual(parsed.data.filesTouched, ['src/core/memory.ts']);
   assert.ok(
-    parsed.data.metadata.noiseFilesIgnored.includes('.ome/.session'),
+    noiseCovers('.ome/.session'),
     'expected session file to be tracked as ignored noise'
   );
-  assert.doesNotMatch(content, /\.claude\/commands\/ome-bug\.md/);
+  assert.ok(
+    noiseCovers('.codex/skills/openspec-explore/SKILL.md'),
+    'expected Codex skill sync output to be tracked as ignored noise'
+  );
+  assert.ok(
+    noiseCovers('.cursor/rules/00-ome-auto-detection.mdc'),
+    'expected Cursor rule sync output to be tracked as ignored noise'
+  );
+  assert.ok(
+    noiseCovers('.ome/rules/testing.md'),
+    'expected generated rule refresh output to be tracked as ignored noise'
+  );
+  assert.ok(
+    noiseCovers('.ome/skills/ome-bug/SKILL.md'),
+    'expected project skill refresh output to be tracked as ignored noise'
+  );
+  assert.ok(
+    noiseCovers('.trae/skills/openspec-apply-change/SKILL.md'),
+    'expected Trae skill sync output to be tracked as ignored noise'
+  );
+  assert.doesNotMatch(filesTouchedSection, /\.claude\/commands\/ome-bug\.md/);
+  assert.doesNotMatch(filesTouchedSection, /\.codex\/skills\/openspec-explore\/SKILL\.md/);
+  assert.doesNotMatch(filesTouchedSection, /\.cursor\/rules\/00-ome-auto-detection\.mdc/);
+  assert.doesNotMatch(filesTouchedSection, /\.ome\/rules\/testing\.md/);
+  assert.doesNotMatch(filesTouchedSection, /\.ome\/skills\/ome-bug\/SKILL\.md/);
+  assert.doesNotMatch(filesTouchedSection, /\.trae\/skills\/openspec-apply-change\/SKILL\.md/);
   assert.match(content, /## Symptom/);
   assert.match(content, /Bug memory records noise instead of root cause/);
   assert.match(content, /## Root Cause/);
@@ -546,7 +605,105 @@ test('bug finish writes diagnostic memory and filters preexisting platform noise
   assert.match(content, /## Reusable Learning/);
 });
 
-test('bug finish refuses empty diagnostic memory without core fields', () => {
+test('bug finish keeps real changes after ome update noise out of files touched', () => {
+  const workspace = createWorkspace();
+
+  runOme(workspace, ['init']);
+  fs.mkdirSync(path.join(workspace, 'src', 'core'), { recursive: true });
+  fs.writeFileSync(path.join(workspace, 'src', 'core', 'memory.ts'), 'export const value = 1;\n', 'utf8');
+  const customTestingRule = [
+    '---',
+    'rule: testing',
+    'version: 2.0.0',
+    'description: Custom testing rule that must survive update',
+    'category: testing',
+    '---',
+    '',
+    '# Testing',
+    '',
+    '- Preserve this project-specific testing rule.',
+    ''
+  ].join('\n');
+  const testingRulePath = path.join(workspace, '.ome', 'rules', 'testing.md');
+  fs.writeFileSync(testingRulePath, customTestingRule, 'utf8');
+
+  runGit(workspace, ['init']);
+  runGit(workspace, ['config', 'user.email', 'test@example.com']);
+  runGit(workspace, ['config', 'user.name', 'Test User']);
+  runGit(workspace, ['add', '.']);
+  runGit(workspace, ['commit', '-m', 'seed workspace']);
+
+  runOme(workspace, ['bug', 'ome update noise dominates files touched']);
+
+  const staleGeneratedFiles = [
+    '.claude/commands/ome-bug.md',
+    '.ome/context/project-scan.json'
+  ];
+  for (const staleFile of staleGeneratedFiles) {
+    const filePath = path.join(workspace, staleFile);
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, `stale generated content for ${staleFile}\n`, 'utf8');
+  }
+
+  runOme(workspace, ['update', '--project-only']);
+
+  assert.equal(
+    fs.readFileSync(testingRulePath, 'utf8'),
+    customTestingRule,
+    'ome update must not overwrite existing generated or customized rules'
+  );
+
+  fs.writeFileSync(
+    path.join(workspace, 'src', 'core', 'memory.ts'),
+    'export const value = 2;\n',
+    'utf8'
+  );
+
+  runOme(workspace, [
+    'finish',
+    '--root-cause',
+    'bug workflow memory included generated update synchronization output',
+    '--evidence',
+    'ome update refreshed platform entry files before the actual bug fix',
+    '--fix',
+    'filter generated update paths while preserving the real source file change',
+    '--verification',
+    'node:test runs ome update then verifies files touched contains only src/core/memory.ts'
+  ]);
+
+  const executionFiles = findExecutionFiles(workspace, 'bug');
+  assert.equal(executionFiles.length, 1);
+
+  const content = fs.readFileSync(executionFiles[0], 'utf8');
+  const parsed = matter(content);
+  const ignoredNoise = parsed.data.metadata.noiseFilesIgnored || [];
+  const filesTouchedSection = content.match(/## Files Touched\n\n([\s\S]*?)(?:\n## |\n```json|$)/)?.[1] || '';
+  const noiseCovers = (expectedPath: string) =>
+    ignoredNoise.some((ignoredPath: string) =>
+      ignoredPath === expectedPath || expectedPath.startsWith(ignoredPath)
+    );
+
+  assert.deepEqual(parsed.data.filesTouched, ['src/core/memory.ts']);
+  assert.equal(parsed.data.filesTouchedTotal, 1);
+  assert.ok(
+    noiseCovers('.ome/context/project-scan.json'),
+    'expected update context refresh output to be tracked as ignored noise'
+  );
+  assert.ok(
+    noiseCovers('.claude/commands/ome-bug.md'),
+    'expected generated project command output to be tracked as ignored noise'
+  );
+  assert.ok(
+    noiseCovers('OME.md'),
+    'expected OME.md config refresh output to be tracked as ignored noise'
+  );
+  assert.doesNotMatch(filesTouchedSection, /\.ome\/context\/project-scan\.json/);
+  assert.doesNotMatch(filesTouchedSection, /\.ome\/skills\/ome-bug\/SKILL\.md/);
+  assert.doesNotMatch(filesTouchedSection, /\.claude\/commands\/ome-bug\.md/);
+  assert.doesNotMatch(filesTouchedSection, /OME\.md/);
+});
+
+test('bug finish refuses empty diagnostic memory without core fields and keeps session retryable', () => {
   const workspace = createWorkspace();
 
   runOme(workspace, ['init']);
@@ -568,7 +725,67 @@ test('bug finish refuses empty diagnostic memory without core fields', () => {
   assert.match(output, /Execution not persisted/);
   assert.match(output, /requires core diagnostic fields/);
   assert.equal(findExecutionFiles(workspace, 'bug').length, 0);
+  assert.equal(fs.existsSync(path.join(workspace, '.ome', '.session')), true);
+
+  const retryOutput = runOme(workspace, [
+    'finish',
+    '--root-cause',
+    'bug workflow finish was attempted before diagnostic fields were supplied',
+    '--evidence',
+    'the first finish explained the missing fields without recording memory',
+    '--fix',
+    'keep the active session available for a structured finish retry',
+    '--verification',
+    'node:test verifies retryable bug finish behavior'
+  ]);
+
+  assert.match(retryOutput, /Execution recorded/);
+  assert.equal(findExecutionFiles(workspace, 'bug').length, 1);
   assert.equal(fs.existsSync(path.join(workspace, '.ome', '.session')), false);
+});
+
+test('finish finalizes an old active session instead of stale-cleaning it first', () => {
+  const workspace = createWorkspace();
+
+  runOme(workspace, ['init']);
+  fs.mkdirSync(path.join(workspace, 'src'), { recursive: true });
+  fs.writeFileSync(path.join(workspace, 'src', 'bug.ts'), 'export const value = 1;\n', 'utf8');
+
+  runGit(workspace, ['init']);
+  runGit(workspace, ['config', 'user.email', 'test@example.com']);
+  runGit(workspace, ['config', 'user.name', 'Test User']);
+  runGit(workspace, ['add', '.']);
+  runGit(workspace, ['commit', '-m', 'seed workspace']);
+
+  runOme(workspace, ['bug', 'Long-running bug fix should still finish']);
+
+  fs.writeFileSync(path.join(workspace, 'src', 'bug.ts'), 'export const value = 2;\n', 'utf8');
+
+  const sessionPath = path.join(workspace, '.ome', '.session');
+  const session = JSON.parse(fs.readFileSync(sessionPath, 'utf8'));
+  session.startTime = new Date(Date.now() - 16 * 60 * 1000).toISOString();
+  fs.writeFileSync(sessionPath, JSON.stringify(session, null, 2), 'utf8');
+
+  const output = runOme(workspace, [
+    'finish',
+    '--root-cause',
+    'finish command cleaned up stale sessions before reading its own active session',
+    '--evidence',
+    'a long-running workflow reached finish after the stale-session threshold',
+    '--fix',
+    'skip stale cleanup for the finish command so it can close the current session',
+    '--verification',
+    'node:test verifies the original session id is recorded'
+  ]);
+
+  assert.doesNotMatch(output, /Found stale session/);
+  assert.match(output, new RegExp(`Session: ${session.id}`));
+
+  const executionFiles = findExecutionFiles(workspace, 'bug');
+  assert.equal(executionFiles.length, 1);
+  const parsed = matter(fs.readFileSync(executionFiles[0], 'utf8'));
+  assert.equal(parsed.data.changeId, session.id);
+  assert.equal(fs.existsSync(sessionPath), false);
 });
 
 test('finish records explicit diagnostic memory without an active session', () => {
@@ -610,6 +827,49 @@ test('finish records explicit diagnostic memory without an active session', () =
   assert.match(content, /finish required \.ome\/\.session/);
   assert.match(content, /## Verification/);
   assert.match(content, /node:test verifies ad-hoc memory rendering/);
+});
+
+test('finish records Chinese diagnostic memory when project output language is Chinese', () => {
+  const workspace = createWorkspace();
+
+  runOme(workspace, ['init', '--language', 'zh-CN']);
+
+  const output = runOme(workspace, [
+    'finish',
+    '--symptom',
+    '生成的记忆没有遵循中文规范',
+    '--impact',
+    '用户需要手工重写执行记忆',
+    '--root-cause',
+    'memory store 未读取 OME.md 中的 output.language 配置',
+    '--evidence',
+    '执行记忆仍然使用英文标题 Root Cause 和 Verification',
+    '--fix',
+    '根据项目输出语言渲染记忆正文标题',
+    '--verification',
+    'node:test 检查中文标题和稳定 frontmatter',
+    '--learning',
+    '记忆正文应跟随项目语言，但 frontmatter 字段必须保持稳定英文 key'
+  ]);
+
+  assert.match(output, /Execution recorded/);
+
+  const executionFiles = findExecutionFiles(workspace, 'bug');
+  assert.equal(executionFiles.length, 1);
+
+  const content = fs.readFileSync(executionFiles[0], 'utf8');
+  const parsed = matter(content);
+
+  assert.equal(parsed.data.workflow, 'bug');
+  assert.equal(parsed.data.rootCause, 'memory store 未读取 OME.md 中的 output.language 配置');
+  assert.equal(parsed.data.fixSummary, '根据项目输出语言渲染记忆正文标题');
+  assert.equal(parsed.data.filesTouchedTotal, 0);
+  assert.match(content, /## 根因/);
+  assert.match(content, /## 证据/);
+  assert.match(content, /## 验证/);
+  assert.match(content, /## 可复用经验/);
+  assert.doesNotMatch(content, /## Root Cause/);
+  assert.doesNotMatch(content, /## Verification/);
 });
 
 test('sessionless finish refuses shallow diagnostic payloads', () => {
@@ -796,6 +1056,111 @@ test('evolve analyzer persists learning and skill candidates from repeated patte
   );
   assert.equal(skillView.summary.totalRecords, 1);
   assert.equal(skillView.records[0].patternId, 'react-event-handler-invocation');
+});
+
+test('auto evolution analyzes markdown execution memory after workflow completion', () => {
+  const workspace = createWorkspace();
+
+  runOme(workspace, ['init']);
+
+  for (const changeId of ['auto-alpha', 'auto-beta', 'auto-gamma']) {
+    recordExecutionEvent(workspace, {
+      source: 'workflow_command',
+      workflow: 'spec',
+      phase: 'verify',
+      changeId,
+      changeSlug: changeId,
+      capability: 'auth',
+      complexity: 'high',
+      confidence: 'high',
+      sensitivity: 'low',
+      reusePotential: 0.8,
+      stability: 0.9,
+      novelty: 0.6,
+      status: 'verified',
+      summary: 'Verified automatic evolution candidates from markdown memory.',
+      filesTouched: ['openspec/changes/demo/spec.md'],
+      testsRun: ['npm test'],
+      errors: [],
+      metadata: {
+        patternCategory: 'workflow_success'
+      }
+    });
+  }
+
+  autoAnalyzeEvolution(workspace);
+
+  const candidatePath = path.join(
+    workspace,
+    '.ome',
+    'memory',
+    'learnings',
+    'candidates',
+    'spec-verify-verified-automatic-evolution-candidate.md'
+  );
+  assert.ok(
+    fs.existsSync(candidatePath),
+    'expected automatic analysis to write a learning candidate'
+  );
+
+  const candidate = matter(fs.readFileSync(candidatePath, 'utf8')).data;
+  assert.equal(candidate.status, 'candidate');
+  assert.equal(candidate.evidenceCount, 3);
+  assert.equal(candidate.verification.state, 'pending');
+
+  const state = loadAnalysisState(workspace);
+  assert.equal(state.analysisCount, 1);
+  assert.equal(state.lastCandidateCount, 1);
+});
+
+test('evolve analyzer ignores low-information workflow summaries', () => {
+  const workspace = createWorkspace();
+
+  runOme(workspace, ['init']);
+
+  for (const changeId of ['diff-alpha', 'diff-beta', 'diff-gamma']) {
+    recordExecutionEvent(workspace, {
+      source: 'workflow_command',
+      workflow: 'review',
+      phase: 'execution',
+      changeId,
+      changeSlug: changeId,
+      capability: 'review',
+      complexity: 'medium',
+      confidence: 'high',
+      sensitivity: 'low',
+      reusePotential: 0.8,
+      stability: 0.9,
+      novelty: 0.5,
+      status: 'verified',
+      summary: 'current diff',
+      filesTouched: ['src/example.ts'],
+      testsRun: ['npm test'],
+      errors: [],
+      metadata: {
+        patternCategory: 'workflow_success'
+      }
+    });
+  }
+
+  const report = JSON.parse(
+    runOme(workspace, ['evolve', 'analyze', '--format', 'json'])
+  );
+
+  assert.equal(report.summary.learningCandidates, 0);
+  assert.equal(
+    fs.existsSync(
+      path.join(
+        workspace,
+        '.ome',
+        'memory',
+        'learnings',
+        'candidates',
+        'review-execution-current-diff.md'
+      )
+    ),
+    false
+  );
 });
 
 test('evolve analyzer surfaces repeated agent behavior antipatterns as learning candidates', () => {

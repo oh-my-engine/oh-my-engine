@@ -44,8 +44,8 @@
   ],
   "sourceExtensions": {
     ".json": 8,
-    ".md": 415,
-    ".ts": 102,
+    ".md": 416,
+    ".ts": 103,
     ".yml": 1
   },
   "existingRuleFiles": [
@@ -79,7 +79,7 @@
     "typed-source"
   ],
   "hasUi": false,
-  "filesScanned": 571,
+  "filesScanned": 573,
   "directories": [
     ".agent",
     ".agent/rules",
@@ -162,6 +162,7 @@
     ".qoder/skills/openspec-archive-change",
     ".qoder/skills/openspec-explore",
     ".qoder/skills/openspec-propose",
+    ".tmp",
     ".trae",
     ".trae/commands",
     ".trae/rules",

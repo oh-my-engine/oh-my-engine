@@ -1,5 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const { isOutputLanguageChinese } = require('./output-language');
+import type { OutputLanguageResolution } from './output-language';
 
 export interface WorkflowDefinition {
   id: string;
@@ -18,7 +20,10 @@ export interface SkillSourceResult {
 export interface PlatformSkillEntryOptions {
   style: 'skill' | 'slash' | 'workflow';
   platformId: string;
+  outputLanguage?: OutputLanguageResolution;
 }
+
+type SkillLanguage = OutputLanguageResolution | undefined;
 
 const COMMON_RATIONALIZATIONS = [
   '"The obvious fix is good enough without a closer read of the rules."',
@@ -27,14 +32,21 @@ const COMMON_RATIONALIZATIONS = [
   '"A vague summary is enough for handoff."'
 ];
 
+const COMMON_RATIONALIZATIONS_ZH = [
+  '"这个修复很明显，不需要回归测试。"',
+  '"改动很小，可以跳过验证。"',
+  '"旁边代码也需要整理，所以一起改掉。"',
+  '"简单总结一下就足够交付。"'
+];
+
 const SUPERPOWERS_REPO = 'https://github.com/obra/superpowers';
 
 export const OME_ACTION_MARKER = '<!-- OME:ACTION -->';
 
-const ACTION_SKILLS: Record<string, { cli: string; humanLabel: string }> = {
-  memory: { cli: 'ome memory view', humanLabel: 'memory inspection' },
-  remember: { cli: 'ome memory remember', humanLabel: 'explicit memory recording' },
-  evolve: { cli: 'ome evolve analyze', humanLabel: 'evolution analysis' }
+const ACTION_SKILLS: Record<string, { cli: string; humanLabel: string; humanLabelZh: string }> = {
+  memory: { cli: 'ome memory view', humanLabel: 'memory inspection', humanLabelZh: '记忆检查结果' },
+  remember: { cli: 'ome memory remember', humanLabel: 'explicit memory recording', humanLabelZh: '显式记忆写入结果' },
+  evolve: { cli: 'ome evolve analyze', humanLabel: 'evolution analysis', humanLabelZh: '演化分析结果' }
 };
 
 const SESSION_MANAGED_WORKFLOW_IDS = new Set([
@@ -52,9 +64,65 @@ function workflowSessionCommand(workflow: WorkflowDefinition): string {
   return `ome ${workflow.id}`;
 }
 
-function renderWorkflowStartSection(workflow: WorkflowDefinition): string {
+function usesChinese(outputLanguage?: SkillLanguage): boolean {
+  return Boolean(outputLanguage && isOutputLanguageChinese(outputLanguage));
+}
+
+function workflowDescription(workflow: WorkflowDefinition, outputLanguage?: SkillLanguage): string {
+  if (!usesChinese(outputLanguage)) {
+    return workflow.description;
+  }
+
+  const descriptions: Record<string, string> = {
+    init: '初始化 .ome 项目配置和 Agent 规则。',
+    'init-rules': '刷新扫描上下文、检查当前源码、更新 .ome/rules 并同步 Agent 规则。',
+    bug: '结合项目规则分析、诊断并规划缺陷修复。',
+    ui: '基于设计源和项目设计规则恢复 UI 组件。',
+    comp: '使用项目代码和设计规则生成可复用组件。',
+    api: '使用项目规则集成 API 客户端、服务和契约。',
+    memory: '检查本地 Oh My Engine 记忆和已采纳经验。',
+    remember: '显式记住可复用的偏好或指令。',
+    evolve: '分析本地记忆，发现学习和 skill 候选项。',
+    superpowers: '为支持的 Agent 编辑器安装、更新或检查 Superpowers bridge 条目。',
+    mcp: '为 Agent 编辑器初始化、同步、预览或检查 Figma 和 MasterGo MCP 配置。',
+    define: '在实现前澄清目标、范围、成功标准和假设。',
+    plan: '生成包含接口、边界情况和测试策略的实现指导。',
+    build: '依据项目规则小步实现有边界的改动。',
+    test: '设计面向行为的测试、回归覆盖和失败诊断。',
+    review: '评审正确性、可读性、架构、安全、性能和测试。',
+    ship: '运行最终就绪检查，并准备面向用户的交付说明或提交记录。',
+    spec: '运行 OpenSpec 兼容工作流。'
+  };
+
+  return descriptions[workflow.id] || workflow.description;
+}
+
+function renderWorkflowStartSection(workflow: WorkflowDefinition, outputLanguage?: SkillLanguage): string {
   const command = workflowSessionCommand(workflow);
   const windowsFallback = `cmd.exe /c ome.cmd ${workflow.id} $ARGUMENTS`;
+
+  if (usesChinese(outputLanguage)) {
+    return [
+      '## 工作流会话开始（必需）',
+      '',
+      '在读取源文件、制定计划、编辑或运行验证之前，必须先运行以下 OME 工作流命令：',
+      '',
+      '```bash',
+      `${command} $ARGUMENTS`,
+      '```',
+      '',
+      '这会创建 `.ome/.session`，让最后的 `ome finish` 可以把执行记录写入 `.ome/memory/executions/`。',
+      '',
+      `如果 Windows PowerShell 策略阻止 \`ome\` shim，请通过跨 shell fallback 运行：\`${windowsFallback}\`。不要在非 Windows 平台硬编码该 fallback。`,
+      '',
+      'Claude Code 快捷路径（其他 Agent 忽略开头的 `!`，通过自己的 shell 工具运行不带 `!` 的命令）：',
+      '',
+      '```',
+      `!${command} $ARGUMENTS`,
+      '```',
+      ''
+    ].join('\n');
+  }
 
   return [
     '## Workflow Session Start (MANDATORY)',
@@ -78,25 +146,26 @@ function renderWorkflowStartSection(workflow: WorkflowDefinition): string {
   ].join('\n');
 }
 
-function renderWorkflowCompletionSection(): string {
+function renderSubstantiveWorkflowCompletionSection(_outputLanguage?: SkillLanguage): string {
   return [
-    '## Workflow Completion (MANDATORY)',
+    '## Workflow Completion (SUBSTANTIVE WORK ONLY)',
     '',
-    'After you finish the work for this workflow — successful or not — you MUST run the following shell command as the very last step, AFTER you have reported results to the user:',
+    'Run `ome finish` only after a substantive workflow loop is complete, and only after you have reported results to the user.',
+    '',
+    'Substantive work means at least one of these is true:',
+    '- You changed files or wrote new code/docs.',
+    '- You ran verification and the result matters to the task outcome.',
+    '- You made a durable technical decision, diagnosis, or reusable learning that should be available later.',
+    '',
+    'Do NOT run `ome finish` for ordinary conversation, quick explanations, brainstorming with no conclusion, or read-only exploration that produced no reusable outcome.',
+    '',
+    'When the work is substantive, run this as the final shell command:',
     '',
     '```bash',
     'ome finish',
     '```',
     '',
-    'This records the execution into `.ome/memory/executions/` so the engine can learn from it.',
-    '',
-    'Skip ONLY if all of these are true:',
-    '- The user explicitly said "do not record" or "just testing".',
-    '- You made zero file changes.',
-    '- You wrote zero new code.',
-    '- You ran zero verifications.',
-    '',
-    'Do NOT skip because "the task was small" or "nothing interesting happened" — the engine\'s policy gate decides what to keep, not you.',
+    'This records the execution into `.ome/memory/executions/`; the engine policy decides whether it is valuable enough to persist or later evolve.',
     '',
     'Claude Code fast path (other agents: ignore the leading `!` and run the bare command via your shell tool):',
     '',
@@ -116,16 +185,54 @@ function insertAfterPrimaryHeading(content: string, section: string): string {
   return content.replace(headingPattern, match => `${match}\n${section.trimEnd()}\n`);
 }
 
-function ensureWorkflowSessionSections(workflow: WorkflowDefinition, content: string): string {
+function hasWorkflowStartSection(content: string): boolean {
+  return content.includes('## Workflow Session Start (MANDATORY)') ||
+    content.includes('## 工作流会话开始（必需）');
+}
+
+function hasWorkflowCompletionSection(content: string): boolean {
+  return content.includes('## Workflow Completion (SUBSTANTIVE WORK ONLY)') ||
+    content.includes('## Workflow Completion (MANDATORY)') ||
+    content.includes('## 工作流收尾（必需）');
+}
+
+function isWorkflowCompletionHeading(line: string): boolean {
+  const heading = line.trim();
+  return heading === '## Workflow Completion (SUBSTANTIVE WORK ONLY)' ||
+    heading === '## Workflow Completion (MANDATORY)' ||
+    heading.includes('\u5de5\u4f5c\u6d41\u6536\u5c3e');
+}
+
+function replaceWorkflowCompletionSection(content: string, section: string): string {
+  const lines = content.split(/\r?\n/);
+  const start = lines.findIndex(isWorkflowCompletionHeading);
+  if (start < 0) return content;
+
+  let end = start + 1;
+  while (end < lines.length && !lines[end].startsWith('## ')) {
+    end += 1;
+  }
+
+  return [
+    ...lines.slice(0, start),
+    ...section.trimEnd().split('\n'),
+    ...lines.slice(end)
+  ].join('\n');
+}
+
+function ensureWorkflowSessionSections(workflow: WorkflowDefinition, content: string, outputLanguage?: SkillLanguage): string {
   if (!isSessionManagedWorkflow(workflow)) return content;
 
   let next = content;
-  if (!next.includes('## Workflow Session Start (MANDATORY)')) {
-    next = insertAfterPrimaryHeading(next, renderWorkflowStartSection(workflow));
+  if (!hasWorkflowStartSection(next)) {
+    next = insertAfterPrimaryHeading(next, renderWorkflowStartSection(workflow, outputLanguage));
   }
 
-  if (!next.includes('## Workflow Completion (MANDATORY)')) {
-    next = `${next.trimEnd()}\n\n${renderWorkflowCompletionSection().trimEnd()}\n`;
+  const completionSection = renderSubstantiveWorkflowCompletionSection(outputLanguage);
+  if (hasWorkflowCompletionSection(next)) {
+    next = replaceWorkflowCompletionSection(next, completionSection);
+  } else {
+    next = `${next.trimEnd()}\n\n${completionSection.trimEnd()}\n`;
   }
 
   return next.endsWith('\n') ? next : `${next}\n`;
@@ -208,7 +315,9 @@ function renderStructuredSkill(options: {
   verification: string[];
   outputContract: string[];
   workflowId?: string;
+  outputLanguage?: SkillLanguage;
 }): string {
+  const chinese = usesChinese(options.outputLanguage);
   const sections = [
     '---',
     `name: ${options.command}`,
@@ -220,52 +329,57 @@ function renderStructuredSkill(options: {
     '',
     `# ${options.command}`,
     '',
-    '## Purpose',
+    chinese ? '## 用途' : '## Purpose',
     options.purpose,
     '',
-    '## When to Use',
+    chinese ? '## 适用场景' : '## When to Use',
     renderBulletList(options.whenToUse),
     '',
-    '## Inputs',
+    chinese ? '## 输入' : '## Inputs',
     renderBulletList(options.inputs),
     '',
-    '## Process',
+    chinese ? '## 流程' : '## Process',
     renderOrderedList(options.process),
     '',
-    '## Red Flags',
+    chinese ? '## 风险信号' : '## Red Flags',
     renderBulletList(options.redFlags),
     '',
-    '## Common Rationalizations',
-    renderBulletList(options.rationalizations || COMMON_RATIONALIZATIONS),
+    chinese ? '## 常见误区' : '## Common Rationalizations',
+    renderBulletList(options.rationalizations || (chinese ? COMMON_RATIONALIZATIONS_ZH : COMMON_RATIONALIZATIONS)),
     '',
-    '## Verification',
+    chinese ? '## 验证' : '## Verification',
     renderBulletList(options.verification),
     '',
-    '## Output Contract',
-    'Final response must include:',
+    chinese ? '## 输出要求' : '## Output Contract',
+    chinese ? '最终回复必须包含：' : 'Final response must include:',
     renderBulletList(options.outputContract),
     ''
   ];
 
   if (options.workflowId && COMPLETION_LIFECYCLE_IDS.has(options.workflowId)) {
-    sections.push('', renderWorkflowCompletionSection());
+    sections.push('', renderSubstantiveWorkflowCompletionSection(options.outputLanguage));
   } else {
     const inferredId = options.command.replace(/^ome-/, '');
     if (COMPLETION_LIFECYCLE_IDS.has(inferredId)) {
-      sections.push('', renderWorkflowCompletionSection());
+      sections.push('', renderSubstantiveWorkflowCompletionSection(options.outputLanguage));
     }
   }
 
   return sections.join('\n');
 }
 
-export function renderActionSkillSource(workflow: WorkflowDefinition, options: { cli: string; humanLabel: string }): string {
+export function renderActionSkillSource(
+  workflow: WorkflowDefinition,
+  options: { cli: string; humanLabel: string; humanLabelZh: string },
+  outputLanguage?: SkillLanguage
+): string {
   const tag = workflow.id;
+  const chinese = usesChinese(outputLanguage);
   return [
     '---',
     `name: ${workflow.command}`,
     'version: 1.0.0',
-    `description: ${workflow.description}`,
+    `description: ${workflowDescription(workflow, outputLanguage)}`,
     'author: oh-my-engine',
     `tags: [ome, ${tag}, action]`,
     `allowed-tools: Bash(${options.cli}:*)`,
@@ -274,31 +388,53 @@ export function renderActionSkillSource(workflow: WorkflowDefinition, options: {
     OME_ACTION_MARKER,
     `# ${workflow.command}`,
     '',
-    `> **Action command — execute, do not narrate.**`,
-    '> When the user invokes this command, you MUST do the following before any other reasoning or commentary:',
-    '>',
-    `> 1. Run this shell command exactly (substitute \`$ARGUMENTS\` with whatever the user passed, empty if none):`,
-    '>',
-    '>    ```bash',
-    `>    ${options.cli} $ARGUMENTS`,
-    '>    ```',
-    '>',
-    '> 2. Show the raw output to the user.',
-    '> 3. Add commentary ONLY after the output is shown, and only if the user explicitly asks.',
-    '>',
-    `> Do NOT print the Reference section below unless the user asks "how do I use this". The user invoked this command to see ${options.humanLabel} results, not docs.`,
-    '',
-    'Claude Code fast path — the line below starting with `!` is pre-executed automatically. Other agents: ignore the leading `!` and run the bare command via your shell tool, following the instructions above.',
+    ...(chinese
+      ? [
+        '> **动作命令：执行，不要讲解。**',
+        '> 当用户调用此命令时，必须在任何推理或说明之前完成以下步骤：',
+        '>',
+        '> 1. 精确运行这个 shell 命令（将 `$ARGUMENTS` 替换为用户传入内容，没有则留空）：',
+        '>',
+        '>    ```bash',
+        `>    ${options.cli} $ARGUMENTS`,
+        '>    ```',
+        '>',
+        '> 2. 向用户展示原始输出。',
+        '> 3. 只有用户明确要求时，才在输出之后补充说明。',
+        '>',
+        `> 除非用户问“怎么使用”，不要打印下面的参考章节。用户调用此命令是为了查看${options.humanLabelZh}，不是阅读文档。`,
+        '',
+        'Claude Code 快捷路径：下面以 `!` 开头的行会被自动预执行。其他 Agent 忽略开头的 `!`，通过自己的 shell 工具运行不带 `!` 的命令，并遵循上面的说明。'
+      ]
+      : [
+        '> **Action command: execute, do not narrate.**',
+        '> When the user invokes this command, you MUST do the following before any other reasoning or commentary:',
+        '>',
+        '> 1. Run this shell command exactly (substitute `$ARGUMENTS` with whatever the user passed, empty if none):',
+        '>',
+        '>    ```bash',
+        `>    ${options.cli} $ARGUMENTS`,
+        '>    ```',
+        '>',
+        '> 2. Show the raw output to the user.',
+        '> 3. Add commentary ONLY after the output is shown, and only if the user explicitly asks.',
+        '>',
+        `> Do NOT print the Reference section below unless the user asks "how do I use this". The user invoked this command to see ${options.humanLabel} results, not docs.`,
+        '',
+        'Claude Code fast path: the line below starting with `!` is pre-executed automatically. Other agents: ignore the leading `!` and run the bare command via your shell tool, following the instructions above.'
+      ]),
     '',
     `!${options.cli} $ARGUMENTS`,
     '',
     '---',
     '',
-    '## Reference (only show when the user asks)',
+    chinese ? '## 参考（仅在用户询问时展示）' : '## Reference (only show when the user asks)',
     '',
-    `Underlying CLI: \`${options.cli}\``,
+    chinese ? `底层 CLI：\`${options.cli}\`` : `Underlying CLI: \`${options.cli}\``,
     '',
-    `For detailed flags and examples, run \`${options.cli} --help\` or read \`.ome/skills/${workflow.command}/SKILL.md\` directly.`,
+    chinese
+      ? `如需详细 flags 和示例，运行 \`${options.cli} --help\` 或直接阅读 \`.ome/skills/${workflow.command}/SKILL.md\`。`
+      : `For detailed flags and examples, run \`${options.cli} --help\` or read \`.ome/skills/${workflow.command}/SKILL.md\` directly.`,
     ''
   ].join('\n');
 }
@@ -313,6 +449,56 @@ const TEMPLATE_SKILLS: Record<string, string> = {
   memory: 'skills/oh-my-engine-memory/SKILL.md',
   spec: 'skills/oh-my-engine-spec/SKILL.md'
 };
+
+function localizedGenericSkillSource(workflow: WorkflowDefinition, outputLanguage: OutputLanguageResolution): string {
+  const description = workflowDescription(workflow, outputLanguage);
+
+  return renderStructuredSkill({
+    command: workflow.command,
+    description,
+    tags: ['ome', workflow.id, 'workflow'],
+    purpose: `${description}请结合 \`OME.md\`、相关 \`.ome/rules/*.md\` 和当前源码执行。`,
+    whenToUse: [
+      '当用户请求与该工作流匹配时使用。',
+      '当任务需要结合项目规则、源码和验证结果执行时使用。',
+      '如果另一个 OME 工作流明显更贴合任务形态，不要使用此工作流。'
+    ],
+    inputs: [
+      '用户请求和任何附带上下文。',
+      '`OME.md`、相关 `.ome/rules/*.md` 文件，以及匹配的 `.ome/skills/ome-*/SKILL.md` 文件。',
+      '与当前工作流相关的源码、测试、日志、配置或设计/接口资料。'
+    ],
+    process: [
+      '先阅读 OME 指南、项目规则和相关文件。',
+      '识别当前任务真正需要改变或验证的最小范围。',
+      '优先复用项目已有模式、工具和边界。',
+      '按最小可验证步骤执行分析、实现或同步。',
+      '运行能证明结果的最近相关检查，需要时扩大验证范围。',
+      '避免无关清理、宽泛重构或推测性新增功能。',
+      '报告变更文件、核心结论、验证证据和剩余风险。'
+    ],
+    redFlags: [
+      '工作流与用户请求不匹配。',
+      '改动范围超出当前任务需要。',
+      '跳过验证或验证无法证明结论。',
+      '结果无法追溯到项目规则、源码证据或用户目标。'
+    ],
+    verification: [
+      '运行当前工作流最接近的有效检查。',
+      '确认输出符合用户请求和项目规则。',
+      '说明无法验证的部分和原因。',
+      '没有证据时不要声称完成。'
+    ],
+    outputContract: [
+      '工作流总结',
+      '变更文件或产物',
+      '验证证据',
+      '剩余风险'
+    ],
+    workflowId: workflow.id,
+    outputLanguage
+  });
+}
 
 function genericSkillSource(workflow: WorkflowDefinition): string {
   switch (workflow.id) {
@@ -781,34 +967,42 @@ function templateSkillContent(workflow: WorkflowDefinition): string | undefined 
   return replaceFrontmatterName(source, workflow.command);
 }
 
-export function buildWorkflowSkillSource(workflow: WorkflowDefinition): string {
+export function buildWorkflowSkillSource(workflow: WorkflowDefinition, outputLanguage?: SkillLanguage): string {
   const action = ACTION_SKILLS[workflow.id];
   if (action) {
-    const template = templateSkillContent(workflow);
+    const template = usesChinese(outputLanguage) ? undefined : templateSkillContent(workflow);
     if (template && template.includes(OME_ACTION_MARKER)) return template;
-    return renderActionSkillSource(workflow, action);
+    return renderActionSkillSource(workflow, action, outputLanguage);
   }
-  const template = templateSkillContent(workflow);
-  return ensureWorkflowSessionSections(workflow, template || genericSkillSource(workflow));
+  const template = usesChinese(outputLanguage) ? undefined : templateSkillContent(workflow);
+  const source = outputLanguage && usesChinese(outputLanguage)
+    ? localizedGenericSkillSource(workflow, outputLanguage)
+    : template || genericSkillSource(workflow);
+  return ensureWorkflowSessionSections(workflow, source, outputLanguage);
 }
 
 export function skillSourcePath(projectRoot: string, workflow: WorkflowDefinition): string {
   return path.join(projectRoot, '.ome', 'skills', workflow.command, 'SKILL.md');
 }
 
-export function resolveWorkflowSkillSource(projectRoot: string, workflow: WorkflowDefinition): string {
+export function resolveWorkflowSkillSource(projectRoot: string, workflow: WorkflowDefinition, outputLanguage?: SkillLanguage): string {
   const projectSourcePath = skillSourcePath(projectRoot, workflow);
   const projectSource = readFileIfExists(projectSourcePath);
-  if (projectSource) return ensureWorkflowSessionSections(workflow, projectSource);
-  return buildWorkflowSkillSource(workflow);
+  if (projectSource) return ensureWorkflowSessionSections(workflow, projectSource, outputLanguage);
+  return buildWorkflowSkillSource(workflow, outputLanguage);
 }
 
-export function initializeWorkflowSkillSources(projectRoot: string, workflows: WorkflowDefinition[], force: boolean = false): SkillSourceResult[] {
+export function initializeWorkflowSkillSources(
+  projectRoot: string,
+  workflows: WorkflowDefinition[],
+  force: boolean = false,
+  outputLanguage?: SkillLanguage
+): SkillSourceResult[] {
   const results: SkillSourceResult[] = [];
 
   for (const workflow of workflows) {
     const filePath = skillSourcePath(projectRoot, workflow);
-    const content = buildWorkflowSkillSource(workflow);
+    const content = buildWorkflowSkillSource(workflow, outputLanguage);
     const created = writeFileIfNeeded(filePath, content, force);
     results.push({
       workflow: workflow.command,
@@ -821,7 +1015,7 @@ export function initializeWorkflowSkillSources(projectRoot: string, workflows: W
 }
 
 export function renderPlatformSkillEntry(options: PlatformSkillEntryOptions, workflow: WorkflowDefinition, sourceContent: string): string {
-  const preparedContent = ensureWorkflowSessionSections(workflow, sourceContent);
+  const preparedContent = ensureWorkflowSessionSections(workflow, sourceContent, options.outputLanguage);
   const isAction = preparedContent.includes(OME_ACTION_MARKER);
 
   if (options.style === 'skill') {
@@ -832,9 +1026,9 @@ export function renderPlatformSkillEntry(options: PlatformSkillEntryOptions, wor
   const sections: string[] = [];
 
   if (isAction && options.platformId === 'claude-code') {
-    sections.push(renderActionFrontmatterFor('claude-code', workflow));
+    sections.push(renderActionFrontmatterFor('claude-code', workflow, options.outputLanguage));
   } else {
-    sections.push(renderFrontmatterBlock(workflow.description));
+    sections.push(renderFrontmatterBlock(workflowDescription(workflow, options.outputLanguage)));
   }
 
   if (isAction && options.platformId !== 'claude-code') {
@@ -844,23 +1038,32 @@ export function renderPlatformSkillEntry(options: PlatformSkillEntryOptions, wor
   }
 
   if (options.platformId === 'antigravity') {
-    sections.push(
-      '',
-      'Antigravity workflow notes:',
-      `- Use this workflow from Antigravity as \`/${workflow.command}\` when workflow commands are available.`,
-      '- If it does not appear immediately, reload the Antigravity window after installing workflows.'
-    );
+    if (usesChinese(options.outputLanguage)) {
+      sections.push(
+        '',
+        'Antigravity 工作流说明：',
+        `- 当 Antigravity 支持工作流命令时，使用 \`/${workflow.command}\` 调用此工作流。`,
+        '- 如果安装后没有立即出现，请重新加载 Antigravity 窗口。'
+      );
+    } else {
+      sections.push(
+        '',
+        'Antigravity workflow notes:',
+        `- Use this workflow from Antigravity as \`/${workflow.command}\` when workflow commands are available.`,
+        '- If it does not appear immediately, reload the Antigravity window after installing workflows.'
+      );
+    }
   }
 
   return `${sections.join('\n')}\n`;
 }
 
-function renderActionFrontmatterFor(platformId: string, workflow: WorkflowDefinition): string {
+function renderActionFrontmatterFor(platformId: string, workflow: WorkflowDefinition, outputLanguage?: SkillLanguage): string {
   const action = ACTION_SKILLS[workflow.id];
   const allowedTools = action ? `Bash(${action.cli}:*)` : 'Bash(ome:*)';
   return [
     '---',
-    `description: ${workflow.description}`,
+    `description: ${workflowDescription(workflow, outputLanguage)}`,
     `allowed-tools: ${allowedTools}`,
     '---',
     ''

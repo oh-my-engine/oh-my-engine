@@ -43,6 +43,10 @@ test('ome init initializes project directories and defaults from TypeScript CLI'
   assert.equal(fs.existsSync(path.join(workspace, 'AGENTS.md')), true);
   assert.equal(fs.existsSync(path.join(workspace, '.claude', 'commands', 'ome-init-rules.md')), false);
   assert.equal(fs.existsSync(path.join(workspace, '.cursor', 'commands', 'ome-init-rules.md')), false);
+  assert.equal(fs.existsSync(path.join(workspace, '.cursor', 'rules', '00-ome-auto-detection.mdc')), false);
+  assert.equal(fs.existsSync(path.join(workspace, '.qoder', 'rules', '00-ome-auto-detection.md')), false);
+  assert.equal(fs.existsSync(path.join(workspace, '.trae', 'rules', '00-ome-auto-detection.md')), false);
+  assert.equal(fs.existsSync(path.join(workspace, '.agent', 'rules', '00-ome-auto-detection.md')), false);
   assert.equal(fs.existsSync(path.join(workspace, '.agents', 'skills', 'ome-bug', 'SKILL.md')), false);
   assert.equal(fs.existsSync(path.join(workspace, '.agent', 'workflows', 'ome-init-rules.md')), false);
 
@@ -149,6 +153,48 @@ test('ome init scans TypeScript Node projects and writes agent personalization c
   assert.equal(fs.existsSync(path.join(workspace, '.ome', 'rules', 'theme.md')), false);
   assert.equal(fs.existsSync(path.join(workspace, '.ome', 'rules', 'design-tokens.md')), false);
   assert.equal(fs.existsSync(path.join(workspace, '.ome', 'rules', 'i18n.md')), false);
+});
+
+test('ome init uses explicit Chinese output language for generated project guidance', () => {
+  const workspace = createWorkspace();
+  fs.writeFileSync(path.join(workspace, 'package.json'), JSON.stringify({
+    name: 'zh-target',
+    scripts: {
+      test: 'node --test dist/tests/*.test.js'
+    },
+    devDependencies: {
+      typescript: '^6.0.3'
+    }
+  }, null, 2), 'utf8');
+  fs.mkdirSync(path.join(workspace, 'src'), { recursive: true });
+  fs.writeFileSync(path.join(workspace, 'src', 'index.ts'), 'export const value: number = 1;\n', 'utf8');
+
+  const output = runOme(['init', '--language', 'zh-CN'], workspace);
+
+  assert.match(output, /Output language: zh-CN \(explicit\)/);
+
+  const config = parseOMEConfig(workspace);
+  assert.equal(config.output.language, 'zh-CN');
+  assert.equal(config.output.languageSource, 'explicit');
+
+  const projectOverview = fs.readFileSync(path.join(workspace, '.ome', 'rules', 'project-overview.md'), 'utf8');
+  const codeStyle = fs.readFileSync(path.join(workspace, '.ome', 'rules', 'code-style.md'), 'utf8');
+  assert.match(projectOverview, /# 项目概览/);
+  assert.match(codeStyle, /# 代码风格/);
+
+  const agents = fs.readFileSync(path.join(workspace, 'AGENTS.md'), 'utf8');
+  assert.match(agents, /## 项目上下文/);
+  assert.match(agents, /## 默认交付工作流/);
+
+  const prompt = fs.readFileSync(path.join(workspace, '.ome', 'context', 'rules-generation-prompt.md'), 'utf8');
+  assert.match(prompt, /zh-CN/);
+  assert.match(prompt, /所有人类可读的规则正文、标题和说明必须使用/);
+
+  const bugSkill = fs.readFileSync(path.join(workspace, '.ome', 'skills', 'ome-bug', 'SKILL.md'), 'utf8');
+  assert.match(bugSkill, /## 用途/);
+  assert.match(bugSkill, /## 工作流会话开始（必需）/);
+  assert.match(bugSkill, /ome bug \$ARGUMENTS/);
+  assert.match(bugSkill, /ome finish/);
 });
 
 test('ome init generates UI rules only when a UI framework is detected', () => {
@@ -272,7 +318,7 @@ test('ome init scans Koa Gulp apps and generates project-specific rule files', (
   assert.match(serverRule, /src\/routes\/home\.js/);
 
   const cursorRule = path.join(workspace, '.cursor', 'rules', '00-ome-rules.mdc');
-  assert.equal(fs.existsSync(cursorRule), true);
+  assert.equal(fs.existsSync(cursorRule), false);
   assert.equal(fs.existsSync(path.join(workspace, '.cursor', 'rules', 'code-style.mdc')), false);
   assert.equal(fs.existsSync(path.join(workspace, '.cursor', 'rules', 'typescript-react-native.mdc')), false);
   assert.equal(fs.existsSync(path.join(workspace, '.agent', 'workflows', 'ome-init-rules.md')), false);
@@ -374,9 +420,18 @@ test('ome init sync preserves user-edited rules and only appends missing ones', 
   assert.equal(fs.readFileSync(codeStylePath, 'utf8'), customRule, 'user-edited rule must be preserved');
   assert.equal(fs.existsSync(securityPath), true, 'missing rule must be re-created');
 
-  // --force still overwrites the hand-edited rule.
+  // --force refreshes managed assets but still preserves rule sources.
   runOme(['init', '--force'], workspace);
-  assert.notEqual(fs.readFileSync(codeStylePath, 'utf8'), customRule, '--force must regenerate the rule');
+  assert.equal(fs.readFileSync(codeStylePath, 'utf8'), customRule, '--force must preserve user-edited rules');
+
+  // --force-rules is the explicit rule-source overwrite path.
+  runOme(['init', '--force-rules'], workspace);
+  assert.notEqual(fs.readFileSync(codeStylePath, 'utf8'), customRule, '--force-rules must regenerate the rule');
+
+  const backupsRoot = path.join(workspace, '.ome', 'backups', 'rules');
+  const backupDirectories = fs.readdirSync(backupsRoot);
+  assert.equal(backupDirectories.length, 1);
+  assert.equal(fs.readFileSync(path.join(backupsRoot, backupDirectories[0], 'code-style.md'), 'utf8'), customRule);
 });
 
 test('ome init migrates legacy .oh-my-engine projects to .ome', () => {

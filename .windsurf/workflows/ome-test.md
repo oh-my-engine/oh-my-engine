@@ -70,23 +70,24 @@ Final response must include:
 - Remaining gaps
 
 
-## Workflow Completion (MANDATORY)
+## Workflow Completion (SUBSTANTIVE WORK ONLY)
 
-After you finish the work for this workflow — successful or not — you MUST run the following shell command as the very last step, AFTER you have reported results to the user:
+Run `ome finish` only after a substantive workflow loop is complete, and only after you have reported results to the user.
+
+Substantive work means at least one of these is true:
+- You changed files or wrote new code/docs.
+- You ran verification and the result matters to the task outcome.
+- You made a durable technical decision, diagnosis, or reusable learning that should be available later.
+
+Do NOT run `ome finish` for ordinary conversation, quick explanations, brainstorming with no conclusion, or read-only exploration that produced no reusable outcome.
+
+When the work is substantive, run this as the final shell command:
 
 ```bash
 ome finish
 ```
 
-This records the execution into `.ome/memory/executions/` so the engine can learn from it.
-
-Skip ONLY if all of these are true:
-- The user explicitly said "do not record" or "just testing".
-- You made zero file changes.
-- You wrote zero new code.
-- You ran zero verifications.
-
-Do NOT skip because "the task was small" or "nothing interesting happened" — the engine's policy gate decides what to keep, not you.
+This records the execution into `.ome/memory/executions/`; the engine policy decides whether it is valuable enough to persist or later evolve.
 
 Claude Code fast path (other agents: ignore the leading `!` and run the bare command via your shell tool):
 

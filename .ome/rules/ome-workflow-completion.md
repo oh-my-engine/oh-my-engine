@@ -1,78 +1,51 @@
 ---
 rule: ome-workflow-completion
-version: 1.1.0
+version: 1.2.0
 category: ome/workflow
 priority: reference
 severity: info
-tags: [ome, workflow, memory, auto-record]
+tags: [ome, workflow, memory, selective-record]
 autoApply: false
 ---
 
-# Oh My Engine 工作流完成规则（参考文档）
+# Oh My Engine Workflow Completion Rule
 
-> **说明（v1.1）**：自从 v1.1 起，`ome finish` 的强制提示已下沉到每个 lifecycle skill 的 SKILL.md 末尾的
-> "Workflow Completion (MANDATORY)" 段，由各 agent 在执行具体工作流时直接看到。
-> 本文件仅作为人类可读的背景说明保留，不再依赖 `autoApply` 加载。
+> Since v1.2, lifecycle skills use `Workflow Completion (SUBSTANTIVE WORK ONLY)`.
+> This reference file documents the same policy for humans and rule-sync flows.
 
-## 自动记录执行
+## Selective Execution Recording
 
-当你完成一个完整的任务或对话闭环后，**必须**自动运行命令来记录本次执行，以便系统学习和进化。
+Run `ome finish` only after a substantive workflow loop is complete. Ordinary chat should not create execution memory.
 
-### 何时调用记录命令
+### Run `ome finish` When
 
-**必须调用**（满足以下任一条件）：
-- ✅ 完成了用户明确要求的功能或修复
-- ✅ 修改了 2 个或以上的文件
-- ✅ 代码变更超过 10 行
-- ✅ 对话持续超过 5 分钟
-- ✅ 完成了一个完整的工作流（如 bug-analysis、ui-restore 等）
+- Files, code, docs, configs, tests, or generated artifacts were changed.
+- Verification was run and the result matters to the task outcome.
+- A durable technical decision, diagnosis, root cause, fix, or reusable learning was produced.
+- A full bug/build/test/review/ship loop completed and has evidence worth preserving.
 
-**无需调用**（以下情况可跳过）：
-- ❌ 仅回答问题，未修改代码
-- ❌ 只修改了 1 个文件且变更少于 10 行
-- ❌ 用户明确表示"不用记录"或"只是测试"
+### Skip `ome finish` When
 
-### 如何调用
+- The exchange was ordinary conversation or a quick explanation.
+- The work was brainstorming with no durable conclusion.
+- Read-only exploration found no reusable outcome.
+- The user explicitly asked not to record.
 
-根据你所在的平台，使用以下命令：
+### Command
 
-**Claude Code / Cursor / Windsurf / Codex / OpenCode**：
-```bash
-! ome finish
-```
-
-**其他平台**：
 ```bash
 ome finish
 ```
 
-### 注意事项
-
-1. **使用 `!` 前缀**（如果平台支持）：在当前会话中执行命令，这样记录会包含完整的上下文信息
-2. **自动执行**：这是一个自动化流程，不需要用户手动触发
-3. **智能过滤**：系统会自动过滤低价值的执行，不用担心记录过多
-
-### 为什么要记录
-
-- 📊 **系统学习**：记录执行历史，帮助系统识别模式和最佳实践
-- 🚀 **进化能力**：积累足够的数据后，系统可以自动生成学习候选和技能候选
-- 🔍 **可追溯性**：保留完整的执行历史，便于回顾和分析
-
-### 示例
+Claude Code fast path:
 
 ```bash
-# 完成 Bug 修复后
-! ome finish
-
-# 完成 UI 组件开发后
-! ome finish
-
-# 完成 API 集成后
-! ome finish
+!ome finish
 ```
 
-## 验证清单
+## Evolution Policy
 
-- [ ] 任务完成后自动调用了记录命令
-- [ ] 使用了正确的命令格式（带 `!` 前缀）
-- [ ] 记录成功（看到 "✅ Execution recorded" 消息）
+- Execution memory is not the same as evolution.
+- Repeated useful records may become learning candidates.
+- Low-information records, such as generic `current diff` reviews, should not become evolution candidates.
+- Durable adoption still requires verification and explicit review/adoption.

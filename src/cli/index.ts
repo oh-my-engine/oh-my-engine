@@ -51,7 +51,12 @@ function runInit(args: string[]): void {
 
 function runInitRules(args: string[]): void {
   const force = args.includes('--force') || args.includes('--force-rules');
-  const result = initializeProjectRules(process.cwd(), force);
+  const languageIndex = args.findIndex(argument => argument === '--language' || argument === '--output-language');
+  const outputLanguage = languageIndex >= 0 ? args[languageIndex + 1] : undefined;
+  if (languageIndex >= 0 && !outputLanguage) {
+    throw new Error(`Missing value for ${args[languageIndex]}`);
+  }
+  const result = initializeProjectRules(process.cwd(), force, outputLanguage);
   process.stdout.write(renderInitRulesResult(result));
 }
 
@@ -302,8 +307,7 @@ function runFinish(args: string[]): void {
     process.stdout.write('⚠️  Execution not persisted\n');
     process.stdout.write('   Reason: bug workflow memory requires core diagnostic fields.\n');
     process.stdout.write('   Pass --root-cause, --evidence, --fix, --verification, or --learning to record a useful memory.\n');
-    process.stdout.write('   You can rerun ome finish with those fields even after this session is cleaned up.\n');
-    cleanupSession();
+    process.stdout.write('   The active session was kept so you can rerun ome finish with those fields.\n');
     return;
   }
 
@@ -460,11 +464,12 @@ function buildCommandHandlers(): Record<string, CommandHandler> {
 const COMMAND_HANDLERS = buildCommandHandlers();
 
 function main(argv: string[]): void {
-  // 在执行任何命令前，清理过期会话
-  cleanupStaleSessions();
-
   const command = argv[0] || 'help';
   const args = argv.slice(1);
+
+  if (command !== 'finish') {
+    cleanupStaleSessions();
+  }
 
   if (command === 'help' || command === '--help' || command === '-h') {
     printHelp();

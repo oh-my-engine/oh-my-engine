@@ -25,10 +25,11 @@ function runOme(args: string[], cwd: string): string {
 test('ome rules sync writes single-file and multi-file platform targets through TypeScript core', () => {
   const workspace = createWorkspace();
 
-  const output = runOme(['rules', 'sync', 'codex', 'cursor', 'antigravity'], workspace);
+  const output = runOme(['rules', 'sync', 'codex', 'cursor', 'antigravity', 'qoder'], workspace);
   assert.match(output, /codex/);
   assert.match(output, /cursor/);
   assert.match(output, /antigravity/);
+  assert.match(output, /qoder/);
 
   const agentsPath = path.join(workspace, 'AGENTS.md');
   assert.equal(fs.existsSync(agentsPath), true);
@@ -45,6 +46,9 @@ test('ome rules sync writes single-file and multi-file platform targets through 
   const antigravityRulesDirectory = path.join(workspace, '.agents', 'rules');
   const antigravityRules = fs.readdirSync(antigravityRulesDirectory).filter((fileName: string) => fileName.endsWith('.md'));
   assert.deepEqual(antigravityRules, ['00-ome-rules.md']);
+
+  const qoderRule = fs.readFileSync(path.join(workspace, '.qoder', 'rules', '00-ome-rules.md'), 'utf8');
+  assert.equal(qoderRule.startsWith('---\ntrigger: always_on\n---\n# Qoder OME Rules Entry'), true);
 });
 
 test('rules sync skips generated platform files that cannot be written', () => {
@@ -94,6 +98,25 @@ test('ome rules sync preserves user content in single-file targets', () => {
   assert.match(content, /Keep this section/);
   assert.match(content, /<!-- OME:START -->/);
   assert.match(content, /<!-- OME:END -->/);
+});
+
+test('ome rules sync uses explicit Chinese output language for generated platform entries', () => {
+  const workspace = createWorkspace();
+
+  const output = runOme(['rules', 'sync', 'codex', 'cursor', '--language', 'zh-CN'], workspace);
+
+  assert.match(output, /codex/);
+  assert.match(output, /cursor/);
+
+  const agents = fs.readFileSync(path.join(workspace, 'AGENTS.md'), 'utf8');
+  assert.match(agents, /## 项目/);
+  assert.match(agents, /规则源: `\.ome\/rules\/`/);
+  assert.match(agents, /修改规则源文件后运行 `ome rules sync`/);
+
+  const cursorRule = fs.readFileSync(path.join(workspace, '.cursor', 'rules', '00-ome-rules.mdc'), 'utf8');
+  assert.match(cursorRule, /## 项目/);
+  assert.match(cursorRule, /规则源: `\.ome\/rules\/`/);
+  assert.doesNotMatch(cursorRule, /Rule source: `\.ome\/rules\/`/);
 });
 
 export {};

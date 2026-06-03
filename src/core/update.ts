@@ -35,6 +35,26 @@ function extractProcessFailure(result: {
   return 'unknown npm failure';
 }
 
+function isLocalDevelopmentCheckout(repoRoot: string): boolean {
+  return fs.existsSync(path.join(repoRoot, 'src')) &&
+    fs.existsSync(path.join(repoRoot, 'package.json')) &&
+    (fs.existsSync(path.join(repoRoot, '.git')) || fs.existsSync(path.join(repoRoot, 'tsconfig.json')));
+}
+
+function readOptionValue(args: string[], names: string[]): string | undefined {
+  const index = args.findIndex(argument => names.includes(argument));
+  if (index < 0) {
+    return undefined;
+  }
+
+  const value = args[index + 1];
+  if (!value || value.startsWith('--')) {
+    throw new Error(`Missing value for ${args[index]}`);
+  }
+
+  return value;
+}
+
 function updateGlobalPackage(): void {
   console.log('🚀 正在从 npm 市场获取最新版本...');
 
@@ -60,25 +80,32 @@ async function runUpdateCommand(args: string[] = []): Promise<void> {
   const isRecursive = args.includes('--all') || args.includes('-a');
   const isForce = args.includes('--force');
   const forceRules = args.includes('--force-rules');
+  const outputLanguage = readOptionValue(args, ['--language', '--output-language']);
+  const projectEntries = args.includes('--project-entries') || args.includes('--sync-project-entries');
+  const forceGlobalUpdate = args.includes('--global') || args.includes('--force-global');
   const skipGlobalUpdate = args.includes('--project-only')
     || args.includes('--skip-global')
     || process.env.OME_SKIP_GLOBAL_UPDATE === '1';
   const repoRoot = process.env.OME_REPO_ROOT || path.resolve(__dirname, '..', '..');
+  const localDevelopmentCheckout = isLocalDevelopmentCheckout(repoRoot);
 
-  if (!skipGlobalUpdate) {
+  if (skipGlobalUpdate) {
+    console.log('⏭️  已跳过全局 CLI 更新，仅同步项目配置。\n');
+  } else if (localDevelopmentCheckout && !forceGlobalUpdate) {
+    console.log('⏭️  检测到本地开发引擎，已跳过全局 npm 更新以保留当前本地版本。');
+    console.log('   如需强制从 npm 覆盖本地引擎，请运行 `ome update --global`。\n');
+  } else {
     try {
       updateGlobalPackage();
     } catch (error: any) {
       console.error(`⚠️  CLI 工具更新跳过: ${error?.message || String(error)}`);
       console.log('继续尝试更新项目配置...\n');
     }
-  } else {
-    console.log('⏭️  已跳过全局 CLI 更新，仅同步项目配置。\n');
   }
 
   if (isRecursive) {
     console.log(`📦 正在扫描工作区中的 OME 项目: ${process.cwd()}`);
-    const results: any[] = updateWorkspace(process.cwd(), { force: isForce, forceRules });
+    const results: any[] = updateWorkspace(process.cwd(), { force: isForce, forceRules, outputLanguage, projectEntries });
 
     console.log(`\n完成！共处理 ${results.length} 个项目`);
     results.forEach((res: any) => {
@@ -106,7 +133,10 @@ async function runUpdateCommand(args: string[] = []): Promise<void> {
     repoRoot,
     force: isForce,
     forceRules,
-    sync: true
+    sync: true,
+    projectEntries,
+    outputLanguage,
+    defaultProjectPlatforms: false
   });
   console.log('✅ 当前项目已同步。');
   console.log(`   - Project skills updated: ${result.projectSkillTargets.length}`);
@@ -120,5 +150,6 @@ async function runUpdateCommand(args: string[] = []): Promise<void> {
 }
 
 module.exports = {
-  runUpdateCommand
+  runUpdateCommand,
+  isLocalDevelopmentCheckout
 };

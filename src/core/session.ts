@@ -161,26 +161,53 @@ function isTemporaryNoiseFile(filePath: string): boolean {
 
 function isGeneratedPlatformSyncFile(filePath: string): boolean {
   const normalized = normalizeStatusPath(filePath).toLowerCase();
+  const generatedExactPaths = new Set([
+    'ome.md',
+    'agents.md',
+    'claude.md',
+    'gemini.md',
+    '.gitignore',
+    '.windsurfrules',
+    '.ome/platforms.json'
+  ]);
+  const generatedDirectoryPrefixes = [
+    '.agent/',
+    '.agents/',
+    '.claude/commands/',
+    '.claude/skills/',
+    '.codex/skills/',
+    '.cursor/commands/',
+    '.cursor/rules/',
+    '.cursor/skills/',
+    '.kiro/prompts/',
+    '.kiro/skills/',
+    '.opencode/command/',
+    '.qoder/commands/',
+    '.qoder/rules/',
+    '.qoder/skills/',
+    '.trae/commands/',
+    '.trae/rules/',
+    '.trae/skills/',
+    '.windsurf/rules/',
+    '.windsurf/workflows/',
+    '.ome/context/',
+    '.ome/rules/',
+    '.ome/skills/'
+  ];
+  const generatedDirectoryRoots = [
+    '.claude/',
+    '.codex/',
+    '.cursor/',
+    '.kiro/',
+    '.opencode/',
+    '.qoder/',
+    '.trae/',
+    '.windsurf/'
+  ];
 
-  return normalized === 'agents.md' ||
-    normalized === 'claude.md' ||
-    normalized.startsWith('.agent/') ||
-    normalized.startsWith('.agents/') ||
-    normalized.startsWith('.claude/commands/') ||
-    normalized.startsWith('.claude/skills/') ||
-    normalized.startsWith('.cursor/commands/') ||
-    normalized.startsWith('.cursor/skills/') ||
-    normalized.startsWith('.kiro/prompts/') ||
-    normalized.startsWith('.kiro/skills/') ||
-    normalized.startsWith('.opencode/command/') ||
-    normalized.startsWith('.qoder/commands/') ||
-    normalized.startsWith('.qoder/skills/') ||
-    normalized.startsWith('.trae/commands/') ||
-    normalized.startsWith('.trae/skills/') ||
-    normalized.startsWith('.windsurf/workflows/') ||
-    normalized.startsWith('.ome/context/') ||
-    normalized.startsWith('.ome/skills/') ||
-    normalized === '.ome/platforms.json';
+  return generatedExactPaths.has(normalized) ||
+    generatedDirectoryPrefixes.some(prefix => normalized.startsWith(prefix)) ||
+    generatedDirectoryRoots.includes(normalized);
 }
 
 function filterExecutionFiles(files: string[], workflow: string): { filesTouched: string[]; noiseFilesIgnored: string[] } {

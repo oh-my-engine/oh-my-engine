@@ -255,7 +255,7 @@ test('ome update surfaces npm failure details before continuing project sync', (
   }
   env.OME_REPO_ROOT = REPO_ROOT;
 
-  const result = spawnSync(OME_BIN, omeArgs(['update']), {
+  const result = spawnSync(OME_BIN, omeArgs(['update', '--global']), {
     cwd: REPO_ROOT,
     encoding: 'utf8',
     env
@@ -266,6 +266,28 @@ test('ome update surfaces npm failure details before continuing project sync', (
   assert.match(result.stderr, /npm 更新失败，请检查网络或权限。详细信息:/);
   assert.match(result.stdout, /继续尝试更新项目配置/);
   assert.match(result.stdout, /当前项目已同步/);
+});
+
+test('ome update preserves a local development engine by default', () => {
+  const env: NodeJS.ProcessEnv = { ...process.env, OME_REPO_ROOT: REPO_ROOT };
+  if (process.platform === 'win32') {
+    env.Path = '';
+    env.PATH = '';
+  } else {
+    env.PATH = '';
+  }
+
+  const result = spawnSync(OME_BIN, omeArgs(['update']), {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+    env
+  });
+
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /检测到本地开发引擎，已跳过全局 npm 更新/);
+  assert.match(result.stdout, /当前项目已同步/);
+  assert.doesNotMatch(result.stdout, /正在从 npm 市场获取最新版本/);
+  assert.doesNotMatch(result.stderr, /CLI 工具更新跳过/);
 });
 
 test('ome update supports project-only sync without global npm update', () => {
@@ -281,7 +303,53 @@ test('ome update supports project-only sync without global npm update', () => {
   assert.match(result.stdout, /当前项目已同步/);
 });
 
-test('ome update refreshes managed project assets beyond .ome skills', () => {
+test('ome update does not initialize platforms missing from the project', () => {
+  const workspace = createWorkspace('ome-update-platform-scope-');
+  const env: NodeJS.ProcessEnv = { ...process.env, OME_REPO_ROOT: REPO_ROOT };
+  if (process.platform === 'win32') {
+    env.Path = '';
+  } else {
+    env.PATH = '';
+  }
+
+  execFileSync(OME_BIN, omeArgs(['init']), {
+    cwd: workspace,
+    encoding: 'utf8',
+    env: { ...process.env, OME_REPO_ROOT: REPO_ROOT }
+  });
+
+  const missingPlatformTargets = [
+    path.join(workspace, '.cursor', 'rules', '00-ome-auto-detection.mdc'),
+    path.join(workspace, '.cursor', 'rules', '00-ome-rules.mdc'),
+    path.join(workspace, '.qoder', 'rules', '00-ome-auto-detection.md'),
+    path.join(workspace, '.qoder', 'rules', '00-ome-rules.md'),
+    path.join(workspace, '.trae', 'rules', '00-ome-auto-detection.md'),
+    path.join(workspace, '.trae', 'rules', '00-ome-rules.md'),
+    path.join(workspace, '.agent', 'rules', '00-ome-auto-detection.md'),
+    path.join(workspace, '.agents', 'rules', '00-ome-rules.md')
+  ];
+
+  for (const target of missingPlatformTargets) {
+    assert.equal(fs.existsSync(target), false, `${target} should not exist before update`);
+  }
+
+  const result = spawnSync(OME_BIN, omeArgs(['update', '--project-only', '--force']), {
+    cwd: workspace,
+    encoding: 'utf8',
+    env
+  });
+
+  assert.equal(result.status, 0);
+  assert.equal(fs.existsSync(path.join(workspace, 'CLAUDE.md')), true);
+  assert.equal(fs.existsSync(path.join(workspace, 'AGENTS.md')), true);
+  for (const target of missingPlatformTargets) {
+    assert.equal(fs.existsSync(target), false, `${target} should not be initialized by update`);
+  }
+  assert.match(result.stdout, /Rule integrations synced: 2/);
+  assert.match(result.stdout, /Agent guidance files generated: 2/);
+});
+
+test('ome update skips project entries by default and refreshes them when requested', () => {
   const workspace = createWorkspace('ome-update-sync-');
   const env: NodeJS.ProcessEnv = { ...process.env, OME_REPO_ROOT: REPO_ROOT };
   if (process.platform === 'win32') {
@@ -302,6 +370,24 @@ test('ome update refreshes managed project assets beyond .ome skills', () => {
   const codeStylePath = path.join(workspace, '.ome', 'rules', 'code-style.md');
   const customCodeStyle = '---\nrule: code-style\nversion: 1.0.0\n---\n\n# Custom Code Style\n\n- Keep my local rule.\n';
   fs.writeFileSync(codeStylePath, customCodeStyle, 'utf8');
+  const testingPath = path.join(workspace, '.ome', 'rules', 'testing.md');
+  const customTesting = [
+    '---',
+    'rule: testing',
+    'version: 2.0.0',
+    'description: Testing rules for PHP Swoft projects',
+    'category: testing',
+    '---',
+    '',
+    '# Testing',
+    '',
+    '## Project Profile',
+    '',
+    '- Primary framework: swoft',
+    '- Language: PHP 8.1+',
+    ''
+  ].join('\n');
+  fs.writeFileSync(testingPath, customTesting, 'utf8');
   const securityPath = path.join(workspace, '.ome', 'rules', 'security.md');
   fs.rmSync(securityPath, { force: true });
   fs.writeFileSync(path.join(workspace, '.ome', 'context', 'rules-generation-prompt.md'), 'stale context\n', 'utf8');
@@ -311,6 +397,18 @@ test('ome update refreshes managed project assets beyond .ome skills', () => {
   fs.writeFileSync(path.join(workspace, '.claude', 'skills', 'ome-bug', 'SKILL.md'), 'stale mirrored skill\n', 'utf8');
   fs.mkdirSync(path.join(workspace, '.windsurf', 'workflows'), { recursive: true });
   fs.writeFileSync(path.join(workspace, '.windsurf', 'workflows', 'ome-bug.md'), 'stale project workflow\n', 'utf8');
+  const customCursorRulesEntry = '---\nglob: "**/*"\nalwaysApply: true\n---\n\n# Custom Cursor Rules\n\nKeep this generated platform rule.\n';
+  const customQoderGuidance = '---\ntrigger: always_on\n---\n\n# Custom Qoder Auto Detection\n\nKeep this generated guidance rule.\n';
+  const customAgentGuidance = '# Custom Antigravity Auto Detection\n\nKeep this generated guidance rule.\n';
+  const cursorRulesEntryPath = path.join(workspace, '.cursor', 'rules', '00-ome-rules.mdc');
+  const qoderGuidancePath = path.join(workspace, '.qoder', 'rules', '00-ome-auto-detection.md');
+  const agentGuidancePath = path.join(workspace, '.agent', 'rules', '00-ome-auto-detection.md');
+  fs.mkdirSync(path.dirname(cursorRulesEntryPath), { recursive: true });
+  fs.mkdirSync(path.dirname(qoderGuidancePath), { recursive: true });
+  fs.mkdirSync(path.dirname(agentGuidancePath), { recursive: true });
+  fs.writeFileSync(cursorRulesEntryPath, customCursorRulesEntry, 'utf8');
+  fs.writeFileSync(qoderGuidancePath, customQoderGuidance, 'utf8');
+  fs.writeFileSync(agentGuidancePath, customAgentGuidance, 'utf8');
 
   const result = spawnSync(OME_BIN, omeArgs(['update', '--project-only']), {
     cwd: workspace,
@@ -321,16 +419,33 @@ test('ome update refreshes managed project assets beyond .ome skills', () => {
   assert.equal(result.status, 0);
   assert.match(fs.readFileSync(path.join(workspace, '.ome', 'skills', 'ome-bug', 'SKILL.md'), 'utf8'), /## Purpose/);
   assert.match(fs.readFileSync(path.join(workspace, '.ome', 'context', 'rules-generation-prompt.md'), 'utf8'), /Read `\.ome\/context\/project-scan\.json` first/);
+  assert.equal(fs.readFileSync(path.join(workspace, '.claude', 'commands', 'ome-bug.md'), 'utf8'), 'stale project command\n');
+  assert.equal(fs.readFileSync(path.join(workspace, '.claude', 'skills', 'ome-bug', 'SKILL.md'), 'utf8'), 'stale mirrored skill\n');
+  assert.equal(fs.readFileSync(path.join(workspace, '.windsurf', 'workflows', 'ome-bug.md'), 'utf8'), 'stale project workflow\n');
+  assert.equal(fs.readFileSync(codeStylePath, 'utf8'), customCodeStyle);
+  assert.equal(fs.readFileSync(testingPath, 'utf8'), customTesting);
+  assert.equal(fs.readFileSync(cursorRulesEntryPath, 'utf8'), customCursorRulesEntry);
+  assert.equal(fs.readFileSync(qoderGuidancePath, 'utf8'), customQoderGuidance);
+  assert.equal(fs.readFileSync(agentGuidancePath, 'utf8'), customAgentGuidance);
+  assert.equal(fs.existsSync(securityPath), true);
+  assert.match(result.stdout, /Project skills updated: /);
+  assert.match(result.stdout, /Project skill mirrors synced: 0/);
+  assert.match(result.stdout, /Project command entries synced: 0/);
+  assert.match(result.stdout, /Rule integrations synced: [1-9]\d*/);
+  assert.match(result.stdout, /Rule source files: created [1-9]\d*, overwritten 0, preserved [1-9]\d*/);
+
+  const projectEntriesResult = spawnSync(OME_BIN, omeArgs(['update', '--project-only', '--project-entries']), {
+    cwd: workspace,
+    encoding: 'utf8',
+    env
+  });
+
+  assert.equal(projectEntriesResult.status, 0);
   assert.match(fs.readFileSync(path.join(workspace, '.claude', 'commands', 'ome-bug.md'), 'utf8'), /## Purpose/);
   assert.match(fs.readFileSync(path.join(workspace, '.claude', 'skills', 'ome-bug', 'SKILL.md'), 'utf8'), /## Purpose/);
   assert.match(fs.readFileSync(path.join(workspace, '.windsurf', 'workflows', 'ome-bug.md'), 'utf8'), /## Purpose/);
-  assert.equal(fs.readFileSync(codeStylePath, 'utf8'), customCodeStyle);
-  assert.equal(fs.existsSync(securityPath), true);
-  assert.match(result.stdout, /Project skills updated: /);
-  assert.match(result.stdout, /Project skill mirrors synced: [1-9]\d*/);
-  assert.match(result.stdout, /Project command entries synced: [1-9]\d*/);
-  assert.match(result.stdout, /Rule integrations synced: [1-9]\d*/);
-  assert.match(result.stdout, /Rule source files: created [1-9]\d*, overwritten 0, preserved [1-9]\d*/);
+  assert.match(projectEntriesResult.stdout, /Project skill mirrors synced: [1-9]\d*/);
+  assert.match(projectEntriesResult.stdout, /Project command entries synced: [1-9]\d*/);
 
   const forcedResult = spawnSync(OME_BIN, omeArgs(['update', '--project-only', '--force']), {
     cwd: workspace,
@@ -340,6 +455,12 @@ test('ome update refreshes managed project assets beyond .ome skills', () => {
 
   assert.equal(forcedResult.status, 0);
   assert.equal(fs.readFileSync(codeStylePath, 'utf8'), customCodeStyle);
+  assert.equal(fs.readFileSync(testingPath, 'utf8'), customTesting);
+  assert.equal(fs.readFileSync(cursorRulesEntryPath, 'utf8'), customCursorRulesEntry);
+  assert.equal(fs.readFileSync(qoderGuidancePath, 'utf8'), customQoderGuidance);
+  assert.equal(fs.readFileSync(agentGuidancePath, 'utf8'), customAgentGuidance);
+  assert.match(forcedResult.stdout, /Project skill mirrors synced: 0/);
+  assert.match(forcedResult.stdout, /Project command entries synced: 0/);
   assert.match(forcedResult.stdout, /Rule source files: created 0, overwritten 0, preserved [1-9]\d*/);
 
   const agents = fs.readFileSync(path.join(workspace, 'AGENTS.md'), 'utf8');
@@ -350,6 +471,50 @@ test('ome update refreshes managed project assets beyond .ome skills', () => {
   assert.match(claude, /# Local claude notes/);
   assert.match(claude, /<!-- OME:START -->/);
   assert.match(claude, /Rule source: `\.ome\/rules\/`/);
+});
+
+test('ome update applies explicit Chinese output language without overwriting existing rules', () => {
+  const workspace = createWorkspace('ome-update-language-');
+  const env: NodeJS.ProcessEnv = { ...process.env, OME_REPO_ROOT: REPO_ROOT };
+  if (process.platform === 'win32') {
+    env.Path = '';
+  } else {
+    env.PATH = '';
+  }
+
+  execFileSync(OME_BIN, omeArgs(['init']), {
+    cwd: workspace,
+    encoding: 'utf8',
+    env: { ...process.env, OME_REPO_ROOT: REPO_ROOT }
+  });
+
+  const codeStylePath = path.join(workspace, '.ome', 'rules', 'code-style.md');
+  const customCodeStyle = '---\nrule: code-style\nversion: 1.0.0\n---\n\n# Custom Code Style\n\n- Keep this project-specific rule.\n';
+  fs.writeFileSync(codeStylePath, customCodeStyle, 'utf8');
+  fs.writeFileSync(path.join(workspace, '.ome', 'skills', 'ome-bug', 'SKILL.md'), 'stale skill\n', 'utf8');
+  fs.mkdirSync(path.join(workspace, '.claude', 'commands'), { recursive: true });
+  fs.writeFileSync(path.join(workspace, '.claude', 'commands', 'ome-bug.md'), 'stale command\n', 'utf8');
+
+  const result = spawnSync(OME_BIN, omeArgs(['update', '--project-only', '--project-entries', '--language', 'zh-CN']), {
+    cwd: workspace,
+    encoding: 'utf8',
+    env
+  });
+
+  assert.equal(result.status, 0);
+  assert.equal(fs.readFileSync(codeStylePath, 'utf8'), customCodeStyle);
+
+  const omeConfig = fs.readFileSync(path.join(workspace, 'OME.md'), 'utf8');
+  assert.match(omeConfig, /language: zh-CN/);
+
+  const bugSkill = fs.readFileSync(path.join(workspace, '.ome', 'skills', 'ome-bug', 'SKILL.md'), 'utf8');
+  assert.match(bugSkill, /## 用途/);
+  assert.match(bugSkill, /## 工作流会话开始（必需）/);
+
+  const claudeCommand = fs.readFileSync(path.join(workspace, '.claude', 'commands', 'ome-bug.md'), 'utf8');
+  assert.match(claudeCommand, /## 用途/);
+  assert.match(claudeCommand, /## 工作流会话开始（必需）/);
+  assert.match(result.stdout, /Rule source files: created 0, overwritten 0, preserved [1-9]\d*/);
 });
 
 test('ome update force-rules overwrites rule sources after backing them up', () => {
@@ -392,10 +557,23 @@ test('ome update force-rules overwrites rule sources after backing them up', () 
 test('ome update uses cmd wrapper for npm install on Windows', () => {
   if (process.platform !== 'win32') return;
 
-  const env: NodeJS.ProcessEnv = { ...process.env, OME_REPO_ROOT: REPO_ROOT };
+  const fakeBin = createWorkspace('ome-update-fake-npm-');
+  const markerPath = path.join(fakeBin, 'npm-invocation.txt');
+  fs.writeFileSync(
+    path.join(fakeBin, 'npm.cmd'),
+    `@echo off\r\necho %* > "${markerPath}"\r\nexit /b 0\r\n`,
+    'utf8'
+  );
+  const system32 = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32');
+  const env: NodeJS.ProcessEnv = {
+    ...process.env,
+    OME_REPO_ROOT: REPO_ROOT,
+    Path: `${fakeBin};${system32}`,
+    PATH: `${fakeBin};${system32}`
+  };
   delete env.npm_config_user_agent;
 
-  const result = spawnSync(OME_BIN, omeArgs(['update']), {
+  const result = spawnSync(OME_BIN, omeArgs(['update', '--global']), {
     cwd: REPO_ROOT,
     encoding: 'utf8',
     env
@@ -403,6 +581,7 @@ test('ome update uses cmd wrapper for npm install on Windows', () => {
 
   assert.equal(result.status, 0);
   assert.doesNotMatch(result.stderr, /spawnSync npm\.cmd EINVAL/);
+  assert.match(fs.readFileSync(markerPath, 'utf8'), /install -g oh-my-engine/);
 });
 
 export {};

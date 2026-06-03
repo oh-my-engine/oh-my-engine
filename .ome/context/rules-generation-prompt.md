@@ -13,6 +13,8 @@ Rewrite the Markdown files under `.ome/rules/` so they reflect this repository's
 - Inspect package scripts and existing tests before changing testing or tooling rules.
 - Preserve `.ome/rules/` as the only source of truth for project rules.
 - After editing rules, run `ome rules sync` so platform files are regenerated.
+- Generate human-readable rule prose, titles, and descriptions in English (US) (en-US).
+- Keep code identifiers, commands, paths, frontmatter keys, and machine-readable schema fields in their original English form.
 
 ## Current Scan Summary
 
@@ -23,7 +25,7 @@ Rewrite the Markdown files under `.ome/rules/` so they reflect this repository's
 - Frameworks: Node.js
 - Language: TypeScript
 - Package manager: npm
-- Files scanned: 571
+- Files scanned: 573
 - Source directories: src, docs, schemas, skills, examples, bin
 - Entrypoints: dist/index.d.ts, dist/index.js, src/index.ts
 - Route files: none detected
@@ -41,7 +43,7 @@ Rewrite the Markdown files under `.ome/rules/` so they reflect this repository's
 - Database signals: migrations-or-sql
 - Deployment signals: github-actions
 - Source signals: commonjs-exports, commonjs-require, console-logging, environment-variables, esm-exports, esm-imports, http-routing, koa-context, try-catch-error-handling
-- Source extensions: .json: 8, .md: 415, .ts: 102, .yml: 1
+- Source extensions: .json: 8, .md: 416, .ts: 103, .yml: 1
 - Existing rule files: .agents/rules, .cursor/rules, .qoder/rules, .trae/rules, .windsurfrules, AGENTS.md, CLAUDE.md
 - Detected patterns: automated-tests, build-script, build-tooling, commonjs-exports, commonjs-require, console-logging, data-access, deployment-config, environment-variables, esm-exports, esm-imports, http-routing, koa-context, npm-package-manager, src-directory, structured-content-parsing, try-catch-error-handling, typecheck-script, typed-source
 

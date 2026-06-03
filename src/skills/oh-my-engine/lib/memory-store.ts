@@ -5,12 +5,21 @@ const matter = require('gray-matter');
 const { mergeMemoryConfig, decideCapture } = require('./memory-policy');
 const { getErrorMessage } = require('../../../core/errors');
 const { enginePath } = require('../../../core/paths');
+const { loadConfig } = require('../../../core/config-loader');
+const { isOutputLanguageChinese, resolveOutputLanguage } = require('../../../core/output-language');
+import type { OutputLanguageResolution } from '../../../core/output-language';
 
 type Dirent = import('node:fs').Dirent;
 type MemoryRecord = Record<string, any>;
 type MemoryMutator = MemoryRecord | ((record: MemoryRecord) => MemoryRecord);
 
 function loadProjectConfig(projectRoot: string): MemoryRecord {
+  try {
+    return loadConfig(projectRoot);
+  } catch (error) {
+    // Fall through to legacy .ome/config.json.
+  }
+
   const configPath = enginePath(projectRoot, 'config.json');
 
   if (!fs.existsSync(configPath)) {
@@ -66,6 +75,88 @@ function truncateList(items: string[], limit: number): { shown: string[]; omitte
   };
 }
 
+function resolveMemoryOutputLanguage(projectRoot: string): OutputLanguageResolution {
+  return resolveOutputLanguage(projectRoot, {
+    config: loadProjectConfig(projectRoot)
+  });
+}
+
+function memoryLabels(outputLanguage: OutputLanguageResolution): Record<string, string> {
+  if (!isOutputLanguageChinese(outputLanguage)) {
+    return {
+      executionRecord: 'Execution Record',
+      details: 'Details',
+      workflow: 'Workflow',
+      phase: 'Phase',
+      status: 'Status',
+      duration: 'Duration',
+      timestamp: 'Timestamp',
+      whyStored: 'Why Stored',
+      symptom: 'Symptom',
+      impact: 'Impact',
+      rootCause: 'Root Cause',
+      evidence: 'Evidence',
+      fix: 'Fix',
+      verification: 'Verification',
+      reusableLearning: 'Reusable Learning',
+      noiseExcluded: 'Noise Excluded',
+      errors: 'Errors',
+      filesTouched: 'Files Touched',
+      testsRun: 'Tests Run',
+      metadata: 'Metadata',
+      scope: 'Scope',
+      source: 'Source',
+      evidenceCount: 'Evidence Count',
+      stability: 'Stability',
+      summary: 'Summary',
+      appliesTo: 'Applies To',
+      changeId: 'Change ID',
+      executionDirectives: 'Execution Directives',
+      patternId: 'Pattern ID',
+      adoptedAt: 'Adopted At',
+      notRecorded: 'Not recorded.',
+      none: 'None',
+      moreOmitted: 'more omitted from this memory file'
+    };
+  }
+
+  return {
+    executionRecord: '执行记录',
+    details: '详情',
+    workflow: '工作流',
+    phase: '阶段',
+    status: '状态',
+    duration: '耗时',
+    timestamp: '时间戳',
+    whyStored: '保存原因',
+    symptom: '问题现象',
+    impact: '影响',
+    rootCause: '根因',
+    evidence: '证据',
+    fix: '修复',
+    verification: '验证',
+    reusableLearning: '可复用经验',
+    noiseExcluded: '已排除噪音',
+    errors: '错误',
+    filesTouched: '涉及文件',
+    testsRun: '已运行测试',
+    metadata: '元数据',
+    scope: '范围',
+    source: '来源',
+    evidenceCount: '证据数量',
+    stability: '稳定性',
+    summary: '摘要',
+    appliesTo: '适用范围',
+    changeId: '变更 ID',
+    executionDirectives: '执行指令',
+    patternId: '模式 ID',
+    adoptedAt: '采纳时间',
+    notRecorded: '未记录。',
+    none: '无',
+    moreOmitted: '项已从此记忆文件省略'
+  };
+}
+
 // File path functions for Markdown format
 function executionFilePath(projectRoot: string, workflow: string, timestamp: string, summary: string, id?: string): string {
   const day = timestamp.slice(0, 10);
@@ -97,7 +188,8 @@ function generatedSkillFilePath(projectRoot: string, slug: string): string {
 }
 
 // Markdown generation functions
-function buildExecutionMarkdown(record: MemoryRecord): string {
+function buildExecutionMarkdown(record: MemoryRecord, outputLanguage: OutputLanguageResolution): string {
+  const labels = memoryLabels(outputLanguage);
   const filesTouched = normalizeStringArray(record.filesTouched);
   const testsRun = normalizeStringArray(record.testsRun);
   const errors = normalizeStringArray(record.errors);
@@ -141,40 +233,40 @@ function buildExecutionMarkdown(record: MemoryRecord): string {
     }
   });
 
-  let content = `# ${record.summary || 'Execution Record'}\n\n`;
+  let content = `# ${record.summary || labels.executionRecord}\n\n`;
 
-  content += `## Details\n\n`;
-  content += `- **Workflow**: ${record.workflow}\n`;
-  if (record.phase) content += `- **Phase**: ${record.phase}\n`;
-  content += `- **Status**: ${record.status}\n`;
-  content += `- **Duration**: ${record.durationMs}ms\n`;
-  content += `- **Timestamp**: ${record.timestamp}\n\n`;
+  content += `## ${labels.details}\n\n`;
+  content += `- **${labels.workflow}**: ${record.workflow}\n`;
+  if (record.phase) content += `- **${labels.phase}**: ${record.phase}\n`;
+  content += `- **${labels.status}**: ${record.status}\n`;
+  content += `- **${labels.duration}**: ${record.durationMs}ms\n`;
+  content += `- **${labels.timestamp}**: ${record.timestamp}\n\n`;
 
   if (record.whyStored) {
-    content += `## Why Stored\n\n${record.whyStored}\n\n`;
+    content += `## ${labels.whyStored}\n\n${record.whyStored}\n\n`;
   }
 
   if (record.workflow === 'bug') {
-    content += `## Symptom\n\n${record.symptom || record.summary || 'Not recorded.'}\n\n`;
-    content += `## Impact\n\n${record.impact || 'Not recorded.'}\n\n`;
-    content += `## Root Cause\n\n${record.rootCause || 'Not recorded.'}\n\n`;
+    content += `## ${labels.symptom}\n\n${record.symptom || record.summary || labels.notRecorded}\n\n`;
+    content += `## ${labels.impact}\n\n${record.impact || labels.notRecorded}\n\n`;
+    content += `## ${labels.rootCause}\n\n${record.rootCause || labels.notRecorded}\n\n`;
 
-    content += `## Evidence\n\n`;
+    content += `## ${labels.evidence}\n\n`;
     if (record.evidence && record.evidence.length > 0) {
       record.evidence.forEach((item: string) => {
         content += `- ${item}\n`;
       });
     } else {
-      content += `- Not recorded.\n`;
+      content += `- ${labels.notRecorded}\n`;
     }
     content += `\n`;
 
-    content += `## Fix\n\n${record.fixSummary || 'Not recorded.'}\n\n`;
-    content += `## Verification\n\n${record.verificationSummary || 'Not recorded.'}\n\n`;
-    content += `## Reusable Learning\n\n${record.reusableLearning || 'Not recorded.'}\n\n`;
+    content += `## ${labels.fix}\n\n${record.fixSummary || labels.notRecorded}\n\n`;
+    content += `## ${labels.verification}\n\n${record.verificationSummary || labels.notRecorded}\n\n`;
+    content += `## ${labels.reusableLearning}\n\n${record.reusableLearning || labels.notRecorded}\n\n`;
 
     if (record.exclusions && record.exclusions.length > 0) {
-      content += `## Noise Excluded\n\n`;
+      content += `## ${labels.noiseExcluded}\n\n`;
       record.exclusions.forEach((item: string) => {
         content += `- ${item}\n`;
       });
@@ -183,7 +275,7 @@ function buildExecutionMarkdown(record: MemoryRecord): string {
   }
 
   if (errors.length > 0) {
-    content += `## Errors\n\n`;
+    content += `## ${labels.errors}\n\n`;
     errors.forEach((error: string) => {
       content += `- ${error}\n`;
     });
@@ -191,29 +283,29 @@ function buildExecutionMarkdown(record: MemoryRecord): string {
   }
 
   if (filesTouched.length > 0) {
-    content += `## Files Touched\n\n`;
+    content += `## ${labels.filesTouched}\n\n`;
     visibleFiles.shown.forEach((file: string) => {
       content += `- ${file}\n`;
     });
     if (visibleFiles.omitted > 0) {
-      content += `- ... ${visibleFiles.omitted} more omitted from this memory file\n`;
+      content += `- ... ${visibleFiles.omitted} ${labels.moreOmitted}\n`;
     }
     content += `\n`;
   }
 
   if (testsRun.length > 0) {
-    content += `## Tests Run\n\n`;
+    content += `## ${labels.testsRun}\n\n`;
     visibleTests.shown.forEach((test: string) => {
       content += `- ${test}\n`;
     });
     if (visibleTests.omitted > 0) {
-      content += `- ... ${visibleTests.omitted} more omitted from this memory file\n`;
+      content += `- ... ${visibleTests.omitted} ${labels.moreOmitted}\n`;
     }
     content += `\n`;
   }
 
   if (record.metadata && Object.keys(record.metadata).length > 0) {
-    content += `## Metadata\n\n`;
+    content += `## ${labels.metadata}\n\n`;
     content += '```json\n';
     content += JSON.stringify(record.metadata, null, 2);
     content += '\n```\n';
@@ -229,7 +321,8 @@ function buildExecutionMarkdown(record: MemoryRecord): string {
   return matter.stringify(content, frontmatter);
 }
 
-function buildPreferenceMarkdown(record: MemoryRecord): string {
+function buildPreferenceMarkdown(record: MemoryRecord, outputLanguage: OutputLanguageResolution): string {
+  const labels = memoryLabels(outputLanguage);
   const frontmatter: MemoryRecord = {
     id: record.id,
     type: 'preference',
@@ -253,21 +346,22 @@ function buildPreferenceMarkdown(record: MemoryRecord): string {
 
   let content = `# ${record.statement}\n\n`;
 
-  content += `## Details\n\n`;
-  content += `- **Scope**: ${record.scope}\n`;
-  content += `- **Source**: ${record.source}\n`;
-  content += `- **Evidence Count**: ${record.evidenceCount}\n`;
-  content += `- **Stability**: ${record.stability}\n`;
-  content += `- **Status**: ${record.status}\n\n`;
+  content += `## ${labels.details}\n\n`;
+  content += `- **${labels.scope}**: ${record.scope}\n`;
+  content += `- **${labels.source}**: ${record.source}\n`;
+  content += `- **${labels.evidenceCount}**: ${record.evidenceCount}\n`;
+  content += `- **${labels.stability}**: ${record.stability}\n`;
+  content += `- **${labels.status}**: ${record.status}\n\n`;
 
   if (record.whyStored) {
-    content += `## Why Stored\n\n${record.whyStored}\n\n`;
+    content += `## ${labels.whyStored}\n\n${record.whyStored}\n\n`;
   }
 
   return matter.stringify(content, frontmatter);
 }
 
-function buildLearningCandidateMarkdown(record: MemoryRecord): string {
+function buildLearningCandidateMarkdown(record: MemoryRecord, outputLanguage: OutputLanguageResolution): string {
+  const labels = memoryLabels(outputLanguage);
   const frontmatter: MemoryRecord = {
     id: record.id,
     type: 'learning',
@@ -294,11 +388,11 @@ function buildLearningCandidateMarkdown(record: MemoryRecord): string {
   let content = `# ${record.title}\n\n`;
 
   if (record.summary) {
-    content += `## Summary\n\n${record.summary}\n\n`;
+    content += `## ${labels.summary}\n\n${record.summary}\n\n`;
   }
 
   if (record.appliesTo && record.appliesTo.length > 0) {
-    content += `## Applies To\n\n`;
+    content += `## ${labels.appliesTo}\n\n`;
     record.appliesTo.forEach((item: string) => {
       content += `- ${item}\n`;
     });
@@ -306,18 +400,18 @@ function buildLearningCandidateMarkdown(record: MemoryRecord): string {
   }
 
   if (record.evidence && record.evidence.length > 0) {
-    content += `## Evidence\n\n`;
+    content += `## ${labels.evidence}\n\n`;
     record.evidence.forEach((ev: any) => {
-      content += `### ${ev.timestamp || 'Evidence'}\n\n`;
-      content += `- **Change ID**: ${ev.changeId || 'N/A'}\n`;
-      content += `- **Workflow**: ${ev.workflow || 'N/A'}\n`;
-      content += `- **Phase**: ${ev.phase || 'N/A'}\n`;
-      content += `- **Status**: ${ev.status || 'N/A'}\n\n`;
+      content += `### ${ev.timestamp || labels.evidence}\n\n`;
+      content += `- **${labels.changeId}**: ${ev.changeId || 'N/A'}\n`;
+      content += `- **${labels.workflow}**: ${ev.workflow || 'N/A'}\n`;
+      content += `- **${labels.phase}**: ${ev.phase || 'N/A'}\n`;
+      content += `- **${labels.status}**: ${ev.status || 'N/A'}\n\n`;
     });
   }
 
   if (record.whyStored) {
-    content += `## Why Stored\n\n${record.whyStored}\n\n`;
+    content += `## ${labels.whyStored}\n\n${record.whyStored}\n\n`;
   }
 
   // Remove undefined values to avoid YAML serialization errors
@@ -330,7 +424,8 @@ function buildLearningCandidateMarkdown(record: MemoryRecord): string {
   return matter.stringify(content, frontmatter);
 }
 
-function buildSkillCandidateMarkdown(record: MemoryRecord): string {
+function buildSkillCandidateMarkdown(record: MemoryRecord, outputLanguage: OutputLanguageResolution): string {
+  const labels = memoryLabels(outputLanguage);
   const frontmatter: MemoryRecord = {
     id: record.id,
     type: 'skill',
@@ -354,27 +449,28 @@ function buildSkillCandidateMarkdown(record: MemoryRecord): string {
   let content = `# ${record.title}\n\n`;
 
   if (record.summary) {
-    content += `## Summary\n\n${record.summary}\n\n`;
+    content += `## ${labels.summary}\n\n${record.summary}\n\n`;
   }
 
   if (record.evidence && record.evidence.length > 0) {
-    content += `## Evidence\n\n`;
+    content += `## ${labels.evidence}\n\n`;
     record.evidence.forEach((ev: any) => {
-      content += `### ${ev.timestamp || 'Evidence'}\n\n`;
-      content += `- **Change ID**: ${ev.changeId || 'N/A'}\n`;
-      content += `- **Workflow**: ${ev.workflow || 'N/A'}\n`;
-      content += `- **Status**: ${ev.status || 'N/A'}\n\n`;
+      content += `### ${ev.timestamp || labels.evidence}\n\n`;
+      content += `- **${labels.changeId}**: ${ev.changeId || 'N/A'}\n`;
+      content += `- **${labels.workflow}**: ${ev.workflow || 'N/A'}\n`;
+      content += `- **${labels.status}**: ${ev.status || 'N/A'}\n\n`;
     });
   }
 
   if (record.whyStored) {
-    content += `## Why Stored\n\n${record.whyStored}\n\n`;
+    content += `## ${labels.whyStored}\n\n${record.whyStored}\n\n`;
   }
 
   return matter.stringify(content, frontmatter);
 }
 
-function buildGeneratedSkillMarkdown(record: MemoryRecord): string {
+function buildGeneratedSkillMarkdown(record: MemoryRecord, outputLanguage: OutputLanguageResolution): string {
+  const labels = memoryLabels(outputLanguage);
   const frontmatter: MemoryRecord = {
     slug: record.slug,
     title: record.title,
@@ -398,24 +494,24 @@ function buildGeneratedSkillMarkdown(record: MemoryRecord): string {
   let content = `# ${record.title || record.slug}\n\n`;
 
   if (record.summary) {
-    content += `## Summary\n\n${record.summary}\n\n`;
+    content += `## ${labels.summary}\n\n${record.summary}\n\n`;
   }
 
-  content += `## Execution Directives\n\n`;
+  content += `## ${labels.executionDirectives}\n\n`;
   if (record.executionDirectives && record.executionDirectives.length > 0) {
     record.executionDirectives.forEach((directive: string) => {
       content += `- ${directive}\n`;
     });
   } else {
-    content += `- None\n`;
+    content += `- ${labels.none}\n`;
   }
   content += `\n`;
 
-  content += `## Metadata\n\n`;
-  content += `- **Pattern ID**: ${record.patternId || 'N/A'}\n`;
-  content += `- **Evidence Count**: ${record.evidenceCount || 0}\n`;
-  content += `- **Adopted At**: ${record.adoptedAt || 'N/A'}\n`;
-  content += `- **Source**: ${record.source || 'N/A'}\n\n`;
+  content += `## ${labels.metadata}\n\n`;
+  content += `- **${labels.patternId}**: ${record.patternId || 'N/A'}\n`;
+  content += `- **${labels.evidenceCount}**: ${record.evidenceCount || 0}\n`;
+  content += `- **${labels.adoptedAt}**: ${record.adoptedAt || 'N/A'}\n`;
+  content += `- **${labels.source}**: ${record.source || 'N/A'}\n\n`;
 
   return matter.stringify(content, frontmatter);
 }
@@ -491,7 +587,7 @@ function recordExecutionMemory(projectRoot: string, event: MemoryRecord): Memory
     metadata: event.metadata && typeof event.metadata === 'object' ? event.metadata : {}
   };
 
-  const markdown = buildExecutionMarkdown(record);
+  const markdown = buildExecutionMarkdown(record, resolveMemoryOutputLanguage(projectRoot));
   fs.writeFileSync(filePath, markdown, 'utf8');
 
   return {
@@ -561,7 +657,7 @@ function recordPreferenceMemory(projectRoot: string, event: MemoryRecord): Memor
     };
   }
 
-  const markdown = buildPreferenceMarkdown(record);
+  const markdown = buildPreferenceMarkdown(record, resolveMemoryOutputLanguage(projectRoot));
   fs.writeFileSync(filePath, markdown, 'utf8');
 
   return {
@@ -679,7 +775,7 @@ function upsertLearningCandidate(projectRoot: string, candidate: MemoryRecord): 
           }
   });
 
-  const markdown = buildLearningCandidateMarkdown(payload);
+  const markdown = buildLearningCandidateMarkdown(payload, resolveMemoryOutputLanguage(projectRoot));
   ensureDirectory(path.dirname(filePath));
   fs.writeFileSync(filePath, markdown, 'utf8');
 
@@ -721,7 +817,7 @@ function upsertSkillCandidate(projectRoot: string, candidate: MemoryRecord): Mem
           }
   });
 
-  const markdown = buildSkillCandidateMarkdown(payload);
+  const markdown = buildSkillCandidateMarkdown(payload, resolveMemoryOutputLanguage(projectRoot));
   ensureDirectory(path.dirname(filePath));
   fs.writeFileSync(filePath, markdown, 'utf8');
 
@@ -783,7 +879,7 @@ function updateLearningCandidateRecord(projectRoot: string, slug: string, mutate
   const nextRecord =
     typeof mutate === 'function' ? mutate({ ...record }) : { ...record, ...mutate };
 
-  const markdown = buildLearningCandidateMarkdown(nextRecord);
+  const markdown = buildLearningCandidateMarkdown(nextRecord, resolveMemoryOutputLanguage(projectRoot));
   fs.writeFileSync(filePath, markdown, 'utf8');
 
   return {
@@ -810,7 +906,7 @@ function updateSkillCandidateRecord(projectRoot: string, slug: string, mutate: M
   const nextRecord =
     typeof mutate === 'function' ? mutate({ ...record }) : { ...record, ...mutate };
 
-  const markdown = buildSkillCandidateMarkdown(nextRecord);
+  const markdown = buildSkillCandidateMarkdown(nextRecord, resolveMemoryOutputLanguage(projectRoot));
   fs.writeFileSync(filePath, markdown, 'utf8');
 
   return {
@@ -821,7 +917,7 @@ function updateSkillCandidateRecord(projectRoot: string, slug: string, mutate: M
 
 function writeGeneratedSkillArtifact(projectRoot: string, slug: string, payload: MemoryRecord): MemoryRecord {
   const filePath = generatedSkillFilePath(projectRoot, slug);
-  const markdown = buildGeneratedSkillMarkdown(payload);
+  const markdown = buildGeneratedSkillMarkdown(payload, resolveMemoryOutputLanguage(projectRoot));
   ensureDirectory(path.dirname(filePath));
   fs.writeFileSync(filePath, markdown, 'utf8');
 
@@ -833,7 +929,7 @@ function writeGeneratedSkillArtifact(projectRoot: string, slug: string, payload:
 
 function writeAdoptedLearningArtifact(projectRoot: string, slug: string, payload: MemoryRecord): MemoryRecord {
   const filePath = adoptedLearningFilePath(projectRoot, slug);
-  const markdown = buildLearningCandidateMarkdown(payload);
+  const markdown = buildLearningCandidateMarkdown(payload, resolveMemoryOutputLanguage(projectRoot));
   ensureDirectory(path.dirname(filePath));
   fs.writeFileSync(filePath, markdown, 'utf8');
 

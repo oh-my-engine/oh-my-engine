@@ -95,11 +95,11 @@ test('ome agents install writes global short command entries', () => {
   assert.match(claudeCommand, /## Workflow Session Start \(MANDATORY\)/);
   assert.match(claudeCommand, /ome bug \$ARGUMENTS/);
   assert.match(claudeCommand, /cmd\.exe \/c ome\.cmd bug \$ARGUMENTS/);
-  assert.match(claudeCommand, /## Workflow Completion \(MANDATORY\)/);
+  assert.match(claudeCommand, /## Workflow Completion \(SUBSTANTIVE WORK ONLY\)/);
   assert.match(claudeCommand, /ome finish/);
   assert.match(codexSkill, /## Workflow Session Start \(MANDATORY\)/);
   assert.match(codexSkill, /ome bug \$ARGUMENTS/);
-  assert.match(codexSkill, /## Workflow Completion \(MANDATORY\)/);
+  assert.match(codexSkill, /## Workflow Completion \(SUBSTANTIVE WORK ONLY\)/);
   assert.match(legacyCodexSkill, /## Workflow Session Start \(MANDATORY\)/);
   assert.match(legacyCodexSkill, /ome bug \$ARGUMENTS/);
   assert.match(initCommand, /^---\ndescription: Initialize \.ome project configuration and Agent rules\.\n---\n/);
@@ -155,7 +155,7 @@ test('ome agents install writes global short command entries', () => {
   assert.match(codexRememberSkill, /^!ome memory remember \$ARGUMENTS$/m);
   assert.match(codexRememberSkill, /allowed-tools:\s*Bash\(ome memory remember:\*\)/);
 
-  // Lifecycle workflows must carry the mandatory completion section in every
+  // Lifecycle workflows must carry the substantive completion section in every
   // platform-rendered file, and must start the CLI workflow session before
   // doing real work so `ome finish` can find `.ome/.session`.
   const claudeBuild = fs.readFileSync(path.join(home, '.claude', 'commands', 'ome-build.md'), 'utf8');
@@ -167,8 +167,9 @@ test('ome agents install writes global short command entries', () => {
     assert.match(content, /you MUST start the OME workflow session/);
     assert.match(content, /ome build \$ARGUMENTS/);
     assert.match(content, /cmd\.exe \/c ome\.cmd build \$ARGUMENTS/);
-    assert.match(content, /## Workflow Completion \(MANDATORY\)/);
-    assert.match(content, /you MUST run the following shell command/);
+    assert.match(content, /## Workflow Completion \(SUBSTANTIVE WORK ONLY\)/);
+    assert.match(content, /Run `ome finish` only after a substantive workflow loop/);
+    assert.match(content, /Do NOT run `ome finish` for ordinary conversation/);
     assert.match(content, /ome finish/);
   }
 
@@ -177,7 +178,7 @@ test('ome agents install writes global short command entries', () => {
   for (const content of [claudePlan, codexPlan]) {
     assert.match(content, /## Workflow Session Start \(MANDATORY\)/);
     assert.match(content, /ome plan \$ARGUMENTS/);
-    assert.match(content, /## Workflow Completion \(MANDATORY\)/);
+    assert.match(content, /## Workflow Completion \(SUBSTANTIVE WORK ONLY\)/);
   }
 
   // Non-session commands must NOT receive lifecycle session start/completion blocks.
@@ -192,6 +193,7 @@ test('ome agents install writes global short command entries', () => {
   for (const content of nonSessionEntries) {
     assert.doesNotMatch(content, /## Workflow Session Start \(MANDATORY\)/);
     assert.doesNotMatch(content, /## Workflow Completion \(MANDATORY\)/);
+    assert.doesNotMatch(content, /## Workflow Completion \(SUBSTANTIVE WORK ONLY\)/);
   }
 });
 
@@ -210,6 +212,25 @@ test('ome agents install --project writes project command entries', () => {
   assert.equal(fs.existsSync(path.join(workspace, '.opencode', 'command', 'ome-bug.md')), true);
   assert.equal(fs.existsSync(path.join(workspace, '.agent', 'workflows', 'ome-bug.md')), true);
   assert.match(fs.readFileSync(path.join(workspace, '.agent', 'workflows', 'ome-bug.md'), 'utf8'), /^---\ndescription:/);
+});
+
+test('ome agents clean-project removes generated entries without deleting custom commands', () => {
+  const workspace = createWorkspace('ome-agents-clean-project-');
+  const customCommandPath = path.join(workspace, '.claude', 'commands', 'ome-plan.md');
+
+  runOme(['agents', 'install', '--project', '--project-root', workspace, 'claude-code'], workspace);
+  fs.writeFileSync(customCommandPath, '# custom command\n', 'utf8');
+  fs.mkdirSync(path.join(workspace, '.ome', 'skills', 'ome-bug'), { recursive: true });
+  fs.writeFileSync(path.join(workspace, '.ome', 'skills', 'ome-bug', 'SKILL.md'), '# local source skill\n', 'utf8');
+
+  const output = runOme(['agents', 'clean-project', '--project-root', workspace, 'claude-code'], workspace);
+
+  assert.match(output, /Removed: [1-9]\d*/);
+  assert.equal(fs.existsSync(path.join(workspace, '.claude', 'commands', 'ome-bug.md')), false);
+  assert.equal(fs.existsSync(path.join(workspace, '.claude', 'commands', 'ome-build.md')), false);
+  assert.equal(fs.readFileSync(customCommandPath, 'utf8'), '# custom command\n');
+  assert.equal(fs.existsSync(path.join(workspace, '.ome', 'skills', 'ome-bug', 'SKILL.md')), true);
+  assert.match(output, /skipped claude-code: .*ome-plan\.md.*not recognized as an OME-generated project entry/);
 });
 
 test('ome init preserves existing agent files and merges OME guidance blocks', () => {
