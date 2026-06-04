@@ -620,6 +620,8 @@ ome guidance bug-analysis --input "Describe the bug or provide error logs"
 # Describe the bug or provide error logs
 ```
 
+`ome guidance ... --input` ranks adopted learnings and generated skill directives by the task text. This keeps active guidance focused on the current issue, file path, command, or API instead of surfacing unrelated high-evidence memories first.
+
 ### `/ome-memory`
 
 View execution history and learnings.

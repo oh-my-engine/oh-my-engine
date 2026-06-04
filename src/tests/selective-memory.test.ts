@@ -1785,6 +1785,144 @@ test('non-spec workflows surface adopted learnings and generated skill directive
   assert.match(apiOutput, /Execution directives from adopted skills:/);
 });
 
+test('workflow guidance prioritizes contextually relevant adopted memory', () => {
+  const workspace = createWorkspace();
+  const adoptedDir = path.join(
+    workspace,
+    '.ome',
+    'memory',
+    'learnings',
+    'adopted'
+  );
+
+  runOme(workspace, ['init']);
+  fs.mkdirSync(adoptedDir, { recursive: true });
+
+  fs.writeFileSync(
+    path.join(adoptedDir, 'build-session-finish.md'),
+    matter.stringify(
+      [
+        '# Preserve workflow session finish semantics',
+        '',
+        'When `ome finish` reports `No active workflow session found`, inspect `.ome/.session` and `src/core/session.ts` before changing memory storage.',
+        ''
+      ].join('\n'),
+      {
+        type: 'learning',
+        status: 'adopted',
+        title: 'Preserve workflow session finish semantics',
+        workflow: 'build',
+        phase: 'execution',
+        evidenceCount: 2,
+        appliesTo: ['build'],
+        evidence: [
+          {
+            workflow: 'build',
+            changeId: 'session-finish',
+            filesTouched: ['src/core/session.ts'],
+            errors: ['No active workflow session found']
+          }
+        ]
+      }
+    ),
+    'utf8'
+  );
+  fs.writeFileSync(
+    path.join(adoptedDir, 'build-color-theme.md'),
+    matter.stringify(
+      [
+        '# Keep generated UI colors consistent',
+        '',
+        'When restoring UI, reuse color tokens and avoid hardcoded visual drift.',
+        ''
+      ].join('\n'),
+      {
+        type: 'learning',
+        status: 'adopted',
+        title: 'Keep generated UI colors consistent',
+        workflow: 'build',
+        phase: 'execution',
+        evidenceCount: 5,
+        appliesTo: ['build']
+      }
+    ),
+    'utf8'
+  );
+
+  const output = runOme(workspace, [
+    'guidance',
+    'build',
+    '--input',
+    'Fix No active workflow session found from ome finish in src/core/session.ts and .ome/.session'
+  ]);
+
+  assert.match(output, /Preserve workflow session finish semantics/);
+  assert.doesNotMatch(output, /Keep generated UI colors consistent/);
+});
+
+test('workflow guidance filters generated skill directives by contextual relevance', () => {
+  const workspace = createWorkspace();
+  const generatedSkillsDir = path.join(workspace, '.ome', 'generated-skills');
+
+  runOme(workspace, ['init']);
+  fs.mkdirSync(generatedSkillsDir, { recursive: true });
+
+  fs.writeFileSync(
+    path.join(generatedSkillsDir, 'session-finish-triage.md'),
+    matter.stringify(
+      [
+        '# Session finish triage',
+        '',
+        'Use this skill when `ome finish` cannot find `.ome/.session`.',
+        ''
+      ].join('\n'),
+      {
+        slug: 'session-finish-triage',
+        title: 'Session finish triage',
+        summary: 'Diagnose No active workflow session found failures in src/core/session.ts.',
+        evidenceCount: 2,
+        executionDirectives: [
+          'Inspect .ome/.session before changing src/core/session.ts.'
+        ]
+      }
+    ),
+    'utf8'
+  );
+  fs.writeFileSync(
+    path.join(generatedSkillsDir, 'color-token-review.md'),
+    matter.stringify(
+      [
+        '# Color token review',
+        '',
+        'Use this skill when generated UI colors drift from design tokens.',
+        ''
+      ].join('\n'),
+      {
+        slug: 'color-token-review',
+        title: 'Color token review',
+        summary: 'Review generated UI color token usage.',
+        evidenceCount: 7,
+        executionDirectives: [
+          'Compare generated UI colors against design tokens.'
+        ]
+      }
+    ),
+    'utf8'
+  );
+
+  const output = runOme(workspace, [
+    'guidance',
+    'build',
+    '--input',
+    'Fix No active workflow session found from ome finish in src/core/session.ts and .ome/.session'
+  ]);
+
+  assert.match(output, /session-finish-triage/);
+  assert.match(output, /Inspect \.ome\/\.session before changing src\/core\/session\.ts\./);
+  assert.doesNotMatch(output, /color-token-review/);
+  assert.doesNotMatch(output, /Compare generated UI colors against design tokens\./);
+});
+
 export {};
 
 

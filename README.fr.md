@@ -18,6 +18,7 @@ Oh My Engine est un framework puissant qui transforme Claude Code et Codex en un
 - **📋 Workflows Riches** : Workflows préconstruits pour la restauration d'UI, l'analyse de bugs, la génération de composants et l'intégration d'API
 - **📝 Mode Spec** : Workflow compatible OpenSpec pour proposer, planifier, appliquer, vérifier et archiver des changements
 - **🎯 Contexte Intelligent** : Charge automatiquement les règles et configurations spécifiques au projet
+- **🧭 Guidage Contextuel** : `ome guidance --input` priorise les apprentissages adoptés et les consignes de skills générées liées à la tâche actuelle
 - **🔧 Extensible** : Création facile de workflows personnalisés pour vos besoins spécifiques
 
 ## 🚀 Démarrage Rapide

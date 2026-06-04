@@ -17,6 +17,7 @@ Oh My Engine is a powerful framework that transforms Claude Code and Codex into 
 - **📋 Rich Workflows**: Pre-built workflows for UI restoration, bug analysis, component generation, and API integration
 - **📝 Spec Mode** (Optional): OME-owned proposal, planning, apply, verify, and archive workflow - disabled by default, available only when durable specs are needed
 - **🎯 Smart Context**: Loads project-specific rules and configurations automatically
+- **🧭 Contextual Guidance**: Ranks adopted learnings and generated skill directives by the current `ome guidance --input` task
 - **🔧 Extensible**: Easy to create custom workflows for your specific needs
 - **🌐 Cross-Platform Rules**: Single source of truth for rules, auto-sync to 9+ AI platforms (Claude Code, Cursor, Trae, Agents, etc.) - [Learn more](docs/CROSS_PLATFORM_RULES.md)
 
@@ -246,6 +247,8 @@ ome guidance api-integration --input "./specs/user-api.yaml"
 # List platform adapters
 ome adapters list
 ```
+
+`ome guidance ... --input` ranks adopted learnings and generated skill directives by the task text, so unrelated high-evidence memories stay out of active guidance when a more specific match exists.
 
 Platform adapters live under `src/adapters/platforms/` and expose detection metadata plus rule/skill capabilities through the adapter registry.
 

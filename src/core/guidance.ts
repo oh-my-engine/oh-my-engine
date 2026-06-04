@@ -42,7 +42,9 @@ function parseGuidanceArgs(args: string[]): GuidanceOptions {
 
 export function runGuidanceCommand(args: string[]): void {
   const options = parseGuidanceArgs(args);
-  const guidance = collectWorkflowGuidance(process.cwd(), options.workflow);
+  const guidance = collectWorkflowGuidance(process.cwd(), options.workflow, {
+    input: options.input
+  });
 
   if (options.format === 'json') {
     process.stdout.write(

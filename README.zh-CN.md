@@ -16,6 +16,7 @@ Oh My Engine 以 `ome` CLI 为核心，提供项目初始化、规则同步、Sp
 - **📋 丰富的工作流**：预置 UI 还原、Bug 分析、组件生成和 API 集成等工作流
 - **📝 Spec 模式**：提供兼容 OpenSpec 的提案、计划、执行、验证和归档流程
 - **🎯 智能上下文**：自动加载项目特定的规则和配置
+- **🧭 上下文工作流指导**：`ome guidance --input` 会按当前任务优先匹配相关学习内容和生成技能指令
 - **🔧 可扩展**：轻松创建满足特定需求的自定义工作流
 - **🌐 多工具适配**：通过 `ome rules sync` 同步到 Claude Code、Codex、Trae、Cursor、Windsurf 等工具
 

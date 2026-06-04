@@ -384,6 +384,8 @@ Non-spec workflow helpers can now consume adopted engine knowledge directly thro
 - `ome guidance component-gen --input "<component-name>"`
 - `ome guidance api-integration --input "<api-spec>"`
 
+The guidance renderer tokenizes the `--input` text and uses it to prioritize matching adopted learnings and generated skills. When contextual matches exist, unrelated memory is filtered out even if it has a higher evidence count.
+
 ## Context Loading Strategy
 
 When a workflow starts, it loads context in this order:

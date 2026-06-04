@@ -56,7 +56,8 @@ export function runRenderWorkflowGuidance(argv: string[] = process.argv.slice(2)
   const options = parseArgs(argv);
   const guidance = collectWorkflowGuidance(
     path.resolve(options.projectRoot),
-    options.workflow
+    options.workflow,
+    { input: options.input }
   );
 
   if (options.format === 'json') {

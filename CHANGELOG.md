@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **OME Spec Intake**: Added `ome spec import` and `ome spec decompose` support for turning normalized PRD/source text, operator prompts, provenance metadata, and attachments into reviewable OME spec artifacts.
 - **Decomposition Prompt Artifact**: `decompose` now writes `context/decomposition-prompt.md` so agents can refine deterministic first drafts without losing the original intake trail.
 - **Memory Recall View**: `ome memory view` now defaults to active engine recall across preferences, adopted learnings, generated skills, and execution directives; execution history remains available through `ome history view`.
+- **Contextual Workflow Guidance**: `ome guidance <workflow> --input ...` now prioritizes adopted learnings and generated skill directives that match the current task input.
 
 ### Changed
 - **Spec Ownership**: Spec workflows are now fully OME-owned and use `.ome/omespec/`; OME no longer delegates lifecycle commands to an external OpenSpec CLI.

@@ -190,6 +190,8 @@ ome mcp sync
 ome mcp doctor
 ```
 
+The `--input` text in `ome guidance ...` ranks and filters adopted learnings plus generated skill directives, so task-specific guidance takes priority over unrelated high-evidence memory.
+
 ### Framework API
 
 Tools can embed Oh My Engine directly through the package entrypoint:
