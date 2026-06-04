@@ -42,7 +42,7 @@ function normalizeRememberArgs(args: string[]): string[] {
 }
 
 export function runMemoryCommand(command: string, args: string[]): void {
-  if (command === 'view') {
+  if (command === 'view' || !command) {
     runViewMemoryCommand(args);
     return;
   }
@@ -53,6 +53,15 @@ export function runMemoryCommand(command: string, args: string[]): void {
   }
 
   throw new Error(`Unknown memory command: ${command}`);
+}
+
+export function runHistoryCommand(command: string, args: string[]): void {
+  if (command === 'view' || !command) {
+    runViewMemoryCommand(['--type', 'history', ...args]);
+    return;
+  }
+
+  throw new Error(`Unknown history command: ${command}`);
 }
 
 export function runEvolveCommand(command: string, args: string[]): void {

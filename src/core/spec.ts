@@ -6,6 +6,7 @@ const { ENGINE_DIR, enginePath } = require('./paths');
 const { ensureDirectory, writeJsonFile, writeTextFile } = require('./file-system');
 const { countDoneCheckboxes, countOpenCheckboxes, renderTemplate, slugify, utcIso, utcStamp } = require('./spec-utils');
 const { loadSpecConfig, getSpecPaths } = require('./spec-config');
+const { decomposeSpecIntake } = require('./spec-intelligence');
 
 
 const SPEC_COMMANDS = ['init', 'import', 'decompose', 'propose', 'plan', 'apply', 'status', 'verify', 'archive'];
@@ -81,7 +82,7 @@ export function renderSpecHelp(): string {
   return [
     'Oh My Engine Spec Workflow',
     '',
-    'OpenSpec is the authoritative spec lifecycle. OME adds project rules, memory, and Agent context.',
+    'OME manages the spec lifecycle internally with project rules, memory, and Agent context.',
     '',
     'Usage:',
     '  ome spec <command> [args]',
@@ -101,29 +102,8 @@ export function renderSpecHelp(): string {
   ].join('\n');
 }
 
-function isLegacySpecProject(projectRoot: string): boolean {
-  return fs.existsSync(path.join(projectRoot, '.ome', 'omespec')) && !fs.existsSync(path.join(projectRoot, 'openspec'));
-}
-
-function shouldUseOpenSpec(command: string, projectRoot: string): boolean {
-  if (process.env.OME_SPEC_LEGACY === '1') return false;
-  if (isLegacySpecProject(projectRoot)) return false;
-  return ['init', 'propose', 'plan', 'apply', 'status', 'verify', 'archive'].includes(command);
-}
-
-function printOpenSpecContext(command: string): void {
-  const paths = getSpecPaths(process.cwd());
-  process.stdout.write('OME OpenSpec context:\n');
-  process.stdout.write(`  - provider: ${paths.config.provider}\n`);
-  process.stdout.write(`  - spec root: ${paths.config.specRoot}\n`);
-  process.stdout.write(`  - rules: ${ENGINE_DIR}/rules/\n`);
-  process.stdout.write(`  - skills: ${ENGINE_DIR}/skills/ome-spec/SKILL.md\n`);
-  process.stdout.write(`  - memory: ${paths.config.memoryDir}\n`);
-  process.stdout.write(`  - command: openspec ${command}\n`);
-}
-
 export function runSpecInit(args: string[]): void {
-  const result = initializeProject(parseInitArgs(args));
+  const result = initializeProject(parseInitArgs(args, { specInit: true }));
   const paths = getSpecPaths(result.projectRoot);
   process.stdout.write(`Initialized Oh My Engine project in ${result.projectRoot}\n`);
   process.stdout.write(`Template: ${result.template}\n`);
@@ -144,7 +124,8 @@ export function runSpecPropose(args: string[]): void {
     force: false,
     template: 'default',
     projectRoot: options.projectRoot,
-    repoRoot: options.repoRoot
+    repoRoot: options.repoRoot,
+    specInit: true
   });
 
   const paths = getSpecPaths(options.projectRoot);
@@ -266,6 +247,11 @@ function ensureChangeContext(changeInput: string): { changeSlug: string; project
 }
 
 function updateMemoryState(memoryFile: string, memory: Record<string, any>, status: string, phase: string, changeDirectory: string): Record<string, any> {
+  const preserved: Record<string, any> = {};
+  for (const key of ['blocked', 'blockingQuestions', 'assumptions', 'llmPromptPath']) {
+    if (Object.prototype.hasOwnProperty.call(memory, key)) preserved[key] = memory[key];
+  }
+
   const updated = {
     changeId: memory.changeId,
     changeSlug: memory.changeSlug,
@@ -277,7 +263,8 @@ function updateMemoryState(memoryFile: string, memory: Record<string, any>, stat
     openTasks: countOpenCheckboxes(path.join(changeDirectory, 'tasks.md')),
     completedTasks: countDoneCheckboxes(path.join(changeDirectory, 'tasks.md')),
     openAcceptanceCriteria: countOpenCheckboxes(path.join(changeDirectory, 'proposal.md')),
-    archivedPath: ''
+    archivedPath: '',
+    ...preserved
   };
   writeJson(memoryFile, updated);
   return updated;
@@ -320,7 +307,7 @@ function refreshEngineMemoryContext(projectRoot: string, changeSlug: string, cap
 function printExistingReviewFiles(changeDirectory: string, changeSlug: string, projectRoot: string): void {
   const paths = getSpecPaths(projectRoot);
   const relativeChangeDir = path.relative(projectRoot, changeDirectory);
-  const optional = ['source.md', 'prompt.md', 'analysis.md', 'engine-memory.md'];
+  const optional = ['source.md', 'prompt.md', 'analysis.md', 'decomposition-prompt.md', 'engine-memory.md'];
   for (const fileName of optional) {
     if (fs.existsSync(path.join(changeDirectory, 'context', fileName))) {
       process.stdout.write(`  - ${relativeChangeDir}/context/${fileName}\n`);
@@ -692,7 +679,7 @@ export function runSpecImport(args: string[]): void {
   const changeSlug = slugify(options.changeId);
   if (!changeSlug) throw new Error(`Invalid change id: ${options.changeId}`);
 
-  initializeProject({ force: false, template: 'default', projectRoot, repoRoot });
+  initializeProject({ force: false, template: 'default', projectRoot, repoRoot, specInit: true });
 
   const paths = getSpecPaths(projectRoot);
   const contextDirectory = paths.contextDir(changeSlug);
@@ -745,30 +732,67 @@ export function runSpecDecompose(args: string[]): void {
   const paths = getSpecPaths(projectRoot);
   const contextDirectory = paths.contextDir(changeSlug);
   const sourcePath = path.join(contextDirectory, 'source.md');
+  const promptPath = path.join(contextDirectory, 'prompt.md');
+  const referencesPath = path.join(contextDirectory, 'references.json');
 
   if (!fs.existsSync(sourcePath)) throw new Error(`Missing intake source for change: ${options.changeId}`);
 
   runSpecPropose([options.changeId, '--capability', capabilitySlug, '--force', ...(options.mode === 'bugfix' ? ['--bugfix'] : []), ...(options.mode === 'design-first' ? ['--design-first'] : [])]);
 
-  const templateRoot = path.join(repoRoot, 'skills', 'oh-my-engine-spec', 'templates');
-  const analysisContent = renderTemplate(path.join(templateRoot, 'analysis.md'), { '<change-id>': options.changeId, '<change-slug>': changeSlug, '<capability>': capabilitySlug });
-  writeFile(path.join(contextDirectory, 'analysis.md'), analysisContent);
+  const sourceText = parseSourceTextBlock(fs.readFileSync(sourcePath, 'utf8'));
+  const promptText = fs.existsSync(promptPath) ? parseSourceTextBlock(fs.readFileSync(promptPath, 'utf8')) : '';
+  const references = fs.existsSync(referencesPath) ? readJson(referencesPath) : {};
+  const decomposition = decomposeSpecIntake({
+    changeId: options.changeId,
+    changeSlug,
+    capability: capabilitySlug,
+    sourceText,
+    promptText,
+    references
+  });
+
+  const changeDirectory = paths.changeDir(changeSlug);
+  writeFile(path.join(contextDirectory, 'analysis.md'), decomposition.analysisMarkdown);
+  writeFile(path.join(contextDirectory, 'decomposition-prompt.md'), decomposition.llmPromptMarkdown);
+  writeFile(path.join(changeDirectory, 'proposal.md'), decomposition.proposalMarkdown);
+  writeFile(path.join(changeDirectory, 'design.md'), decomposition.designMarkdown);
+  writeFile(path.join(changeDirectory, 'tasks.md'), decomposition.tasksMarkdown);
+  writeFile(path.join(paths.changeSpecDir(changeSlug, capabilitySlug), 'spec.md'), decomposition.specDeltaMarkdown);
 
   const memoryFile = paths.memoryFile(changeSlug);
   const memory = readJson(memoryFile);
-  memory.status = 'decomposed';
+  memory.status = decomposition.blocked ? 'clarification_required' : 'decomposed';
   memory.phase = 'decompose';
   memory.updatedAt = utcIso();
+  memory.blocked = decomposition.blocked;
+  memory.blockingQuestions = decomposition.blockingQuestions;
+  memory.assumptions = decomposition.assumptions;
+  memory.llmPromptPath = path.relative(projectRoot, path.join(contextDirectory, 'decomposition-prompt.md'));
   writeJson(memoryFile, memory);
-  recordLifecycleMemory(projectRoot, memory, 'decompose', 'decomposed', 'Decomposed imported context into proposal, design, tasks, and spec delta scaffolds.');
+  recordLifecycleMemory(
+    projectRoot,
+    memory,
+    'decompose',
+    decomposition.blocked ? 'clarification_required' : 'decomposed',
+    decomposition.blocked
+      ? 'Decomposed imported context and found clarification questions that must be resolved.'
+      : 'Decomposed imported context into populated proposal, design, tasks, and spec delta artifacts.'
+  );
 
   const relativeContextDir = path.relative(projectRoot, contextDirectory);
   const relativeChangeDir = path.relative(projectRoot, paths.changeDir(changeSlug));
   process.stdout.write(`Decomposed change: ${options.changeId}\n`);
+  process.stdout.write(`Clarification gate: ${decomposition.blocked ? 'blocked' : 'passed'}\n`);
+  if (decomposition.blocked) {
+    process.stdout.write('Blocking questions:\n');
+    for (const question of decomposition.blockingQuestions) process.stdout.write(`  - ${question}\n`);
+  }
   process.stdout.write(`  - ${relativeContextDir}/analysis.md\n`);
+  process.stdout.write(`  - ${relativeContextDir}/decomposition-prompt.md\n`);
   process.stdout.write(`  - ${relativeChangeDir}/proposal.md\n`);
   process.stdout.write(`  - ${relativeChangeDir}/design.md\n`);
   process.stdout.write(`  - ${relativeChangeDir}/tasks.md\n`);
+  process.stdout.write(`  - ${path.relative(projectRoot, paths.changeSpecDir(changeSlug, capabilitySlug))}/spec.md\n`);
 }
 
 function findUnresolvedPlaceholders(filePath: string): string[] {
@@ -853,14 +877,6 @@ export function runSpecCommand(command: string, args: string[]): void {
   if (!command || command === 'help' || command === '--help' || command === '-h') {
     process.stdout.write(renderSpecHelp());
     return;
-  }
-
-  if (shouldUseOpenSpec(command, process.cwd())) {
-    const { runOpenSpec } = require('./openspec');
-    printOpenSpecContext(command);
-    if (runOpenSpec([command, ...args], process.cwd())) return;
-    process.exitCode = undefined;
-    process.stdout.write('OpenSpec CLI unavailable or failed; using OME legacy fallback.\n');
   }
 
   if (command === 'init') return runSpecInit(args);

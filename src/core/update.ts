@@ -81,6 +81,7 @@ async function runUpdateCommand(args: string[] = []): Promise<void> {
   const isForce = args.includes('--force');
   const forceRules = args.includes('--force-rules');
   const outputLanguage = readOptionValue(args, ['--language', '--output-language']);
+  const home = readOptionValue(args, ['--home']);
   const projectEntries = args.includes('--project-entries') || args.includes('--sync-project-entries');
   const forceGlobalUpdate = args.includes('--global') || args.includes('--force-global');
   const skipGlobalUpdate = args.includes('--project-only')
@@ -105,7 +106,7 @@ async function runUpdateCommand(args: string[] = []): Promise<void> {
 
   if (isRecursive) {
     console.log(`📦 正在扫描工作区中的 OME 项目: ${process.cwd()}`);
-    const results: any[] = updateWorkspace(process.cwd(), { force: isForce, forceRules, outputLanguage, projectEntries });
+    const results: any[] = updateWorkspace(process.cwd(), { force: isForce, forceRules, outputLanguage, projectEntries, home });
 
     console.log(`\n完成！共处理 ${results.length} 个项目`);
     results.forEach((res: any) => {
@@ -135,11 +136,15 @@ async function runUpdateCommand(args: string[] = []): Promise<void> {
     forceRules,
     sync: true,
     projectEntries,
+    home,
     outputLanguage,
     defaultProjectPlatforms: false
   });
   console.log('✅ 当前项目已同步。');
   console.log(`   - Project skills updated: ${result.projectSkillTargets.length}`);
+  if (result.projectSkillSourceSkipped) {
+    console.log(`   - Project skills skipped: global OME skills already installed at ${result.globalSkillSource || 'user home'}`);
+  }
   console.log(`   - Project skill mirrors synced: ${result.projectSkillMirrorTargets.length}`);
   console.log(`   - Project command entries synced: ${result.projectPlatformTargets.length}`);
   console.log(`   - Rule integrations synced: ${result.syncedTargets.length}`);

@@ -35,7 +35,8 @@ Claude Code fast path — the line below starting with `!` is pre-executed autom
 Underlying CLI: `ome memory view`
 
 Supported `--type` values (v1):
-- `executions` (default)
+- `recall` (default) - active context for future work: preferences, adopted learnings, generated skills, and execution directives
+- `history` / `executions` - execution history records
 - `preferences`
 - `learnings`
 - `adopted-learnings`
@@ -52,13 +53,15 @@ Examples:
 
 ```bash
 ome memory view
-ome memory view --type executions --workflow spec
+ome history view --workflow spec
+ome memory view --type history --workflow spec
 ome memory view --type preferences --scope user
 ome memory view --type learnings
 ome memory view --type skill-candidates
-ome memory view --type executions --format json
+ome memory view --format json
+ome history view --format json
 ```
 
-For deeper docs see `.ome/skills/ome-memory/SKILL.md` or run `ome memory view --help`.
+**Note**: `memory view` is read-only and focused on active recall. Execution logs are history; use `ome history view` when you want run records.
 
-**Note**: v1 stores only events that pass the policy gate. Empty output means nothing has been recorded yet — invoke a workflow command and finish it (`ome finish`) to populate the store.
+For deeper docs see `.ome/skills/ome-memory/SKILL.md` or run `ome memory view --help`.

@@ -6,7 +6,7 @@ Oh My Engine should support the real workflow teams actually use:
 
 `PRD + operator prompt -> decomposition -> proposal/design/tasks/spec delta -> apply/verify/archive`
 
-The current OpenSpec-compatible workflow already handles the back half of that lifecycle well. What is missing is a thin intake layer that can ingest multi-source PRD inputs, normalize them, and hand structured context to the existing spec lifecycle.
+The current OME spec workflow already handles the back half of that lifecycle well. What is missing is a thin intake layer that can ingest multi-source PRD inputs, normalize them, and hand structured context to the existing spec lifecycle.
 
 This document defines the recommended final architecture.
 
@@ -14,7 +14,7 @@ This document defines the recommended final architecture.
 
 Use a hybrid model:
 
-- Keep `openspec/` as the source of truth for durable specs and active changes
+- Keep `.ome/omespec/` as the source of truth for durable specs and active changes
 - Use agent-native reasoning for PRD understanding, prompt interpretation, image reading, and MCP retrieval
 - Add a small, explicit intake layer that turns those inputs into persistent change context artifacts
 
@@ -95,7 +95,7 @@ The decompose layer uses:
 - project memory
 - existing long-lived capability specs
 
-Its job is to translate source inputs into standard OpenSpec change artifacts.
+Its job is to translate source inputs into standard OME spec change artifacts.
 
 This is where prompt-driven decomposition belongs.
 
@@ -115,7 +115,7 @@ This layer should continue to reason about structured text artifacts, not raw im
 Recommended active change layout:
 
 ```text
-.ome/spec/
+.ome/omespec/
 └── changes/
     └── <change-id>/
         ├── context/
@@ -318,11 +318,11 @@ Phase 4:
 
 ## Bottom Line
 
-The correct target architecture is not "OpenSpec only" and not "agent magic only".
+The correct target architecture is not "external spec tooling only" and not "agent magic only".
 
 The right model for Oh My Engine is:
 
-- OpenSpec-style durable artifacts
+- OME-owned durable spec artifacts
 - agent-native multimodal understanding
 - a thin, explicit intake layer between them
 

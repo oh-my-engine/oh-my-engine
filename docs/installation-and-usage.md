@@ -83,9 +83,9 @@ ome agents install --all
 ome agents doctor
 ```
 
-`ome agents install --all` installs the same workflow set into Claude Code, Codex, Cursor, Trae, Windsurf, Qoder, OpenCode, and Antigravity. The set includes `ome-init-rules` for codebase-specific rule generation and `ome-superpowers` for the Superpowers bridge.
+`ome agents install --all` installs the same OME workflow set into Claude Code, Codex, Cursor, Trae, Windsurf, Qoder, OpenCode, and Antigravity. The set includes `ome-init-rules` for codebase-specific rule generation. It does not install optional Superpowers bridge wrappers.
 
-Install Superpowers wrappers:
+Optionally install Superpowers wrappers only when you want the official Superpowers integration:
 
 ```bash
 ome superpowers install all
@@ -144,7 +144,7 @@ ome update --project-only
 
 Spec workflow (optional, disabled by default):
 
-> **Note**: The spec workflow is an **optional advanced compatibility feature**, disabled by default in `OME.md`. Enable it by setting `workflows.spec.enabled: true` if needed. The external OpenSpec CLI is optional; OME provides a complete TypeScript fallback implementation.
+> **Note**: The spec workflow is an **optional OME-owned advanced feature**, disabled by default in `OME.md`. Enable it by setting `workflows.spec.enabled: true` only when durable specs and active change state are needed.
 
 ```bash
 ome spec help
@@ -207,7 +207,7 @@ const {
 
 Useful integration surfaces:
 
-- `initializeProject(...)` prepares `.ome/` and `openspec/` state.
+- `initializeProject(...)` prepares `.ome/` state and the optional `.ome/omespec/` workspace.
 - `listAdapterManifests(...)` reports adapter capabilities and target config without writing files.
 - `previewAdapterSync(...)` returns a create/update dry-run plan for one platform.
 - `renderWorkflowCommand(...)` renders the same workflow guidance used by CLI shortcuts.
@@ -265,7 +265,6 @@ Invoke installed skills by name:
 ```text
 ome-init
 ome-init-rules
-ome-superpowers
 ome-spec propose add-auth
 ome-spec apply add-auth
 ome-bug Login button click does nothing
@@ -458,8 +457,8 @@ Commit project configuration and rules:
 .ome/context/rules-generation-prompt.md
 .ome/rules/
 OME.md
-openspec/project.md
-openspec/specs/
+.ome/omespec/project.md
+.ome/omespec/specs/
 ```
 
 Do not assume `.ome/rules/` contains a fixed template set. Commit whatever project-specific files `ome init-rules` generated and your Agent editor refined.

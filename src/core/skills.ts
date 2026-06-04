@@ -44,7 +44,7 @@ const SUPERPOWERS_REPO = 'https://github.com/obra/superpowers';
 export const OME_ACTION_MARKER = '<!-- OME:ACTION -->';
 
 const ACTION_SKILLS: Record<string, { cli: string; humanLabel: string; humanLabelZh: string }> = {
-  memory: { cli: 'ome memory view', humanLabel: 'memory inspection', humanLabelZh: '记忆检查结果' },
+  memory: { cli: 'ome memory view', humanLabel: 'memory recall', humanLabelZh: '记忆召回结果' },
   remember: { cli: 'ome memory remember', humanLabel: 'explicit memory recording', humanLabelZh: '显式记忆写入结果' },
   evolve: { cli: 'ome evolve analyze', humanLabel: 'evolution analysis', humanLabelZh: '演化分析结果' }
 };
@@ -91,7 +91,7 @@ function workflowDescription(workflow: WorkflowDefinition, outputLanguage?: Skil
     test: '设计面向行为的测试、回归覆盖和失败诊断。',
     review: '评审正确性、可读性、架构、安全、性能和测试。',
     ship: '运行最终就绪检查，并准备面向用户的交付说明或提交记录。',
-    spec: '运行 OpenSpec 兼容工作流。'
+    spec: '运行 OME spec 工作流。'
   };
 
   return descriptions[workflow.id] || workflow.description;

@@ -1,7 +1,7 @@
 ---
 workflow: spec-propose
 version: 1.0.0
-description: Create a change proposal in an OpenSpec-compatible structure
+description: Create a change proposal in the OME spec workspace
 rules: []
 mcps: []
 skills: []
@@ -33,7 +33,7 @@ skills: []
 
 ### Step 3: Link long-lived context
 ```
-1. Reference openspec/project.md
-2. Reference existing openspec/specs/<capability>/spec.md if present
+1. Reference .ome/omespec/project.md
+2. Reference existing .ome/omespec/specs/<capability>/spec.md if present
 3. Record unresolved questions in design.md
 ```

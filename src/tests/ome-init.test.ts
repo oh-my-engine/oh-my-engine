@@ -7,6 +7,7 @@ const { execFileSync } = require('node:child_process');
 const yaml = require('js-yaml');
 
 const { OME_BIN, omeArgs } = require('./helpers');
+const { initializeProject } = require('../index');
 
 function createWorkspace(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'oh-my-engine-init-'));
@@ -37,6 +38,7 @@ test('ome init initializes project directories and defaults from TypeScript CLI'
   assert.equal(fs.existsSync(path.join(workspace, '.ome', 'rules', 'agent-behavior.md')), true);
   assert.equal(fs.existsSync(path.join(workspace, '.ome', 'rules', 'code-style.md')), true);
   assert.equal(fs.existsSync(path.join(workspace, 'openspec', 'project.md')), false);
+  assert.equal(fs.existsSync(path.join(workspace, '.ome', 'omespec', 'project.md')), false);
   assert.equal(fs.existsSync(path.join(workspace, '.ome', 'skills', 'ome-bug', 'SKILL.md')), true);
   assert.equal(fs.existsSync(path.join(workspace, '.ome', 'skills', 'ome-spec', 'SKILL.md')), false);
   assert.equal(fs.existsSync(path.join(workspace, 'CLAUDE.md')), true);
@@ -55,8 +57,8 @@ test('ome init initializes project directories and defaults from TypeScript CLI'
   assert.equal(config.project.template, 'node');
   assert.equal(config.memory.captureMode, 'selective');
   assert.equal(config.workflows.spec.enabled, false);
-  assert.equal(config.workflows.spec.provider, 'openspec');
-  assert.equal(config.workflows.spec.options.specRoot, 'openspec');
+  assert.equal(config.workflows.spec.provider, 'ome-spec');
+  assert.equal(config.workflows.spec.options.specRoot, '.ome/omespec');
 
   const agents = fs.readFileSync(path.join(workspace, 'AGENTS.md'), 'utf8');
   assert.match(agents, /Default Delivery Workflow/);
@@ -65,6 +67,54 @@ test('ome init initializes project directories and defaults from TypeScript CLI'
 
   const gitignore = fs.readFileSync(path.join(workspace, '.gitignore'), 'utf8');
   assert.match(gitignore, /\.ome\/memory\//);
+});
+
+test('initializeProject does not create spec workspace unless requested', () => {
+  const workspace = createWorkspace();
+
+  const defaultResult = initializeProject({
+    force: false,
+    template: 'default',
+    projectRoot: workspace,
+    repoRoot: path.resolve(__dirname, '..', '..')
+  });
+
+  assert.equal(defaultResult.projectCreated, false);
+  assert.match(defaultResult.specWorkspaceStatus, /^skipped:/);
+  assert.equal(fs.existsSync(path.join(workspace, '.ome', 'omespec', 'project.md')), false);
+
+  const specResult = initializeProject({
+    force: false,
+    template: 'default',
+    projectRoot: workspace,
+    repoRoot: path.resolve(__dirname, '..', '..'),
+    specInit: true
+  });
+
+  assert.equal(specResult.projectCreated, true);
+  assert.match(specResult.specWorkspaceStatus, /^ome-spec:/);
+  assert.equal(fs.existsSync(path.join(workspace, '.ome', 'omespec', 'project.md')), true);
+});
+
+test('ome init skips project skill sources when global OME skills are installed', () => {
+  const workspace = createWorkspace();
+  const globalHome = fs.mkdtempSync(path.join(os.tmpdir(), 'oh-my-engine-global-home-'));
+
+  runOme(['agents', 'install', '--home', globalHome, '--no-install-openspec', 'codex'], workspace);
+
+  const output = runOme(['init', '--home', globalHome], workspace);
+
+  assert.match(output, /Project skills installed: 0/);
+  assert.match(output, /Project skills skipped: global OME skills already installed at /);
+  assert.equal(fs.existsSync(path.join(workspace, '.ome', 'skills')), false);
+  assert.equal(fs.existsSync(path.join(workspace, '.ome', 'skills', 'ome-bug', 'SKILL.md')), false);
+
+  const agents = fs.readFileSync(path.join(workspace, 'AGENTS.md'), 'utf8');
+  const claude = fs.readFileSync(path.join(workspace, 'CLAUDE.md'), 'utf8');
+  assert.match(agents, /Skill source: global OME skills/);
+  assert.match(agents, /project-local override/);
+  assert.match(claude, /Skill source: global OME skills/);
+  assert.match(claude, /project-local override/);
 });
 
 test('ome init scans TypeScript Node projects and writes agent personalization context', () => {
@@ -132,7 +182,7 @@ test('ome init scans TypeScript Node projects and writes agent personalization c
   assert.match(bugSkill, /## Purpose/);
   assert.match(bugSkill, /## Workflow Session Start \(MANDATORY\)/);
   assert.match(bugSkill, /ome bug \$ARGUMENTS/);
-  assert.match(bugSkill, /## Workflow Completion \(MANDATORY\)/);
+  assert.match(bugSkill, /## Workflow Completion \(SUBSTANTIVE WORK ONLY\)/);
   assert.match(bugSkill, /ome finish/);
   assert.match(bugSkill, /## When to Use/);
   assert.match(bugSkill, /## Process/);
@@ -144,7 +194,7 @@ test('ome init scans TypeScript Node projects and writes agent personalization c
   const buildSkill = fs.readFileSync(path.join(workspace, '.ome', 'skills', 'ome-build', 'SKILL.md'), 'utf8');
   assert.match(buildSkill, /## Workflow Session Start \(MANDATORY\)/);
   assert.match(buildSkill, /ome build \$ARGUMENTS/);
-  assert.match(buildSkill, /## Workflow Completion \(MANDATORY\)/);
+  assert.match(buildSkill, /## Workflow Completion \(SUBSTANTIVE WORK ONLY\)/);
 
   const memorySkill = fs.readFileSync(path.join(workspace, '.ome', 'skills', 'ome-memory', 'SKILL.md'), 'utf8');
   assert.doesNotMatch(memorySkill, /## Workflow Session Start \(MANDATORY\)/);

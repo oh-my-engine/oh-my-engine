@@ -2,7 +2,7 @@
 
 ## Overview
 
-Oh My Engine is a TypeScript-driven workflow engine with a CLI runtime, a typed framework API, optional agent skills, and project-specific configuration. Spec-driven work uses an OpenSpec-compatible workspace so long-lived specs and active changes stay separate from project memory.
+Oh My Engine is a TypeScript-driven workflow engine with a CLI runtime, a typed framework API, optional agent skills, and project-specific configuration. Spec-driven work uses an OME-owned workspace under `.ome/omespec/` so long-lived specs and active changes stay separate from project memory.
 
 ## Architecture Layers
 
@@ -70,7 +70,7 @@ ome-bug           # Bug analysis workflow
 ome-ui            # UI restoration workflow
 ome-comp          # Component generation workflow
 ome-api           # API integration workflow
-ome-spec          # OpenSpec-compatible spec workflow
+ome-spec          # OME spec workflow
 ome-memory        # Memory system viewer
 ome-evolve        # Evolution analyzer
 ome-superpowers   # Superpowers bridge wrapper
@@ -169,7 +169,7 @@ project/.ome/
 │   └── specs/
 └── generated-skills/      # Adopted skill artifacts
 
-project/openspec/
+project/.ome/omespec/
 ├── project.md             # Stable project context
 ├── changes/               # In-progress changes
 ├── specs/                 # Long-lived capability specs
@@ -187,7 +187,7 @@ Project configuration defines:
 - Enabled workflows and their settings
 - Skills to load for each workflow
 - Rules to apply
-- OpenSpec-compatible spec workflow settings
+- OME spec workflow settings
 - Memory and evolution settings
 
 Example:
@@ -339,7 +339,7 @@ The guidance content includes pattern-matching rules that help agents recognize:
    ↓
 2. Load project config.json
    ↓
-3. If using spec mode, load openspec/project.md and active change docs
+3. If using spec mode, load `.ome/omespec/project.md` and active change docs
    ↓
 4. Check if workflow is enabled
    ↓
@@ -389,12 +389,12 @@ Non-spec workflow helpers can now consume adopted engine knowledge directly thro
 When a workflow starts, it loads context in this order:
 
 1. **Project Config**: `.ome/config.json`
-2. **Project Spec Context**: `openspec/project.md`
+2. **Project Spec Context**: `.ome/omespec/project.md`
 3. **Workflow Config**: Specific workflow settings
-4. **Active Change Docs**: `openspec/changes/<change-id>/`
-5. **Capability Specs**: `openspec/specs/<capability>/spec.md` when the capability has already been accepted
+4. **Active Change Docs**: `.ome/omespec/changes/<change-id>/`
+5. **Capability Specs**: `.ome/omespec/specs/<capability>/spec.md` when the capability has already been accepted
 6. **Rules**: All rules specified in workflow config
-7. **Engine Memory Context**: `openspec/changes/<change-id>/context/engine-memory.md` refreshed from adopted learnings and generated skills during `plan/apply`, including execution directives derived from adopted skills
+7. **Engine Memory Context**: `.ome/omespec/changes/<change-id>/context/engine-memory.md` refreshed from adopted learnings and generated skills during `plan/apply`, including execution directives derived from adopted skills
 8. **Skills**: Additional skills specified in workflow config
 9. **Memory**: Recent executions and learnings
 10. **User Input**: Command parameters
@@ -403,18 +403,18 @@ This ensures the workflow has complete context before generating any code.
 
 ## Spec-Driven Lifecycle
 
-Spec mode follows an OpenSpec-compatible lifecycle:
+Spec mode follows an OME-owned lifecycle:
 
-1. `init` - create `openspec/` and memory directories
-2. `propose` - scaffold a change under `openspec/changes/`
+1. `init` - create `.ome/omespec/` and memory directories
+2. `propose` - scaffold a change under `.ome/omespec/changes/`
 3. `plan` - refine design and tasks
 4. `apply` - implement against the active change and long-lived specs
 5. `verify` - prove acceptance criteria, reject placeholder content, and require concrete spec deltas
-6. `archive` - create or update `openspec/specs/` from accepted change deltas and persist memory
+6. `archive` - create or update `.ome/omespec/specs/` from accepted change deltas and persist memory
 
 ## Prompt-Driven Spec Intake
 
-The current OpenSpec-compatible workflow is the durable lifecycle core. For real-world PRD-driven work, the recommended extension is a thin intake layer in front of it:
+The current OME spec workflow is the durable lifecycle core. For real-world PRD-driven work, the recommended extension is a thin intake layer in front of it:
 
 1. `import` - ingest PRD content from MCP, local docs, URLs, inline text, and image attachments
 2. `decompose` - convert normalized input plus operator prompt into `proposal.md`, `design.md`, `tasks.md`, and spec deltas

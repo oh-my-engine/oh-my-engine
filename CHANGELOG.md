@@ -5,6 +5,29 @@ All notable changes to Oh My Engine will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.10] - 2026-06-04
+
+### Added
+- **OME Spec Intake**: Added `ome spec import` and `ome spec decompose` support for turning normalized PRD/source text, operator prompts, provenance metadata, and attachments into reviewable OME spec artifacts.
+- **Decomposition Prompt Artifact**: `decompose` now writes `context/decomposition-prompt.md` so agents can refine deterministic first drafts without losing the original intake trail.
+- **Memory Recall View**: `ome memory view` now defaults to active engine recall across preferences, adopted learnings, generated skills, and execution directives; execution history remains available through `ome history view`.
+
+### Changed
+- **Spec Ownership**: Spec workflows are now fully OME-owned and use `.ome/omespec/`; OME no longer delegates lifecycle commands to an external OpenSpec CLI.
+- **Spec Workspace Initialization**: Ordinary `ome init` and `ome update` no longer create a spec workspace unless spec mode is explicitly initialized or a spec command needs it.
+- **Global Skill Handling**: Project initialization and update flows now detect globally installed OME skills through `OME_AGENT_HOME` and skip duplicate project-local skill sources or mirrors when appropriate.
+- **Agent Guidance**: Generated platform guidance now points to global OME workflow skills when they are installed, while preserving `.ome/skills/` as an explicit project-local override path.
+- **Superpowers Scope**: Standard agent installation no longer bundles optional Superpowers bridge entries; those remain available through `ome superpowers install`.
+
+### Fixed
+- Preserved spec lifecycle memory fields such as clarification state, blocking questions, assumptions, and LLM prompt paths across status updates.
+- Kept memory/history view operations from stale-cleaning active workflow sessions during read-only inspection.
+- Updated docs and tests to use `.ome/omespec/` consistently instead of legacy `openspec/` paths.
+
+### Documentation
+- Updated README, architecture, installation, user guide, framework API, and spec-intake documentation for OME-owned spec mode and optional Superpowers bridge installation.
+- Clarified framework API usage for opt-in spec workspace initialization with `specInit: true`.
+
 ## [0.4.9] - 2026-05-29
 
 ### Changed
@@ -116,7 +139,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Spec workflow support
 - Multi-platform agent support
 
-[Unreleased]: https://github.com/oh-my-engine/oh-my-engine/compare/v0.4.9...HEAD
+[Unreleased]: https://github.com/oh-my-engine/oh-my-engine/compare/v0.4.10...HEAD
+[0.4.10]: https://github.com/oh-my-engine/oh-my-engine/compare/v0.4.9...v0.4.10
 [0.4.9]: https://github.com/oh-my-engine/oh-my-engine/compare/v0.4.0...v0.4.9
 [0.4.0]: https://github.com/oh-my-engine/oh-my-engine/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/oh-my-engine/oh-my-engine/compare/v0.2.1...v0.3.0

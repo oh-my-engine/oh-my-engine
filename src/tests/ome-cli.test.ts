@@ -47,6 +47,9 @@ test('ome help lists the default delivery lifecycle without spec commands', () =
   assert.doesNotMatch(output, /Spec commands:/);
   assert.match(output, /guidance <workflow>/);
   assert.match(output, /memory view/);
+  assert.match(output, /history view/);
+  assert.match(output, /View active engine recall/);
+  assert.match(output, /View execution history/);
   assert.match(output, /memory remember/);
   assert.match(output, /remember <text>/);
   assert.match(output, /evolve adopt-learning/);
@@ -433,6 +436,7 @@ test('ome update skips project entries by default and refreshes them when reques
   assert.match(result.stdout, /Project command entries synced: 0/);
   assert.match(result.stdout, /Rule integrations synced: [1-9]\d*/);
   assert.match(result.stdout, /Rule source files: created [1-9]\d*, overwritten 0, preserved [1-9]\d*/);
+  assert.equal(fs.existsSync(path.join(workspace, '.ome', 'omespec', 'project.md')), false);
 
   const projectEntriesResult = spawnSync(OME_BIN, omeArgs(['update', '--project-only', '--project-entries']), {
     cwd: workspace,
@@ -462,6 +466,7 @@ test('ome update skips project entries by default and refreshes them when reques
   assert.match(forcedResult.stdout, /Project skill mirrors synced: 0/);
   assert.match(forcedResult.stdout, /Project command entries synced: 0/);
   assert.match(forcedResult.stdout, /Rule source files: created 0, overwritten 0, preserved [1-9]\d*/);
+  assert.equal(fs.existsSync(path.join(workspace, '.ome', 'omespec', 'project.md')), false);
 
   const agents = fs.readFileSync(path.join(workspace, 'AGENTS.md'), 'utf8');
   const claude = fs.readFileSync(path.join(workspace, 'CLAUDE.md'), 'utf8');
@@ -471,6 +476,54 @@ test('ome update skips project entries by default and refreshes them when reques
   assert.match(claude, /# Local claude notes/);
   assert.match(claude, /<!-- OME:START -->/);
   assert.match(claude, /Rule source: `\.ome\/rules\/`/);
+});
+
+test('ome update skips project skill refresh when global OME skills are installed', () => {
+  const workspace = createWorkspace('ome-update-global-skills-');
+  const globalHome = createWorkspace('ome-update-global-home-');
+  const env: NodeJS.ProcessEnv = {
+    ...process.env,
+    OME_AGENT_HOME: globalHome,
+    OME_REPO_ROOT: REPO_ROOT
+  };
+  if (process.platform === 'win32') {
+    env.Path = '';
+  } else {
+    env.PATH = '';
+  }
+
+  execFileSync(OME_BIN, omeArgs(['agents', 'install', '--home', globalHome, '--no-install-openspec', 'codex']), {
+    cwd: workspace,
+    encoding: 'utf8',
+    env: { ...process.env, OME_REPO_ROOT: REPO_ROOT }
+  });
+  execFileSync(OME_BIN, omeArgs(['init', '--home', globalHome]), {
+    cwd: workspace,
+    encoding: 'utf8',
+    env: { ...process.env, OME_REPO_ROOT: REPO_ROOT }
+  });
+
+  const localSkillPath = path.join(workspace, '.ome', 'skills', 'ome-bug', 'SKILL.md');
+  const mirrorSkillPath = path.join(workspace, '.claude', 'skills', 'ome-bug', 'SKILL.md');
+  assert.equal(fs.existsSync(localSkillPath), false);
+
+  fs.mkdirSync(path.dirname(localSkillPath), { recursive: true });
+  fs.writeFileSync(localSkillPath, 'local override skill\n', 'utf8');
+  fs.mkdirSync(path.dirname(mirrorSkillPath), { recursive: true });
+  fs.writeFileSync(mirrorSkillPath, 'stale mirrored skill\n', 'utf8');
+
+  const result = spawnSync(OME_BIN, omeArgs(['update', '--project-only', '--project-entries', '--home', globalHome]), {
+    cwd: workspace,
+    encoding: 'utf8',
+    env
+  });
+
+  assert.equal(result.status, 0);
+  assert.equal(fs.readFileSync(localSkillPath, 'utf8'), 'local override skill\n');
+  assert.equal(fs.readFileSync(mirrorSkillPath, 'utf8'), 'stale mirrored skill\n');
+  assert.match(result.stdout, /Project skills updated: 0/);
+  assert.match(result.stdout, /Project skills skipped: global OME skills already installed at /);
+  assert.match(result.stdout, /Project skill mirrors synced: 0/);
 });
 
 test('ome update applies explicit Chinese output language without overwriting existing rules', () => {

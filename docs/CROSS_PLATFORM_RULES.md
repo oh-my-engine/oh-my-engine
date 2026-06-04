@@ -50,7 +50,7 @@ ome rules sync
 ```
 
 **自动完成**：
-- ✅ 创建 `.ome/` 和 `openspec/` 工作区
+- ✅ 创建 `.ome/` 和可选 `.ome/omespec/` 工作区
 - ✅ 写入默认规则和工作流配置
 - ✅ 保存到 `.ome/rules/`（唯一的规则源）
 - ✅ 同步到 Claude Code、Codex、Trae、Cursor 等平台规则文件

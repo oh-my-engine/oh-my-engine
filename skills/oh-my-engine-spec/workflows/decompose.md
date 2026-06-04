@@ -1,7 +1,7 @@
 ---
 workflow: spec-decompose
 version: 1.1.0
-description: Turn imported change context into standard OpenSpec change artifacts, with a mandatory clarification gate before scaffolding.
+description: Turn imported change context into OME spec artifacts, with a mandatory clarification gate before scaffolding.
 rules: []
 mcps: []
 skills: []
@@ -58,7 +58,7 @@ NON-BLOCKING RULE:
 PASS CONDITION: Zero MISSING dimensions. Proceed to Step 3.
 ```
 
-### Step 3: Scaffold OpenSpec artifacts
+### Step 3: Scaffold OME spec artifacts
 ```
 Proceed ONLY after passing the Clarification Gate.
 

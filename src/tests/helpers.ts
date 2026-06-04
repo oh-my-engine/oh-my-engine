@@ -22,9 +22,14 @@ function findRepoRoot(startDirectory: string): string {
 
 const REPO_ROOT = findRepoRoot(__dirname);
 const RUNTIME_ROOT = path.join(REPO_ROOT, 'dist');
+const TEST_AGENT_HOME = path.join(RUNTIME_ROOT, '.test-agent-home');
 
 if (!process.env.OME_OUTPUT_LANGUAGE) {
   process.env.OME_OUTPUT_LANGUAGE = 'en-US';
+}
+
+if (!process.env.OME_AGENT_HOME) {
+  process.env.OME_AGENT_HOME = TEST_AGENT_HOME;
 }
 
 function omeArgs(args: string[]): string[] {
@@ -36,6 +41,7 @@ function omeTestEnv(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
   return {
     ...process.env,
     OME_OUTPUT_LANGUAGE: 'en-US',
+    OME_AGENT_HOME: TEST_AGENT_HOME,
     ...overrides
   };
 }
@@ -54,6 +60,7 @@ module.exports = {
   OME_BIN,
   REPO_ROOT,
   RUNTIME_ROOT,
+  TEST_AGENT_HOME,
   omeArgs,
   omeTestEnv,
   repoPath,

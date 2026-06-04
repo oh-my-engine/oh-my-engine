@@ -9,7 +9,7 @@
 
 **Description:**
 ```
-TypeScript-driven workflow engine with memory, OpenSpec-style specs, evolution candidates, and cross-tool rule sync for Claude Code, Codex, Trae, Cursor, Windsurf, OpenCode, Qoder, and Antigravity.
+TypeScript-driven workflow engine with memory, OME-owned specs, evolution candidates, and cross-tool rule sync for Claude Code, Codex, Trae, Cursor, Windsurf, OpenCode, Qoder, and Antigravity.
 ```
 
 **Website:**
@@ -80,7 +80,7 @@ Key Features:
 • 🧠 Memory System - Remembers execution history and user preferences
 • 🔄 Self-Evolution - Identifies patterns and promotes verified candidates
 • ⚙️ Project Configuration - Per-project workflow customization
-• 📝 Spec Workflow - OpenSpec-style propose/plan/apply/verify/archive
+• 📝 Spec Workflow - OME-owned propose/plan/apply/verify/archive
 • 🌐 Cross-Tool Rules - Sync rules to Claude Code, Codex, Trae, Cursor, Windsurf, OpenCode, Qoder, and Antigravity
 
 Perfect for developers who want to:
@@ -99,7 +99,7 @@ https://github.com/oh-my-engine/oh-my-engine
 ```
 Title: Oh My Engine - Self-Evolving Workflow Framework for AI Coding Assistants
 
-I built a TypeScript-driven workflow engine that learns from usage patterns, manages OpenSpec-style changes, and syncs project rules across AI coding tools.
+I built a TypeScript-driven workflow engine that learns from usage patterns, manages OME-owned spec changes, and syncs project rules across AI coding tools.
 
 **What it does:**
 - Remembers your execution history and preferences

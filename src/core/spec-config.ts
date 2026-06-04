@@ -17,11 +17,11 @@ interface SpecConfig {
 }
 
 const DEFAULT_SPEC_CONFIG: SpecConfig = {
-  provider: 'openspec',
-  specRoot: 'openspec',
-  changesDir: 'openspec/changes',
-  specsDir: 'openspec/specs',
-  archiveDir: 'openspec/archive',
+  provider: 'ome-spec',
+  specRoot: '.ome/omespec',
+  changesDir: '.ome/omespec/changes',
+  specsDir: '.ome/omespec/specs',
+  archiveDir: '.ome/omespec/archive',
   memoryDir: '.ome/memory/specs',
   defaultFlow: 'import-decompose-plan-apply-verify-archive',
   manualFlow: 'propose-plan-apply-verify-archive',

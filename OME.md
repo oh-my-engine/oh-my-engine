@@ -95,8 +95,8 @@ workflows:
       - tooling
   spec:
     enabled: false
-    provider: openspec
-    format: openspec
+    provider: ome-spec
+    format: ome-spec
     options:
       specRoot: .ome/omespec
       changesDir: .ome/omespec/changes
@@ -134,7 +134,7 @@ evolution:
   optimizationThreshold: 85
 output:
   language: en-US
-  languageSource: explicit
+  languageSource: config
   displayName: English (US)
   requested: en-US
 ---
@@ -169,7 +169,7 @@ This project has the following workflows enabled:
 - **bug-analysis**: Bug analysis workflow with project-specific code, architecture, and tooling rules
 - **component-gen**: Component generation workflow
 - **api-integration**: API integration workflow
-- **spec**: disabled by default; use `ome spec` only as an advanced compatibility workflow
+- **spec**: disabled by default; use `ome spec` only when a durable spec workflow is needed
 
 ## Memory System
 

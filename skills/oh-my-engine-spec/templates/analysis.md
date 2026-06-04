@@ -50,4 +50,4 @@
 
 ### Gate Decision
 - [ ] BLOCKED — waiting for user answers to blocking questions above.
-- [ ] PASSED — proceeding to scaffold OpenSpec artifacts.
+- [ ] PASSED — proceeding to scaffold OME spec artifacts.

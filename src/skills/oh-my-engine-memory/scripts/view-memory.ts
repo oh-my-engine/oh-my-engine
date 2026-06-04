@@ -11,6 +11,9 @@ const {
   listAdoptedLearningRecords,
   listGeneratedSkillArtifacts
 } = require('../../oh-my-engine/lib/memory-store');
+const {
+  collectWorkflowGuidance
+} = require('../../oh-my-engine/lib/workflow-guidance');
 
 type MemoryRecord = Record<string, any>;
 type MemoryReport = {
@@ -21,7 +24,7 @@ type MemoryReport = {
 function parseArgs(argv: string[]): Record<string, any> {
   const options: Record<string, any> = {
     projectRoot: process.cwd(),
-    type: 'executions',
+    type: 'recall',
     format: 'text'
   };
 
@@ -158,10 +161,45 @@ function buildGeneratedSkillReport(projectRoot: string): MemoryReport {
   };
 }
 
+function buildRecallReport(projectRoot: string, workflow: string): MemoryReport {
+  const preferences = listPreferenceRecords(projectRoot);
+  const guidance = collectWorkflowGuidance(projectRoot, workflow || '');
+  const records = [
+    ...preferences.map((record: MemoryRecord) => ({
+      ...record,
+      recallType: 'preference'
+    })),
+    ...guidance.adoptedLearnings.map((record: MemoryRecord) => ({
+      ...record,
+      recallType: 'adopted-learning'
+    })),
+    ...guidance.generatedSkills.map((record: MemoryRecord) => ({
+      ...record,
+      recallType: 'generated-skill'
+    })),
+    ...guidance.executionDirectives.map((record: MemoryRecord) => ({
+      ...record,
+      recallType: 'execution-directive'
+    }))
+  ];
+
+  return {
+    summary: {
+      totalRecords: records.length,
+      preferences: preferences.length,
+      adoptedLearnings: guidance.adoptedLearnings.length,
+      generatedSkills: guidance.generatedSkills.length,
+      executionDirectives: guidance.executionDirectives.length,
+      workflow: workflow || ''
+    },
+    records
+  };
+}
+
 function renderExecutionTextReport(report: MemoryReport): string {
   const lines: string[] = [];
 
-  lines.push('Execution memory');
+  lines.push('Execution history');
   lines.push(`Total records: ${report.summary.totalRecords}`);
 
   for (const [workflow, count] of Object.entries(report.summary.byWorkflow)) {
@@ -178,6 +216,56 @@ function renderExecutionTextReport(report: MemoryReport): string {
       `- ${record.timestamp} ${record.workflow}/${record.phase} ${record.changeId} ` +
         `[${record.captureLevel}] ${record.whyStored}`
     );
+  }
+
+  return `${lines.join('\n')}\n`;
+}
+
+function renderRecallTextReport(report: MemoryReport): string {
+  const lines: string[] = [];
+
+  lines.push('Engine memory recall');
+  lines.push(`Total recall items: ${report.summary.totalRecords}`);
+  lines.push(`Preferences: ${report.summary.preferences}`);
+  lines.push(`Adopted learnings: ${report.summary.adoptedLearnings}`);
+  lines.push(`Generated skills: ${report.summary.generatedSkills}`);
+  lines.push(`Execution directives: ${report.summary.executionDirectives}`);
+
+  const preferences = report.records.filter(record => record.recallType === 'preference');
+  const learnings = report.records.filter(record => record.recallType === 'adopted-learning');
+  const skills = report.records.filter(record => record.recallType === 'generated-skill');
+  const directives = report.records.filter(record => record.recallType === 'execution-directive');
+
+  if (preferences.length > 0) {
+    lines.push('');
+    lines.push('Remembered preferences:');
+    for (const record of preferences) {
+      lines.push(`- ${record.scope || 'user'}: ${record.statement} [evidence=${record.evidenceCount || 0}]`);
+    }
+  }
+
+  if (learnings.length > 0) {
+    lines.push('');
+    lines.push('Adopted learnings:');
+    for (const record of learnings) {
+      lines.push(`- ${record.slug || record.title} [evidence=${record.evidenceCount || 0}]`);
+    }
+  }
+
+  if (skills.length > 0) {
+    lines.push('');
+    lines.push('Generated skills:');
+    for (const record of skills) {
+      lines.push(`- ${record.slug} [directives=${Array.isArray(record.executionDirectives) ? record.executionDirectives.length : 0}]`);
+    }
+  }
+
+  if (directives.length > 0) {
+    lines.push('');
+    lines.push('Execution directives:');
+    for (const record of directives) {
+      lines.push(`- [${record.slug}] ${record.directive}`);
+    }
   }
 
   return `${lines.join('\n')}\n`;
@@ -295,7 +383,9 @@ export function runViewMemoryCommand(argv: string[] = process.argv.slice(2)): vo
   const options = parseArgs(argv);
   let report: MemoryReport;
 
-  if (options.type === 'executions') {
+  if (options.type === 'recall' || options.type === 'active') {
+    report = buildRecallReport(path.resolve(options.projectRoot), options.workflow);
+  } else if (options.type === 'executions' || options.type === 'history') {
     report = buildExecutionReport(
       path.resolve(options.projectRoot),
       options.workflow
@@ -324,7 +414,9 @@ export function runViewMemoryCommand(argv: string[] = process.argv.slice(2)): vo
 
   if (options.format === 'text') {
     process.stdout.write(
-      options.type === 'executions'
+      options.type === 'recall' || options.type === 'active'
+        ? renderRecallTextReport(report)
+        : options.type === 'executions' || options.type === 'history'
         ? renderExecutionTextReport(report)
         : options.type === 'preferences'
           ? renderPreferenceTextReport(report)

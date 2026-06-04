@@ -1,7 +1,7 @@
 ---
 workflow: spec-init
 version: 1.0.0
-description: Initialize OpenSpec-compatible workspace for Oh My Engine
+description: Initialize the OME spec workspace
 rules: []
 mcps: []
 skills: []
@@ -11,7 +11,7 @@ skills: []
 
 ## Goal
 
-Create an OpenSpec-compatible workspace without introducing a new runtime dependency.
+Create the OME spec workspace without introducing an external runtime dependency.
 
 ## Execution Steps
 

@@ -16,6 +16,7 @@ export interface AgentInstallOptions {
   entries?: boolean;
   home?: string;
   projectRoot?: string;
+  /** @deprecated External OpenSpec CLI installation is no longer managed by OME. */
   installOpenSpec?: boolean;
   outputLanguage?: OutputLanguageInput;
 }
@@ -24,7 +25,7 @@ export interface AgentInstallResult {
   platform?: string;
   tool?: string;
   target: string;
-  kind: 'global-command' | 'project-command' | 'openspec-cli';
+  kind: 'global-command' | 'project-command';
   status: 'installed' | 'skipped' | 'present' | 'failed';
   message?: string;
 }
@@ -35,6 +36,20 @@ export interface AgentCleanResult {
   kind: 'project-command' | 'project-skill-mirror';
   status: 'removed' | 'missing' | 'skipped' | 'failed';
   message?: string;
+}
+
+export interface GlobalOmeSkillDirectoryStatus {
+  platform: string;
+  target: string;
+  missing: string[];
+}
+
+export interface GlobalOmeSkillStatus {
+  installed: boolean;
+  home: string;
+  platform?: string;
+  target?: string;
+  checked: GlobalOmeSkillDirectoryStatus[];
 }
 
 interface AgentDefinition {
@@ -104,7 +119,6 @@ const WORKFLOWS: WorkflowDefinition[] = [
   { id: 'memory', command: 'ome-memory', title: 'Memory Viewer', usage: 'ome-memory [options]', description: 'Inspect local Oh My Engine memory and adopted learnings.' },
   { id: 'remember', command: 'ome-remember', title: 'Remember Preference', usage: 'ome-remember "<preference or instruction>"', description: 'Explicitly remember a reusable preference or instruction.' },
   { id: 'evolve', command: 'ome-evolve', title: 'Evolution Analyzer', usage: 'ome-evolve [options]', description: 'Analyze local memory for learning and skill candidates.' },
-  { id: 'superpowers', command: 'ome-superpowers', title: 'Superpowers Bridge', usage: 'ome superpowers <install|update|doctor>', description: 'Install, update, or inspect Superpowers bridge entries for supported Agent editors.' },
   { id: 'mcp', command: 'ome-mcp', title: 'MCP Setup', usage: 'ome mcp <init|sync|preview|doctor> [figma|mastergo|all]', description: 'Initialize, sync, preview, or inspect Figma and MasterGo MCP configuration for Agent editors.' },
   { id: 'define', command: 'ome-define', title: 'Define Workflow', usage: 'ome define "<task or requirement>"', description: 'Clarify goal, scope, success criteria, and assumptions before implementation.' },
   { id: 'plan', command: 'ome-plan', title: 'Plan Workflow', usage: 'ome plan "<task or requirement>"', description: 'Create implementation guidance with interfaces, edge cases, and test strategy.' },
@@ -170,7 +184,7 @@ function writeManagedFileBlock(filePath: string, content: string): void {
 }
 
 function normalizeHome(home?: string): string {
-  return home ? path.resolve(home) : os.homedir();
+  return path.resolve(home || process.env.OME_AGENT_HOME || os.homedir());
 }
 
 function selectedAgents(platforms: string[], all?: boolean): AgentDefinition[] {
@@ -192,6 +206,36 @@ function renderCommandPrompt(
 function targetPath(baseDirectory: string, agent: AgentDefinition, workflow: WorkflowDefinition): string {
   if (agent.commandStyle === 'skill') return path.join(baseDirectory, workflow.command, 'SKILL.md');
   return path.join(baseDirectory, `${workflow.command}.md`);
+}
+
+function globalSkillDirectories(home: string): { agent: AgentDefinition; target: string }[] {
+  return AGENTS
+    .filter(agent => agent.commandStyle === 'skill' && agent.globalCommandDirectory)
+    .flatMap(agent => [
+      { agent, target: path.join(home, agent.globalCommandDirectory as string) },
+      ...(agent.legacyGlobalCommandDirectories || []).map(directory => ({
+        agent,
+        target: path.join(home, directory)
+      }))
+    ]);
+}
+
+export function detectGlobalOmeSkills(options: { home?: string } = {}): GlobalOmeSkillStatus {
+  const home = normalizeHome(options.home);
+  const checked = globalSkillDirectories(home).map(({ agent, target }) => ({
+    platform: agent.id,
+    target,
+    missing: missingWorkflows(target, agent)
+  }));
+  const installed = checked.find(status => status.missing.length === 0);
+
+  return {
+    installed: Boolean(installed),
+    home,
+    platform: installed?.platform,
+    target: installed?.target,
+    checked
+  };
 }
 
 function projectCommandBase(projectRoot: string, agent: AgentDefinition): string | undefined {
@@ -355,12 +399,7 @@ function parseInstallArgs(args: string[]): AgentInstallOptions {
       options.entries = true;
       continue;
     }
-    if (argument === '--install-openspec') {
-      options.installOpenSpec = true;
-      continue;
-    }
-    if (argument === '--no-install-openspec') {
-      options.installOpenSpec = false;
+    if (argument === '--install-openspec' || argument === '--no-install-openspec') {
       continue;
     }
     if (argument === '--home') {
@@ -528,23 +567,20 @@ function applyInteractiveSelection(options: AgentInstallOptions): AgentInstallOp
 
 export function installAgents(options: AgentInstallOptions): AgentInstallResult[] {
   const normalized = applyInteractiveSelection(options);
-  const results = selectedAgents(normalized.platforms, normalized.all).flatMap(agent => installForAgent(agent, normalized));
-  if (!normalized.project && normalized.installOpenSpec !== false) {
-    const { installOpenSpecCli } = require('./openspec');
-    const openspec = installOpenSpecCli(true);
-    results.push({
-      tool: openspec.tool,
-      target: openspec.target,
-      kind: 'openspec-cli',
-      status: openspec.status,
-      message: openspec.message
-    });
-  }
-  return results;
+  return selectedAgents(normalized.platforms, normalized.all).flatMap(agent => installForAgent(agent, normalized));
 }
 
-export function syncExistingProjectAgents(projectRoot: string, outputLanguage?: OutputLanguageInput): AgentInstallResult[] {
+export function syncExistingProjectAgents(
+  projectRoot: string,
+  outputLanguage?: OutputLanguageInput,
+  options: { home?: string; skipGlobalSkillDuplicates?: boolean } = {}
+): AgentInstallResult[] {
+  const globalSkills = options.skipGlobalSkillDuplicates ? detectGlobalOmeSkills({ home: options.home }) : undefined;
   return AGENTS.flatMap(agent => {
+    if (agent.commandStyle === 'skill' && globalSkills?.installed) {
+      return [];
+    }
+
     const base = projectCommandBase(projectRoot, agent);
     if (!base || !fs.existsSync(base)) {
       return [];
@@ -559,7 +595,16 @@ export function syncExistingProjectAgents(projectRoot: string, outputLanguage?: 
   });
 }
 
-export function syncExistingProjectSkillMirrors(projectRoot: string, outputLanguage?: OutputLanguageInput): AgentInstallResult[] {
+export function syncExistingProjectSkillMirrors(
+  projectRoot: string,
+  outputLanguage?: OutputLanguageInput,
+  options: { home?: string; skipGlobalSkillDuplicates?: boolean } = {}
+): AgentInstallResult[] {
+  const globalSkills = options.skipGlobalSkillDuplicates ? detectGlobalOmeSkills({ home: options.home }) : undefined;
+  if (globalSkills?.installed) {
+    return [];
+  }
+
   const resolvedLanguage = normalizeOutputLanguageInput(projectRoot, outputLanguage);
   return AGENTS.flatMap(agent => {
     const base = projectSkillMirrorBase(projectRoot, agent);
@@ -625,11 +670,6 @@ export function runAgentsCommand(args: string[]): void {
   if (subcommand === 'install') {
     const results = installAgents(parseInstallArgs(args.slice(1)));
     for (const result of results) {
-      if (result.kind === 'openspec-cli') {
-        const marker = result.status === 'failed' ? '⚠' : result.status === 'skipped' ? '↷' : '✅';
-        process.stdout.write(`${marker} openspec: ${result.message || result.target}\n`);
-        continue;
-      }
       process.stdout.write(`${result.status === 'installed' ? '✅' : '↷'} ${result.platform}: ${result.target}\n`);
     }
     return;
@@ -662,10 +702,33 @@ export function workflowCommands(): string[] {
 
 export function initializeProjectSkillSources(
   projectRoot: string,
-  force: boolean = false,
+  forceOrOptions: boolean | {
+    force?: boolean;
+    home?: string;
+    outputLanguage?: OutputLanguageInput;
+    skipWhenGlobalInstalled?: boolean;
+  } = false,
   outputLanguage?: OutputLanguageInput
-): { workflow: string; path: string; action: 'created' | 'updated' | 'skipped' }[] {
-  return initializeWorkflowSkillSources(projectRoot, WORKFLOWS, force, normalizeOutputLanguageInput(projectRoot, outputLanguage));
+): { workflow: string; path: string; action: 'created' | 'updated' | 'skipped'; reason?: string; globalSource?: string }[] {
+  const options = typeof forceOrOptions === 'object'
+    ? forceOrOptions
+    : { force: forceOrOptions, outputLanguage };
+  const resolvedLanguage = normalizeOutputLanguageInput(projectRoot, options.outputLanguage);
+
+  if (options.skipWhenGlobalInstalled !== false) {
+    const globalSkills = detectGlobalOmeSkills({ home: options.home });
+    if (globalSkills.installed) {
+      return WORKFLOWS.map(workflow => ({
+        workflow: workflow.command,
+        path: path.join(projectRoot, '.ome', 'skills', workflow.command, 'SKILL.md'),
+        action: 'skipped' as const,
+        reason: 'global-skills-installed',
+        globalSource: globalSkills.target
+      }));
+    }
+  }
+
+  return initializeWorkflowSkillSources(projectRoot, WORKFLOWS, options.force === true, resolvedLanguage);
 }
 
 // ============================================================================
@@ -683,6 +746,7 @@ export interface AgentGuidanceOptions {
   outputLanguage?: OutputLanguageInput;
   preserveExistingMultiFile?: boolean;
   platforms?: string[];
+  home?: string;
 }
 
 /**
@@ -765,6 +829,36 @@ export function detectInitializedAgentPlatforms(projectRoot: string): string[] {
 function buildCommandExample(platform: AgentDefinition, command: string): string {
   if (platform.commandStyle === 'skill') return command;
   return `/${command}`;
+}
+
+function applyGlobalSkillGuidance(content: string, globalSkillSource?: string): string {
+  if (!globalSkillSource) return content;
+
+  return content
+    .replace(
+      /- Skill source: `\.ome\/skills\/`/g,
+      `- Skill source: global OME skills (${globalSkillSource}); use \`.ome/skills/\` only for project-local overrides.`
+    )
+    .replace(
+      /- [^\r\n]*Skill [^\r\n]*`\.ome\/skills\/`/g,
+      `- Skill source: global OME skills (${globalSkillSource}); use \`.ome/skills/\` only for project-local overrides.`
+    )
+    .replace(
+      '- Before executing a task, read `OME.md`, the relevant `.ome/rules/*.md` files, and the matching `.ome/skills/ome-*/SKILL.md` file.',
+      '- Before executing a task, read `OME.md` and the relevant `.ome/rules/*.md` files; use the matching global OME workflow skill unless `.ome/skills/ome-*/SKILL.md` exists as a project-local override.'
+    )
+    .replace(
+      '- Treat `.ome/rules/` and `.ome/skills/` as the project-local source of truth.',
+      '- Treat `.ome/rules/` as the project-local source of truth; treat `.ome/skills/` only as explicit project-local overrides when present.'
+    )
+    .replace(
+      /read `\.ome\/skills\/(ome-[^/]+)\/SKILL\.md`/g,
+      (_match, command: string) => `use the global \`${command}\` skill unless \`.ome/skills/${command}/SKILL.md\` exists as a project-local override`
+    )
+    .replace(
+      /`\.ome\/skills\/(ome-[^/]+)\/SKILL\.md`/g,
+      (_match, command: string) => `global \`${command}\` skill (project override: \`.ome/skills/${command}/SKILL.md\`)`
+    );
 }
 
 /**
@@ -894,7 +988,11 @@ export function generateAgentGuidanceFile(
   const outputLanguage = normalizeOutputLanguageInput(projectRoot, options.outputLanguage);
   const managedFilePath = getAutoDetectionFilePath(projectRoot, platform);
   const managedFileExists = fs.existsSync(managedFilePath);
-  const managedContent = buildAgentGuidanceContent(platform, scan, outputLanguage);
+  const globalSkills = detectGlobalOmeSkills({ home: options.home });
+  const managedContent = applyGlobalSkillGuidance(
+    buildAgentGuidanceContent(platform, scan, outputLanguage),
+    globalSkills.installed ? globalSkills.target : undefined
+  );
   if (isSingleFilePlatform(platform)) {
     writeManagedFileBlock(managedFilePath, managedContent);
   } else if (options.preserveExistingMultiFile === true && managedFileExists) {
@@ -941,6 +1039,7 @@ export function generateAllAgentGuidanceFiles(
 
     const result = generateAgentGuidanceFile(projectRoot, platform, scan, {
       outputLanguage,
+      home: options.home,
       preserveExistingMultiFile: options.preserveExistingMultiFile === true
     });
     results.push(result);

@@ -38,7 +38,7 @@ test('ome agents install writes global short command entries', () => {
   assert.equal(fs.existsSync(path.join(home, '.claude', 'commands', 'ome-plan.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.claude', 'commands', 'ome-ship.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.claude', 'commands', 'ome-init-rules.md')), true);
-  assert.equal(fs.existsSync(path.join(home, '.claude', 'commands', 'ome-superpowers.md')), true);
+  assert.equal(fs.existsSync(path.join(home, '.claude', 'commands', 'ome-superpowers.md')), false);
   assert.equal(fs.existsSync(path.join(home, '.claude', 'commands', 'ome-mcp.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.claude', 'commands', 'ome-memory.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.claude', 'commands', 'ome-remember.md')), true);
@@ -52,7 +52,7 @@ test('ome agents install writes global short command entries', () => {
   assert.equal(fs.existsSync(path.join(home, '.agents', 'skills', 'ome-define', 'SKILL.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.agents', 'skills', 'ome-review', 'SKILL.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.agents', 'skills', 'ome-init-rules', 'SKILL.md')), true);
-  assert.equal(fs.existsSync(path.join(home, '.agents', 'skills', 'ome-superpowers', 'SKILL.md')), true);
+  assert.equal(fs.existsSync(path.join(home, '.agents', 'skills', 'ome-superpowers', 'SKILL.md')), false);
   assert.equal(fs.existsSync(path.join(home, '.agents', 'skills', 'ome-mcp', 'SKILL.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.agents', 'skills', 'ome-memory', 'SKILL.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.agents', 'skills', 'ome-remember', 'SKILL.md')), true);
@@ -187,7 +187,6 @@ test('ome agents install writes global short command entries', () => {
     fs.readFileSync(path.join(home, '.claude', 'commands', 'ome-remember.md'), 'utf8'),
     fs.readFileSync(path.join(home, '.claude', 'commands', 'ome-evolve.md'), 'utf8'),
     fs.readFileSync(path.join(home, '.claude', 'commands', 'ome-mcp.md'), 'utf8'),
-    fs.readFileSync(path.join(home, '.claude', 'commands', 'ome-superpowers.md'), 'utf8'),
     fs.readFileSync(path.join(home, '.claude', 'commands', 'ome-init-rules.md'), 'utf8')
   ];
   for (const content of nonSessionEntries) {
@@ -204,6 +203,7 @@ test('ome agents install --project writes project command entries', () => {
 
   assert.equal(fs.existsSync(path.join(workspace, '.claude', 'commands', 'ome-bug.md')), true);
   assert.equal(fs.existsSync(path.join(workspace, '.claude', 'commands', 'ome-init-rules.md')), true);
+  assert.equal(fs.existsSync(path.join(workspace, '.claude', 'commands', 'ome-superpowers.md')), false);
   assert.equal(fs.existsSync(path.join(workspace, '.cursor', 'commands', 'ome-bug.md')), true);
   assert.equal(fs.existsSync(path.join(workspace, '.cursor', 'commands', 'ome-init-rules.md')), true);
   assert.equal(fs.existsSync(path.join(workspace, '.windsurf', 'workflows', 'ome-bug.md')), true);

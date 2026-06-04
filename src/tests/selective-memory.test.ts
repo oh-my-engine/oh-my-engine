@@ -92,7 +92,7 @@ function readExecutionRecords(workspace: string, workflow: string): any[] {
 }
 
 function writeValidFeatureDocs(workspace: string, change: string): void {
-  const changeDirectory = path.join(workspace, 'openspec', 'changes', change);
+  const changeDirectory = path.join(workspace, '.ome', 'omespec', 'changes', change);
 
   fs.writeFileSync(
     path.join(changeDirectory, 'proposal.md'),
@@ -134,7 +134,7 @@ Protected routes currently duplicate auth checks in multiple handlers.
 - Monitoring: watch protected-route 401 volume
 
 ## Related Capability Specs
-- \`openspec/specs/${change}/spec.md\`
+- \`.ome/omespec/specs/${change}/spec.md\`
 `,
     'utf8'
   );
@@ -235,7 +235,7 @@ function seedEvolutionWorkspace(workspace: string): any {
       novelty: 0.6,
       status: 'verified',
       summary: 'Verified the spec change and acceptance state.',
-      filesTouched: ['openspec/changes/demo/spec.md'],
+      filesTouched: ['.ome/omespec/changes/demo/spec.md'],
       testsRun: ['sh tests/spec-workflow-smoke.sh'],
       errors: [],
       metadata: {
@@ -486,6 +486,72 @@ test('explicit remembered preferences are stored and visible in the memory viewe
   assert.equal(report.records[0].evidenceCount, 2);
 });
 
+test('memory view defaults to active recall while history view shows executions', () => {
+  const workspace = createWorkspace();
+
+  runOme(workspace, ['init']);
+  recordPreference(workspace, 'Prefer concise reports');
+  recordExecutionEvent(workspace, {
+    source: 'workflow_command',
+    workflow: 'build',
+    phase: 'execution',
+    changeId: 'history-demo',
+    changeSlug: 'build',
+    capability: 'build',
+    complexity: 'medium',
+    confidence: 'high',
+    sensitivity: 'low',
+    reusePotential: 0.8,
+    stability: 0.8,
+    novelty: 0.5,
+    status: 'success',
+    summary: 'Record execution history separately from recall.',
+    filesTouched: ['src/core/memory.ts'],
+    testsRun: ['node --test dist/tests/selective-memory.test.js'],
+    errors: []
+  });
+
+  const recall = JSON.parse(
+    runOme(workspace, ['memory', 'view', '--format', 'json'])
+  );
+  assert.equal(recall.summary.preferences, 1);
+  assert.equal(recall.summary.totalRecords, 1);
+  assert.equal(recall.records[0].recallType, 'preference');
+  assert.equal(recall.records[0].statement, 'Prefer concise reports');
+
+  const history = JSON.parse(
+    runOme(workspace, ['history', 'view', '--workflow', 'build', '--format', 'json'])
+  );
+  assert.equal(history.summary.totalRecords, 1);
+  assert.equal(history.summary.byWorkflow.build, 1);
+  assert.equal(history.records[0].changeId, 'history-demo');
+});
+
+test('memory and history views do not stale-clean active sessions', () => {
+  const workspace = createWorkspace();
+
+  runOme(workspace, ['init']);
+  runOme(workspace, ['build', 'Read-only memory view should not record stale sessions']);
+
+  const sessionPath = path.join(workspace, '.ome', '.session');
+  const session = JSON.parse(fs.readFileSync(sessionPath, 'utf8'));
+  session.startTime = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  fs.writeFileSync(sessionPath, JSON.stringify(session, null, 2), 'utf8');
+
+  fs.mkdirSync(path.join(workspace, 'src'), { recursive: true });
+  fs.writeFileSync(path.join(workspace, 'src', 'demo.ts'), 'export const demo = true;\n', 'utf8');
+
+  const memoryOutput = runOme(workspace, ['memory', 'view']);
+  const historyOutput = runOme(workspace, ['history', 'view']);
+
+  assert.match(memoryOutput, /Engine memory recall/);
+  assert.match(historyOutput, /Execution history/);
+  assert.doesNotMatch(memoryOutput, /Found stale session/);
+  assert.doesNotMatch(historyOutput, /Found stale session/);
+  assert.equal(fs.existsSync(sessionPath), true);
+  assert.equal(findExecutionFiles(workspace, 'build').length, 0);
+});
+
 test('bug finish writes diagnostic memory and filters preexisting platform noise', () => {
   const workspace = createWorkspace();
 
@@ -510,8 +576,8 @@ test('bug finish writes diagnostic memory and filters preexisting platform noise
   runOme(workspace, ['bug', 'Bug memory records noise instead of root cause']);
 
   const generatedNoiseFiles = [
-    '.codex/skills/openspec-explore/SKILL.md',
-    '.codex/skills/openspec-propose/SKILL.md',
+    '.codex/skills/ome-explore/SKILL.md',
+    '.codex/skills/ome-propose/SKILL.md',
     '.cursor/rules/00-ome-auto-detection.mdc',
     '.gitignore',
     '.ome/context/project-scan.json',
@@ -521,7 +587,7 @@ test('bug finish writes diagnostic memory and filters preexisting platform noise
     '.ome/skills/ome-bug/SKILL.md',
     '.qoder/rules/00-ome-auto-detection.md',
     '.trae/rules/00-ome-auto-detection.md',
-    '.trae/skills/openspec-apply-change/SKILL.md',
+    '.trae/skills/ome-apply-change/SKILL.md',
     'AGENTS.md',
     'CLAUDE.md',
     'GEMINI.md'
@@ -571,7 +637,7 @@ test('bug finish writes diagnostic memory and filters preexisting platform noise
     'expected session file to be tracked as ignored noise'
   );
   assert.ok(
-    noiseCovers('.codex/skills/openspec-explore/SKILL.md'),
+    noiseCovers('.codex/skills/ome-explore/SKILL.md'),
     'expected Codex skill sync output to be tracked as ignored noise'
   );
   assert.ok(
@@ -587,15 +653,15 @@ test('bug finish writes diagnostic memory and filters preexisting platform noise
     'expected project skill refresh output to be tracked as ignored noise'
   );
   assert.ok(
-    noiseCovers('.trae/skills/openspec-apply-change/SKILL.md'),
+    noiseCovers('.trae/skills/ome-apply-change/SKILL.md'),
     'expected Trae skill sync output to be tracked as ignored noise'
   );
   assert.doesNotMatch(filesTouchedSection, /\.claude\/commands\/ome-bug\.md/);
-  assert.doesNotMatch(filesTouchedSection, /\.codex\/skills\/openspec-explore\/SKILL\.md/);
+  assert.doesNotMatch(filesTouchedSection, /\.codex\/skills\/ome-explore\/SKILL\.md/);
   assert.doesNotMatch(filesTouchedSection, /\.cursor\/rules\/00-ome-auto-detection\.mdc/);
   assert.doesNotMatch(filesTouchedSection, /\.ome\/rules\/testing\.md/);
   assert.doesNotMatch(filesTouchedSection, /\.ome\/skills\/ome-bug\/SKILL\.md/);
-  assert.doesNotMatch(filesTouchedSection, /\.trae\/skills\/openspec-apply-change\/SKILL\.md/);
+  assert.doesNotMatch(filesTouchedSection, /\.trae\/skills\/ome-apply-change\/SKILL\.md/);
   assert.match(content, /## Symptom/);
   assert.match(content, /Bug memory records noise instead of root cause/);
   assert.match(content, /## Root Cause/);
@@ -646,6 +712,11 @@ test('bug finish keeps real changes after ome update noise out of files touched'
   }
 
   runOme(workspace, ['update', '--project-only']);
+  assert.equal(
+    fs.existsSync(path.join(workspace, '.ome', 'omespec', 'project.md')),
+    false,
+    'ome update must not initialize a spec workspace by default'
+  );
 
   assert.equal(
     fs.readFileSync(testingRulePath, 'utf8'),
@@ -658,6 +729,9 @@ test('bug finish keeps real changes after ome update noise out of files touched'
     'export const value = 2;\n',
     'utf8'
   );
+  const generatedSpecNoisePath = path.join(workspace, '.ome', 'omespec', 'changes', 'generated-noise', 'proposal.md');
+  fs.mkdirSync(path.dirname(generatedSpecNoisePath), { recursive: true });
+  fs.writeFileSync(generatedSpecNoisePath, '# Generated spec noise\n', 'utf8');
 
   runOme(workspace, [
     'finish',
@@ -697,7 +771,12 @@ test('bug finish keeps real changes after ome update noise out of files touched'
     noiseCovers('OME.md'),
     'expected OME.md config refresh output to be tracked as ignored noise'
   );
+  assert.ok(
+    noiseCovers('.ome/omespec/'),
+    'expected generated spec workspace output to be tracked as ignored noise'
+  );
   assert.doesNotMatch(filesTouchedSection, /\.ome\/context\/project-scan\.json/);
+  assert.doesNotMatch(filesTouchedSection, /\.ome\/omespec\//);
   assert.doesNotMatch(filesTouchedSection, /\.ome\/skills\/ome-bug\/SKILL\.md/);
   assert.doesNotMatch(filesTouchedSection, /\.claude\/commands\/ome-bug\.md/);
   assert.doesNotMatch(filesTouchedSection, /OME\.md/);
@@ -1079,7 +1158,7 @@ test('auto evolution analyzes markdown execution memory after workflow completio
       novelty: 0.6,
       status: 'verified',
       summary: 'Verified automatic evolution candidates from markdown memory.',
-      filesTouched: ['openspec/changes/demo/spec.md'],
+      filesTouched: ['.ome/omespec/changes/demo/spec.md'],
       testsRun: ['npm test'],
       errors: [],
       metadata: {
@@ -1477,7 +1556,8 @@ test('spec plan and apply load adopted engine memory context', () => {
 
   const engineMemoryContextPath = path.join(
     workspace,
-    'openspec',
+    '.ome',
+    'omespec',
     'changes',
     'engine-memory-demo',
     'context',
@@ -1489,7 +1569,7 @@ test('spec plan and apply load adopted engine memory context', () => {
   );
   assert.match(
     planOutput,
-    /openspec[\/\\]changes[\/\\]engine-memory-demo[\/\\]context[\/\\]engine-memory\.md/
+    /\.ome[\/\\]omespec[\/\\]changes[\/\\]engine-memory-demo[\/\\]context[\/\\]engine-memory\.md/
   );
   assert.match(
     planOutput,
@@ -1517,7 +1597,7 @@ test('spec plan and apply load adopted engine memory context', () => {
 
   assert.match(
     applyOutput,
-    /openspec[\/\\]changes[\/\\]engine-memory-demo[\/\\]context[\/\\]engine-memory\.md/
+    /\.ome[\/\\]omespec[\/\\]changes[\/\\]engine-memory-demo[\/\\]context[\/\\]engine-memory\.md/
   );
   assert.match(
     applyOutput,

@@ -2,7 +2,7 @@ const { listAdapters } = require('../adapters');
 const { previewRulesSync, syncRulesInherit, validateRules, listRules, parseRuleMetadata } = require('../core/rules');
 const { renderDoctorReport, runDoctorReport } = require('../core/doctor');
 const { runSpecCommand } = require('../core/spec');
-const { runMemoryCommand, runEvolveCommand } = require('../core/memory');
+const { runMemoryCommand, runHistoryCommand, runEvolveCommand } = require('../core/memory');
 const { runGuidanceCommand } = require('../core/guidance');
 const { initializeProject, initializeProjectRules, parseInitArgs, renderInitResult, renderInitRulesResult } = require('../core/init');
 const { runAgentsCommand } = require('../core/agents');
@@ -23,7 +23,7 @@ type WorkflowCommand = typeof WORKFLOW_COMMANDS[number];
 type LifecycleCommand = 'define' | 'plan' | 'build' | 'test' | 'review' | 'ship';
 
 function printHelp(): void {
-  process.stdout.write(`Oh My Engine\n\nUsage:\n  ome <command> [args]\n\nDefault delivery workflow:\n  define <target>         Clarify goal, scope, success criteria, and assumptions\n  plan <target>           Explore code and render implementation guidance with test strategy\n  build <target>          Render incremental implementation guidance\n  test <target>           Render lifecycle test and regression guidance\n  review <target>         Render lifecycle code review guidance\n  ship <target>           Render final readiness and handoff guidance\n\nCommands:\n  doctor                  Check project and platform status\n  init [args]             Initialize .ome and project Agent rules\n  init-rules              Refresh scan context and local rule drafts for Agent personalization\n  agents <command>        Install/list/doctor global Agent command entries\n  superpowers <command>   Install/update/doctor Superpowers bridge entries\n  mcp <command>           Initialize, preview, or inspect design MCP configs\n  bug <description>       Render bug-analysis workflow guidance\n  ui <source>             Render UI restoration workflow guidance\n  comp <name>             Render component-generation workflow guidance\n  api <source>            Render API integration workflow guidance\n  perf <target>           Render performance optimization workflow guidance\n  security <concern>      Render security audit workflow guidance\n  run <command>           Manage an evidence-gated delivery workflow run\n  finish                  Finish workflow session and record execution\n  rules list              List all available rules\n  rules validate          Validate rule references\n  rules preview [platform] Show rule sync targets\n  rules init              Refresh scan context and local rule drafts\n  rules sync              Sync rules to platform files\n  config migrate          Migrate config.json to OME.md\n  config validate         Validate OME.md configuration\n  update [args]           Update global CLI from npm and sync project configurations\n  workspace <command>     Manage multiple OME projects in a workspace\n  guidance <workflow>     Render workflow memory guidance\n  memory view [args]      View engine memory\n  memory remember <text>  Remember an explicit preference or instruction\n  remember <text>         Shortcut for memory remember\n  evolve analyze [args]   Analyze memory evolution candidates\n  evolve review           Review pending candidates for approval\n  evolve verify-learning  Verify a learning candidate\n  evolve verify-skill     Verify a skill candidate\n  evolve adopt-learning   Adopt a verified learning\n  evolve adopt-skill      Adopt a verified generated skill\n  adapters list           List configured platform adapters\n  help                    Show this help\n`);
+  process.stdout.write(`Oh My Engine\n\nUsage:\n  ome <command> [args]\n\nDefault delivery workflow:\n  define <target>         Clarify goal, scope, success criteria, and assumptions\n  plan <target>           Explore code and render implementation guidance with test strategy\n  build <target>          Render incremental implementation guidance\n  test <target>           Render lifecycle test and regression guidance\n  review <target>         Render lifecycle code review guidance\n  ship <target>           Render final readiness and handoff guidance\n\nCommands:\n  doctor                  Check project and platform status\n  init [args]             Initialize .ome and project Agent rules\n  init-rules              Refresh scan context and local rule drafts for Agent personalization\n  agents <command>        Install/list/doctor global Agent command entries\n  superpowers <command>   Install/update/doctor Superpowers bridge entries\n  mcp <command>           Initialize, preview, or inspect design MCP configs\n  bug <description>       Render bug-analysis workflow guidance\n  ui <source>             Render UI restoration workflow guidance\n  comp <name>             Render component-generation workflow guidance\n  api <source>            Render API integration workflow guidance\n  perf <target>           Render performance optimization workflow guidance\n  security <concern>      Render security audit workflow guidance\n  run <command>           Manage an evidence-gated delivery workflow run\n  finish                  Finish workflow session and record execution\n  rules list              List all available rules\n  rules validate          Validate rule references\n  rules preview [platform] Show rule sync targets\n  rules init              Refresh scan context and local rule drafts\n  rules sync              Sync rules to platform files\n  config migrate          Migrate config.json to OME.md\n  config validate         Validate OME.md configuration\n  update [args]           Update global CLI from npm and sync project configurations\n  workspace <command>     Manage multiple OME projects in a workspace\n  guidance <workflow>     Render workflow memory guidance\n  memory view [args]      View active engine recall\n  history view [args]     View execution history\n  memory remember <text>  Remember an explicit preference or instruction\n  remember <text>         Shortcut for memory remember\n  evolve analyze [args]   Analyze memory evolution candidates\n  evolve review           Review pending candidates for approval\n  evolve verify-learning  Verify a learning candidate\n  evolve verify-skill     Verify a skill candidate\n  evolve adopt-learning   Adopt a verified learning\n  evolve adopt-skill      Adopt a verified generated skill\n  adapters list           List configured platform adapters\n  help                    Show this help\n`);
 }
 
 function runWorkflow(workflow: WorkflowCommand, args: string[]): void {
@@ -431,6 +431,7 @@ function buildCommandHandlers(): Record<string, CommandHandler> {
     spec: args => runSpecCommand(args[0], args.slice(1)),
     guidance: runGuidanceCommand,
     memory: args => runMemoryCommand(args[0], args.slice(1)),
+    history: args => runHistoryCommand(args[0], args.slice(1)),
     remember: args => runMemoryCommand('remember', args),
     evolve: args => runEvolveCommand(args[0], args.slice(1)),
     adapters: runAdapters,
@@ -467,7 +468,9 @@ function main(argv: string[]): void {
   const command = argv[0] || 'help';
   const args = argv.slice(1);
 
-  if (command !== 'finish') {
+  const readOnlyCommands = new Set(['memory', 'history', 'guidance', 'help', '--help', '-h']);
+
+  if (command !== 'finish' && !readOnlyCommands.has(command)) {
     cleanupStaleSessions();
   }
 
@@ -501,6 +504,7 @@ export function runShortcut(shortcut: string, args: string[]): void {
   if (isLifecycleWorkflow(shortcut)) return run([shortcut, ...args]);
   if (shortcut === 'spec') return run(['spec', ...args]);
   if (shortcut === 'memory') return run(['memory', 'view', ...args]);
+  if (shortcut === 'history') return run(['history', 'view', ...args]);
   if (shortcut === 'remember') return run(['memory', 'remember', ...args]);
   if (shortcut === 'evolve') return run(['evolve', 'analyze', ...args]);
   if (shortcut === 'superpowers') return run(['superpowers', ...args]);

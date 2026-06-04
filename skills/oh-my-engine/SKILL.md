@@ -94,7 +94,7 @@ Trae / Cursor / Windsurf / OpenCode 等工具通过 `ome rules sync` 生成的�
 2. 加载工作流定义（templates/<workflow>.md）
 3. 如果 command 是 `spec`，委托 `ome-spec`
 4. 加载相关规则（rules/<rule>.md）
-5. 准备执行上下文（已接受 capability 才加载 `openspec/specs/<capability>/spec.md`）
+5. 准备执行上下文（已接受 capability 才加载 `.ome/omespec/specs/<capability>/spec.md`）
 ```
 
 ### Step 3: 执行工作流
@@ -143,7 +143,7 @@ Trae / Cursor / Windsurf / OpenCode 等工具通过 `ome rules sync` 生成的�
     ├── skill-candidates/
     └── specs/
 
-openspec/                 # OpenSpec-compatible 规范工作区
+.ome/omespec/             # OME spec 规范工作区
 ├── project.md
 ├── changes/
 ├── specs/

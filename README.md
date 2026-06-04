@@ -15,7 +15,7 @@ Oh My Engine is a powerful framework that transforms Claude Code and Codex into 
 - **🤖 Auto-Detection**: AI agents automatically recognize task types and invoke the right OME commands without manual prompting
 - **⚙️ Project Configuration**: Per-project workflow customization with `.ome/`
 - **📋 Rich Workflows**: Pre-built workflows for UI restoration, bug analysis, component generation, and API integration
-- **📝 Spec Mode** (Optional): OpenSpec-compatible proposal, planning, apply, verify, and archive workflow - disabled by default, available as an advanced compatibility feature
+- **📝 Spec Mode** (Optional): OME-owned proposal, planning, apply, verify, and archive workflow - disabled by default, available only when durable specs are needed
 - **🎯 Smart Context**: Loads project-specific rules and configurations automatically
 - **🔧 Extensible**: Easy to create custom workflows for your specific needs
 - **🌐 Cross-Platform Rules**: Single source of truth for rules, auto-sync to 9+ AI platforms (Claude Code, Cursor, Trae, Agents, etc.) - [Learn more](docs/CROSS_PLATFORM_RULES.md)
@@ -85,9 +85,9 @@ ome agents install --all    # non-interactive all
 ome agents doctor
 ```
 
-This installs the same workflow set into every supported Agent editor: Claude Code, Codex, Cursor, Trae, Windsurf, Qoder, OpenCode, and Antigravity. The installed set includes `ome-init-rules` and `ome-superpowers`.
+This installs the same OME workflow set into every supported Agent editor: Claude Code, Codex, Cursor, Trae, Windsurf, Qoder, OpenCode, and Antigravity. The installed set includes `ome-init-rules`; it does not install optional Superpowers bridge wrappers.
 
-Install Superpowers bridge wrappers for all supported editors:
+Optionally install Superpowers bridge wrappers only when you want the official Superpowers integration:
 
 ```bash
 ome superpowers install all
@@ -156,7 +156,7 @@ The generated rule set is dynamic. `ome init-rules` scans the repository and cre
 
 `ome init` also installs project-local Agent workflow entries such as `.claude/commands/`, `.cursor/commands/`, `.qoder/commands/`, `.opencode/command/`, `.windsurf/workflows/`, and `.agent/workflows/` so the initialized rules are reachable from each editor inside the repository.
 
-It also creates an `openspec/` workspace for long-lived specs and active changes:
+When spec mode is initialized, OME uses `.ome/omespec/` for long-lived specs and active changes:
 
 - `project.md` - Project-level context
 - `changes/` - In-progress changes
@@ -199,7 +199,7 @@ ome rules sync
 ome update --project-only
 ome update --project-only --force-rules
 
-# Install Superpowers bridge wrappers
+# Optional: install Superpowers bridge wrappers
 ome superpowers install all
 ome superpowers doctor all
 
@@ -318,14 +318,15 @@ See [docs/lifecycle-workflows.md](docs/lifecycle-workflows.md) and [docs/skill-a
 #### All Commands
 
 - Terminal: `ome`, `ome-init`, `ome-init-rules`, `ome-bug`, `ome-ui`, `ome-comp`, `ome-api`, `ome-spec`, `ome-memory`, `ome-remember`, `ome-evolve`, `ome-superpowers`, `ome-mcp`, `ome-define`, `ome-plan`, `ome-build`, `ome-test`, `ome-review`, `ome-ship`
-- Claude Code: `/ome-init`, `/ome-init-rules`, `/ome-bug`, `/ome-ui`, `/ome-comp`, `/ome-api`, `/ome-spec`, `/ome-memory`, `/ome-remember`, `/ome-evolve`, `/ome-superpowers`, `/ome-mcp`, `/ome-define`, `/ome-plan`, `/ome-build`, `/ome-test`, `/ome-review`, `/ome-ship`
-- Codex skill names: `ome-init`, `ome-init-rules`, `ome-bug`, `ome-ui`, `ome-comp`, `ome-api`, `ome-spec`, `ome-memory`, `ome-remember`, `ome-evolve`, `ome-superpowers`, `ome-mcp`, `ome-define`, `ome-plan`, `ome-build`, `ome-test`, `ome-review`, `ome-ship`
+- Claude Code: `/ome-init`, `/ome-init-rules`, `/ome-bug`, `/ome-ui`, `/ome-comp`, `/ome-api`, `/ome-spec`, `/ome-memory`, `/ome-remember`, `/ome-evolve`, `/ome-mcp`, `/ome-define`, `/ome-plan`, `/ome-build`, `/ome-test`, `/ome-review`, `/ome-ship`
+- Codex skill names: `ome-init`, `ome-init-rules`, `ome-bug`, `ome-ui`, `ome-comp`, `ome-api`, `ome-spec`, `ome-memory`, `ome-remember`, `ome-evolve`, `ome-mcp`, `ome-define`, `ome-plan`, `ome-build`, `ome-test`, `ome-review`, `ome-ship`
 - Cursor, Trae, Windsurf, Qoder, OpenCode, and Antigravity receive the same workflow set through `ome agents install --all`.
+- Optional `ome-superpowers` bridge entries are installed only by `ome superpowers install`.
 - `ome init` generates project rules for each tool, and `ome init-rules` refreshes scan context plus local rule drafts before an Agent editor rewrites `.ome/rules/*.md`.
 
 ### Spec Workflow (Optional Advanced Feature)
 
-> **Note**: The spec workflow is **disabled by default** and available as an optional advanced compatibility feature. Enable it in `OME.md` by setting `workflows.spec.enabled: true` if needed.
+> **Note**: The spec workflow is **disabled by default** and available as an optional OME-owned advanced feature. Enable it in `OME.md` by setting `workflows.spec.enabled: true` only when durable specs are needed.
 
 ```bash
 # Initialize the spec workspace
@@ -351,7 +352,7 @@ ome spec verify user-authentication
 ome spec archive user-authentication
 ```
 
-The spec workflow provides OpenSpec-compatible change management. When the external `openspec` CLI is unavailable, OME uses its TypeScript-backed fallback implementation. `import` persists normalized source text, prompt input, provenance, and copied attachments under `openspec/changes/<change-id>/context/`. `decompose` turns that intake context into `analysis.md`, `proposal.md`, `design.md`, `tasks.md`, and spec deltas while keeping source references attached to the change. `apply` updates lifecycle state, can mark task and acceptance progress, and prints the files the agent should load. It does not generate production code automatically. `status` summarizes the current phase and remaining checklist items. `archive` now creates the long-lived capability spec on first acceptance, rebuilds canonical summary/requirements/compatibility sections from accepted deltas, and keeps both the current accepted snapshot and archived history.
+The spec workflow provides OME-owned change management through the TypeScript CLI. `import` persists normalized source text, prompt input, provenance, and copied attachments under `.ome/omespec/changes/<change-id>/context/`. `decompose` turns that intake context into `analysis.md`, `proposal.md`, `design.md`, `tasks.md`, and spec deltas while keeping source references attached to the change. `apply` updates lifecycle state, can mark task and acceptance progress, and prints the files the agent should load. It does not generate production code automatically. `status` summarizes the current phase and remaining checklist items. `archive` creates the long-lived capability spec on first acceptance, rebuilds canonical summary/requirements/compatibility sections from accepted deltas, and keeps both the current accepted snapshot and archived history.
 
 You can add real project checks under `workflows.spec.options.verifyCommands` in `OME.md`; `verify` runs them sequentially and fails on the first non-zero exit. `verify` also blocks unresolved `TBD:` template markers and requires each spec delta to select exactly one change type plus at least one concrete requirement and WHEN/THEN scenario.
 
@@ -422,7 +423,7 @@ description: Deploy application with pre-flight checks
 ├── ome-bug/               # Bug analysis workflow
 ├── ome-comp/              # Component generation workflow
 ├── ome-api/               # API integration workflow
-├── ome-spec/              # OpenSpec-compatible spec workflow
+├── ome-spec/              # OME spec workflow
 ├── ome-memory/            # Memory viewer
 └── ome-evolve/            # Evolution analyzer
 
@@ -431,7 +432,7 @@ project/
 │   ├── config.json        # Workflow settings
 │   ├── rules/             # Project rules (committed to git)
 │   └── memory/            # Execution history (git-ignored)
-└── openspec/              # OpenSpec-compatible workspace
+└── .ome/omespec/          # OME spec workspace
     ├── project.md         # Project context
     ├── changes/           # In-progress changes
     │   └── <change-id>/context/  # Imported PRD, prompt, analysis, references, assets

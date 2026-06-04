@@ -44,8 +44,9 @@
   ],
   "sourceExtensions": {
     ".json": 8,
-    ".md": 416,
-    ".ts": 103,
+    ".md": 417,
+    ".ts": 104,
+    ".yaml": 1,
     ".yml": 1
   },
   "existingRuleFiles": [
@@ -79,7 +80,7 @@
     "typed-source"
   ],
   "hasUi": false,
-  "filesScanned": 573,
+  "filesScanned": 576,
   "directories": [
     ".agent",
     ".agent/rules",
@@ -162,7 +163,6 @@
     ".qoder/skills/openspec-archive-change",
     ".qoder/skills/openspec-explore",
     ".qoder/skills/openspec-propose",
-    ".tmp",
     ".trae",
     ".trae/commands",
     ".trae/rules",
@@ -207,6 +207,8 @@
     "skills/oh-my-engine/templates",
     "skills/ome-npm-publish",
     "skills/ome-npm-publish/agents",
+    "skills/ome-release-docs",
+    "skills/ome-release-docs/agents",
     "src",
     "src/adapters",
     "src/adapters/platforms",

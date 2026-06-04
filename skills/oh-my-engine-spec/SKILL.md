@@ -1,14 +1,14 @@
 ﻿---
 name: ome-spec
 version: 1.0.0
-description: OpenSpec-compatible spec-driven workflow for Oh My Engine
+description: OME-owned spec-driven workflow for Oh My Engine
 author: yunxi
-tags: [spec, openspec, workflow, planning, verification]
+tags: [spec, ome-spec, workflow, planning, verification]
 ---
 
 # ome-spec
 
-基于规范驱动的开发工作流，兼�?OpenSpec 的目录和生命周期，同时保�?Oh My Engine �?skill 分发和记忆系统�?
+OME-owned spec workflow. Oh My Engine manages the workspace, lifecycle, skill distribution, and memory integration.
 
 ## 使用方法
 
@@ -72,7 +72,7 @@ ome spec propose <change-id> --bugfix
 脚本能力边界�?
 - `init`：创建工作区和默认配�?
 - `import`：将 PRD、提示词、附件归档到 `context/`
-- `decompose`：基�?`context/` 准备 `analysis.md` 和标�?OpenSpec scaffold
+- `decompose`：基�?`context/` 自动生成 `analysis.md`、`decomposition-prompt.md`、`proposal.md`、`design.md`、`tasks.md` 和 spec delta；当输入缺少可执行需求时会标记 clarification gate 为 blocked
 - `propose`：生�?change scaffold
 - `plan`：标记计划阶段并�?Planning Notes
 - `apply`：输出实现上下文、已采纳 skill �?execution directives，并支持勾选任�?验收项回写进�?
@@ -95,6 +95,7 @@ ome spec propose <change-id> --bugfix
 �?      �?  ├── source.md
 �?      �?  ├── prompt.md
 �?      �?  ├── analysis.md
+�?      �?  ├── decomposition-prompt.md
 �?      �?  ├── references.json
 �?      �?  └── assets/
 �?      ├── proposal.md
@@ -125,7 +126,7 @@ ome spec propose <change-id> --bugfix
 
 ### 1. init
 
-创建 OpenSpec-compatible 工作区：
+创建 OME spec 工作区：
 - `.ome/omespec/project.md`
 - `.ome/omespec/changes/`
 - `.ome/omespec/specs/`
@@ -154,14 +155,22 @@ ome spec propose <change-id> --bugfix
 
 ### 2b. decompose
 
-基于导入上下文准�?spec 草案�?
+基于导入上下文准�?spec 草案，并用本地启发式把 source/prompt/assets 拆解成可审阅的 proposal、design、tasks 和 spec delta�?
 - `context/analysis.md`
+- `context/decomposition-prompt.md`
 - `proposal.md`
 - `design.md`
 - `tasks.md`
 - `changes/<change-id>/specs/<capability>/spec.md`
 
-`decompose` 会保留输入追踪信息，把多模态信息先转成文本分析，再继续后续生命周期�?
+`decompose` 会保留输入追踪信息，把多模态信息先转成文本分析，再继续后续生命周期�?如果导入内容不足以确认目标、范围或验收标准，`analysis.md` 会记录 blocking questions，并在命令输出中提示先补充澄清。
+
+LLM-first usage:
+- Treat the generated proposal, design, tasks, and spec delta as a deterministic first draft.
+- In an LLM/agent environment, load `context/decomposition-prompt.md` immediately after `ome spec decompose <change-id>`.
+- Use that prompt to refine `analysis.md`, `proposal.md`, `design.md`, `tasks.md`, and `specs/<capability>/spec.md` against the imported context, project rules, existing specs, and relevant memory.
+- Do not invent missing requirements. If source material is insufficient, keep the clarification gate blocked and ask the questions recorded in `analysis.md`.
+- Do not use external OpenSpec tools; OME owns the spec workspace, lifecycle, memory, and verification contract.
 
 ### 3. plan
 
@@ -179,7 +188,7 @@ ome spec propose <change-id> --bugfix
 执行实现时应加载�?
 1. `.ome/config.json`
 2. `.ome/omespec/project.md`
-3. 当前 change �?`context/source.md`、`context/prompt.md`、`context/analysis.md`、`context/engine-memory.md`（如果存在）
+3. 当前 change �?`context/source.md`、`context/prompt.md`、`context/analysis.md`、`context/decomposition-prompt.md`、`context/engine-memory.md`（如果存在）
 4. 当前 change �?`proposal.md`、`design.md`、`tasks.md`
 5. 相关 capability 的长�?`.ome/omespec/specs/<capability>/spec.md`（如果该 capability 已经被接受过�?
 6. `.ome/rules/`
@@ -240,7 +249,8 @@ workflows:
   "workflows": {
     "spec": {
       "enabled": true,
-      "format": "openspec-compatible",
+      "provider": "ome-spec",
+      "format": "ome-spec",
       "options": {
         "specRoot": ".ome/omespec",
         "changesDir": ".ome/omespec/changes",
@@ -253,8 +263,7 @@ workflows:
         "assetsDirName": "assets",
         "verifyCommands": [
           "npm test"
-        ],
-        "externalOpenSpecCli": "optional"
+        ]
       }
     }
   }
@@ -263,7 +272,7 @@ workflows:
 
 ## 模板策略
 
-模板内容参�?Kiro �?requirements/design/tasks 思路，但目录和生命周期按 OpenSpec-compatible 方式组织�?
+模板内容参�?Kiro �?requirements/design/tasks 思路，但目录和生命周期由 OME 管理�?
 - `project.md`：项目背景、约束、验证基�?
 - `source.md`：归一化后�?PRD / 来源文档
 - `prompt.md`：驱动拆解的操作提示�?
@@ -273,7 +282,7 @@ workflows:
 - `design.md`：架构、接口、数据、风�?
 - `tasks.md`：可执行任务和验证项
 - `spec-delta.md`：change 目录�?`spec.md` 的变更模�?
-- `capability-spec.md`：`.ome/spec/specs/<capability>/spec.md` 的长期规范模�?
+- `capability-spec.md`：`.ome/omespec/specs/<capability>/spec.md` 的长期规范模�?
 
 ## 输出示例
 

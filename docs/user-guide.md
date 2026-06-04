@@ -121,7 +121,8 @@ Edit `.ome/config.json`:
     },
     "spec": {
       "enabled": true,
-      "format": "openspec-compatible"
+      "provider": "ome-spec",
+      "format": "ome-spec"
     }
   }
 }
@@ -551,7 +552,7 @@ ome guidance api-integration --input "<api-spec>"
 
 ### `/ome-spec`
 
-Manage an OpenSpec-compatible change lifecycle inside Oh My Engine.
+Manage an OME-owned change lifecycle inside Oh My Engine.
 
 **What it does**:
 - Creates `.ome/omespec/` scaffolding
@@ -1204,7 +1205,7 @@ Assumptions:
 3. **Long-term capabilities requiring documentation**
    ```bash
    ome spec propose payment-integration
-   �?After implementation, archive to openspec/specs/
+   �?After implementation, archive to .ome/omespec/specs/
    �?Future enhancements reference this spec
    ```
 
@@ -1222,13 +1223,13 @@ Assumptions:
 5. **Decisions requiring traceability**
    ```bash
    # Why did we choose JWT over sessions?
-   �?Check openspec/specs/user-authentication/design.md
+   �?Check .ome/omespec/specs/user-authentication/spec.md
    �?Complete rationale documented
    ```
 
 **Output Structure:**
 ```
-openspec/
+.ome/omespec/
 ├── changes/user-authentication/
 �?  ├── proposal.md      # Problem, goals, risks
 �?  ├── design.md        # Architecture, interfaces, security
@@ -1293,29 +1294,11 @@ ome spec archive user-authentication
 
 ## Migration Guide
 
-### Spec Workspace Migration (v0.4.1+)
+### Spec Workspace Location
 
-�?v0.4.1 开始，spec 工作区已�?`openspec/` 迁移�?`.ome/spec/`�?
+OME spec workspaces live under `.ome/omespec/`.
 
-**快速迁移：**
-
-```bash
-# 如果你有现有�?openspec/ 目录
-mv openspec .ome/spec
-
-# 更新配置
-ome config migrate
-
-# 验证
-ome doctor
-```
-
-**详细迁移指南�?* 参见 [Spec 工作区迁移指南](../.ome/docs/spec-migration-guide.md)
-
-**主要变更�?*
-- 目录位置：`openspec/` �?`.ome/spec/`
-- 配置方式：推荐使�?`OME.md` 而不�?`config.json`
-- 向后兼容：旧配置仍然支持
+New projects do not need a separate migration step. Keep durable specs in `.ome/omespec/specs/`, active changes in `.ome/omespec/changes/`, and archived changes in `.ome/omespec/archive/`.
 
 ## Best Practices
 
@@ -1392,7 +1375,7 @@ ome doctor
 ome agents install --all
 ome agents doctor --all
 
-# Superpowers wrappers
+# Optional: Superpowers wrappers
 ome superpowers install all
 ome superpowers doctor all
 ```

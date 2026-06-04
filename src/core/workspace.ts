@@ -69,6 +69,7 @@ function updateWorkspace(root: string, options: any = {}): any[] {
         installAgents: false,
         template: 'default',
         projectEntries: options.projectEntries,
+        home: options.home,
         outputLanguage: options.outputLanguage,
         defaultProjectPlatforms: false
       });

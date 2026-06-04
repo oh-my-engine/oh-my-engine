@@ -191,6 +191,7 @@ function isGeneratedPlatformSyncFile(filePath: string): boolean {
     '.windsurf/rules/',
     '.windsurf/workflows/',
     '.ome/context/',
+    '.ome/omespec/',
     '.ome/rules/',
     '.ome/skills/'
   ];

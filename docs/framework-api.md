@@ -33,7 +33,7 @@ Only exports from `src/index.ts` are treated as the supported framework API. Dee
 
 ## Project Setup
 
-Use `initializeProject` when embedding the engine in another tool that needs to prepare `.ome/` and `openspec/` state.
+Use `initializeProject` when embedding the engine in another tool that needs to prepare `.ome/` state. The spec workspace is opt-in so ordinary project setup does not create `.ome/omespec/project.md`.
 
 ```js
 initializeProject({
@@ -49,6 +49,18 @@ This automatically generates:
 - `.ome/` directory structure
 - `CLAUDE.md` and `AGENTS.md` with auto-detection rules
 - Project-specific rules in `.ome/rules/`
+
+To initialize the OME spec workspace explicitly, pass `specInit: true`:
+
+```js
+initializeProject({
+  force: false,
+  template: 'default',
+  projectRoot: process.cwd(),
+  repoRoot: require('node:path').resolve(__dirname, '..'),
+  specInit: true
+});
+```
 
 ## MCP Configuration
 
@@ -172,7 +184,7 @@ The framework exports a small set of reusable helpers:
 
 ```js
 writeTextFile('state/example.md', '# Example');
-const open = countOpenCheckboxes('openspec/changes/demo/tasks.md');
+const open = countOpenCheckboxes('.ome/omespec/changes/demo/tasks.md');
 ```
 
 `writeTextFile` and `writeJsonFile` create parent directories and write through a temporary sibling file followed by rename. This gives callers the same state-write behavior used by the spec workflow.

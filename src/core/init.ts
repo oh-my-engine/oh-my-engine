@@ -19,9 +19,12 @@ export interface InitOptions {
   projectEntries?: boolean;
   migrate?: boolean;
   installAgents?: boolean;
+  /** @deprecated External OpenSpec CLI installation is no longer managed by OME. */
   installOpenSpec?: boolean;
   home?: string;
   specRoot?: string;
+  specInit?: boolean;
+  /** @deprecated Use specInit. */
   openspecInit?: boolean;
   outputLanguage?: string;
   defaultProjectPlatforms?: boolean;
@@ -41,10 +44,13 @@ export interface InitResult {
   migratedLegacy: boolean;
   syncedTargets: string[];
   projectSkillTargets: string[];
+  projectSkillSourceSkipped: boolean;
+  projectSkillSourceSkipReason?: string;
+  globalSkillSource?: string;
   projectPlatformTargets: string[];
   projectSkillMirrorTargets: string[];
   installedAgentTargets: string[];
-  openspecStatus: string;
+  specWorkspaceStatus: string;
   agentGuidanceFiles: string[];
   scanSummary: string;
   contextFilesUpdated: number;
@@ -254,8 +260,8 @@ function buildDefaultConfig(
       },
       spec: {
         enabled: false,
-        provider: 'openspec',
-        format: 'openspec',
+        provider: 'ome-spec',
+        format: 'ome-spec',
         options: {
           specRoot,
           changesDir: `${specRoot}/changes`,
@@ -399,7 +405,7 @@ This project has the following workflows enabled:
 - **bug-analysis**: Bug analysis workflow with project-specific code, architecture, and tooling rules
 - **component-gen**: Component generation workflow
 - **api-integration**: API integration workflow
-- **spec**: disabled by default; use \`ome spec\` only as an advanced compatibility workflow
+- **spec**: disabled by default; use \`ome spec\` only when a durable spec workflow is needed
 
 ## Memory System
 
@@ -1432,7 +1438,7 @@ function updateOMEMarkdownOutputLanguage(projectRoot: string, outputLanguage: Ou
 function defaultSpecRoot(projectRoot: string, requested?: string): string {
   if (requested) return requested;
   if (fs.existsSync(path.join(projectRoot, '.ome', 'omespec'))) return '.ome/omespec';
-  return 'openspec';
+  return '.ome/omespec';
 }
 
 function writeProjectContext(projectRoot: string, scan: ProjectScanSummary, force: boolean, outputLanguage: OutputLanguageResolution): number {
@@ -1505,7 +1511,8 @@ export function parseInitArgs(args: string[], defaults: Partial<InitOptions> = {
     installOpenSpec: defaults.installOpenSpec ?? false,
     home: defaults.home,
     specRoot: defaults.specRoot,
-    openspecInit: defaults.openspecInit ?? false,
+    specInit: defaults.specInit ?? defaults.openspecInit ?? false,
+    openspecInit: defaults.openspecInit,
     outputLanguage: defaults.outputLanguage,
     defaultProjectPlatforms: defaults.defaultProjectPlatforms ?? true
   };
@@ -1544,17 +1551,22 @@ export function parseInitArgs(args: string[], defaults: Partial<InitOptions> = {
     }
 
     if (argument === '--no-install-openspec') {
-      options.installOpenSpec = false;
+      // Legacy no-op: external OpenSpec CLI installation is no longer part of OME.
       continue;
     }
 
     if (argument === '--install-openspec') {
-      options.installOpenSpec = true;
+      // Legacy no-op: external OpenSpec CLI installation is no longer part of OME.
+      continue;
+    }
+
+    if (argument === '--no-spec-init') {
+      options.specInit = false;
       continue;
     }
 
     if (argument === '--no-openspec-init') {
-      options.openspecInit = false;
+      options.specInit = false;
       continue;
     }
 
@@ -1612,6 +1624,8 @@ export function parseInitArgs(args: string[], defaults: Partial<InitOptions> = {
 export function initializeProject(options: InitOptions): InitResult {
   const migration = options.migrate !== false ? migrateLegacyEngineDirectory(options.projectRoot) : { migrated: false };
   const refreshManagedFiles = options.force || options.sync || false;
+  const { detectGlobalOmeSkills } = require('./agents');
+  const globalSkillStatus = detectGlobalOmeSkills({ home: options.home });
 
   const oldSpecPath = path.join(options.projectRoot, '.ome', 'spec');
   const newSpecPath = path.join(options.projectRoot, '.ome', 'omespec');
@@ -1632,6 +1646,9 @@ export function initializeProject(options: InitOptions): InitResult {
 
   for (const directory of ENGINE_DIRECTORIES) {
     const target = path.join(options.projectRoot, directory);
+    if (directory === `${ENGINE_DIR}/skills` && globalSkillStatus.installed && !fs.existsSync(target)) {
+      continue;
+    }
     ensureDirectory(target);
     createdDirectories.push(directory);
   }
@@ -1645,9 +1662,11 @@ export function initializeProject(options: InitOptions): InitResult {
     updateOMEMarkdownOutputLanguage(options.projectRoot, outputLanguage);
   }
 
-  const { initializeOpenSpecWorkspace } = require('./openspec');
-  const openspec = initializeOpenSpecWorkspace(options.projectRoot, specRoot, options.force, options.openspecInit !== false);
-  const projectCreated = openspec.projectCreated;
+  const { initializeSpecWorkspace } = require('./spec-workspace');
+  const shouldInitializeSpecWorkspace = options.specInit === true ||
+    (options.specInit === undefined && options.openspecInit === true);
+  const specWorkspace = initializeSpecWorkspace(options.projectRoot, specRoot, options.force, shouldInitializeSpecWorkspace);
+  const projectCreated = specWorkspace.projectCreated;
 
   copyFileIfNeeded(
     repoEnginePath(options.repoRoot, 'platforms.json'),
@@ -1682,7 +1701,14 @@ export function initializeProject(options: InitOptions): InitResult {
     : options.defaultProjectPlatforms !== false
       ? DEFAULT_PROJECT_AGENT_PLATFORMS
       : [];
-  const skillSourceResults = initializeProjectSkillSources(options.projectRoot, refreshManagedFiles, outputLanguage);
+  const skillSourceResults = initializeProjectSkillSources(options.projectRoot, {
+    force: refreshManagedFiles,
+    home: options.home,
+    outputLanguage,
+    skipWhenGlobalInstalled: true
+  });
+  const projectSkillSourceSkipped = skillSourceResults.length > 0 &&
+    skillSourceResults.every((result: Record<string, any>) => result.reason === 'global-skills-installed');
   const projectSkillTargets = skillSourceResults
     .filter((result: Record<string, any>) => result.action !== 'skipped')
     .map((result: Record<string, any>) => `${result.workflow}: ${result.path}`);
@@ -1698,6 +1724,7 @@ export function initializeProject(options: InitOptions): InitResult {
 
   const agentGuidanceResults = generateAllAgentGuidanceFiles(options.projectRoot, scan, {
     outputLanguage,
+    home: options.home,
     preserveExistingMultiFile: options.forceRules !== true,
     platforms: projectPlatforms
   });
@@ -1706,11 +1733,17 @@ export function initializeProject(options: InitOptions): InitResult {
     .map((r: any) => `${r.platform}: ${r.path}`);
 
   const projectPlatformTargets = options.sync && options.projectEntries === true
-    ? syncExistingProjectAgents(options.projectRoot, outputLanguage).map((result: Record<string, any>) => `${result.platform}: ${result.target}`)
+    ? syncExistingProjectAgents(options.projectRoot, outputLanguage, {
+      home: options.home,
+      skipGlobalSkillDuplicates: true
+    }).map((result: Record<string, any>) => `${result.platform}: ${result.target}`)
     : [];
 
   const projectSkillMirrorTargets = options.sync && options.projectEntries === true
-    ? syncExistingProjectSkillMirrors(options.projectRoot, outputLanguage).map((result: Record<string, any>) => `${result.platform}: ${result.target}`)
+    ? syncExistingProjectSkillMirrors(options.projectRoot, outputLanguage, {
+      home: options.home,
+      skipGlobalSkillDuplicates: true
+    }).map((result: Record<string, any>) => `${result.platform}: ${result.target}`)
     : [];
 
   let installedAgentTargets: string[] = [];
@@ -1719,11 +1752,9 @@ export function initializeProject(options: InitOptions): InitResult {
       platforms: [],
       all: true,
       home: options.home,
-      installOpenSpec: options.installOpenSpec,
       outputLanguage
     });
     installedAgentTargets = agentResults.map((result: Record<string, any>) => {
-      if (result.kind === 'openspec-cli') return `${result.tool}: ${result.status} ${result.target}`;
       return `${result.platform}: ${result.target}`;
     });
   }
@@ -1742,10 +1773,13 @@ export function initializeProject(options: InitOptions): InitResult {
     migratedLegacy: Boolean(migration.migrated),
     syncedTargets,
     projectSkillTargets,
+    projectSkillSourceSkipped,
+    projectSkillSourceSkipReason: projectSkillSourceSkipped ? 'global-skills-installed' : undefined,
+    globalSkillSource: projectSkillSourceSkipped ? globalSkillStatus.target : undefined,
     projectPlatformTargets,
     projectSkillMirrorTargets,
     installedAgentTargets,
-    openspecStatus: `${openspec.initializedBy}: ${openspec.message}`,
+    specWorkspaceStatus: `${specWorkspace.initializedBy}: ${specWorkspace.message}`,
     agentGuidanceFiles,
     scanSummary: renderScanSummary(scan),
     contextFilesUpdated,
@@ -1816,6 +1850,7 @@ export function renderInitResult(result: InitResult): string {
     ...result.agentGuidanceFiles.map(file => `  - ${file}`),
     `Project skills installed: ${result.projectSkillTargets.length}`,
     ...result.projectSkillTargets.map(target => `  - ${target}`),
+    ...(result.projectSkillSourceSkipped ? [`Project skills skipped: global OME skills already installed at ${result.globalSkillSource || 'user home'}`] : []),
     `Project skill mirrors synced: ${result.projectSkillMirrorTargets.length}`,
     ...result.projectSkillMirrorTargets.map(target => `  - ${target}`),
     `Integration targets synced: ${result.syncedTargets.length}`,
