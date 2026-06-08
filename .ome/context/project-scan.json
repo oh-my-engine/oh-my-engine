@@ -44,9 +44,8 @@
   ],
   "sourceExtensions": {
     ".json": 8,
-    ".md": 417,
+    ".md": 416,
     ".ts": 104,
-    ".yaml": 1,
     ".yml": 1
   },
   "existingRuleFiles": [
@@ -80,7 +79,7 @@
     "typed-source"
   ],
   "hasUi": false,
-  "filesScanned": 576,
+  "filesScanned": 574,
   "directories": [
     ".agent",
     ".agent/rules",

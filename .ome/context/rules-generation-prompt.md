@@ -25,7 +25,7 @@ Rewrite the Markdown files under `.ome/rules/` so they reflect this repository's
 - Frameworks: Node.js
 - Language: TypeScript
 - Package manager: npm
-- Files scanned: 576
+- Files scanned: 574
 - Source directories: src, docs, schemas, skills, examples, bin
 - Entrypoints: dist/index.d.ts, dist/index.js, src/index.ts
 - Route files: none detected
@@ -43,7 +43,7 @@ Rewrite the Markdown files under `.ome/rules/` so they reflect this repository's
 - Database signals: migrations-or-sql
 - Deployment signals: github-actions
 - Source signals: commonjs-exports, commonjs-require, console-logging, environment-variables, esm-exports, esm-imports, http-routing, koa-context, try-catch-error-handling
-- Source extensions: .json: 8, .md: 417, .ts: 104, .yaml: 1, .yml: 1
+- Source extensions: .json: 8, .md: 416, .ts: 104, .yml: 1
 - Existing rule files: .agents/rules, .cursor/rules, .qoder/rules, .trae/rules, .windsurfrules, AGENTS.md, CLAUDE.md
 - Detected patterns: automated-tests, build-script, build-tooling, commonjs-exports, commonjs-require, console-logging, data-access, deployment-config, environment-variables, esm-exports, esm-imports, http-routing, koa-context, npm-package-manager, src-directory, structured-content-parsing, try-catch-error-handling, typecheck-script, typed-source
 
