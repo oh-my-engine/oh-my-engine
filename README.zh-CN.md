@@ -113,7 +113,7 @@ ome doctor
 - `rules/` - 项目特定规则
 - `memory/` - 执行历史和学习内容（git 忽略）
 
-同时还会创建一个 `openspec/` 工作区，用于长期规范和活跃变更：
+启用 Spec 模式时还会创建一个 `.ome/omespec/` 工作区，用于长期规范和活跃变更：
 - `project.md` - 项目级上下文
 - `changes/` - 进行中的变更
 - `specs/` - 稳定能力规范
@@ -153,7 +153,7 @@ ome spec verify user-authentication
 ome spec archive user-authentication
 ```
 
-`import` 会把归一化后的来源文本、提示词、追踪信息和附件复制到 `openspec/changes/<change-id>/context/`。`decompose` 会基于这些 intake artifacts 准备 `analysis.md`、`proposal.md`、`design.md`、`tasks.md` 和 spec delta，并保留来源引用。`apply` 会更新生命周期状态，也可以回写任务和验收项进度，并输出应加载的上下文文件，但不会自动生成业务代码。`status` 用于查看当前 phase 和剩余待办。`archive` 现在会在首次接受时创建长期 capability spec，并基于已接受 delta 重建 canonical summary/requirements/compatibility，同时保留当前接受快照和归档历史。
+`import` 会把归一化后的来源文本、提示词、追踪信息和附件复制到 `.ome/omespec/changes/<change-id>/context/`。`decompose` 会基于这些 intake artifacts 准备 `analysis.md`、`proposal.md`、`design.md`、`tasks.md` 和 spec delta，并保留来源引用。`apply` 会更新生命周期状态，也可以回写任务和验收项进度，并输出应加载的上下文文件，但不会自动生成业务代码。`status` 用于查看当前 phase 和剩余待办。`archive` 现在会在首次接受时创建长期 capability spec，并基于已接受 delta 重建 canonical summary/requirements/compatibility，同时保留当前接受快照和归档历史。
 你可以在 `.ome/config.json` 的 `workflows.spec.options.verifyCommands` 中配置真实校验命令；`verify` 会按顺序执行，遇到首个非零退出码就失败。`verify` 还会阻止未替换的 `TBD:` 模板标记，并要求每个 spec delta 必须且只能选中一种 change type，且写出至少一条具体 requirement 和 WHEN/THEN 场景。
 
 ## 📖 文档
@@ -165,6 +165,7 @@ ome spec archive user-authentication
 - [配置指南](docs/configuration.md)
 - [记忆系统](docs/memory-system.md)
 - [进化机制](docs/evolution.md)
+- [评测与回归方案](docs/evaluation.md)
 
 ## 🎯 示例
 
@@ -225,7 +226,7 @@ project/
 │   ├── config.json        # 工作流设置
 │   ├── rules/             # 项目规则（提交到 git）
 │   └── memory/            # 执行历史（git 忽略）
-└── openspec/              # 兼容 OpenSpec 的工作区
+└── .ome/omespec/          # OME 管理的 Spec 工作区
     ├── project.md         # 项目上下文
     ├── changes/           # 进行中的变更
     │   └── <change-id>/context/  # 导入的 PRD、提示词、分析、引用和附件

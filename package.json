@@ -51,6 +51,7 @@
     "docs/skill-anatomy.md",
     "docs/lifecycle-workflows.md",
     "docs/skill-quality-gate.md",
+    "docs/evaluation.md",
     "docs/generated-artifacts.md",
     ".ome/rules/",
     ".ome/platforms.json",
@@ -62,6 +63,8 @@
     "check": "tsc -p tsconfig.json --noEmit",
     "test": "npm run build && node --test dist/tests/*.test.js",
     "verify": "npm run check && npm test",
+    "evaluate": "npm run build && node --test dist/tests/evaluation-regressions.test.js dist/tests/ome-cli.test.js dist/tests/ome-spec-ts.test.js",
+    "audit": "npm audit --audit-level=high",
     "prepack": "npm run verify",
     "test:built": "node --test dist/tests/*.test.js"
   },

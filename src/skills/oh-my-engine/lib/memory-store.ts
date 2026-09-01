@@ -375,7 +375,11 @@ function buildLearningCandidateMarkdown(record: MemoryRecord, outputLanguage: Ou
     evidence: record.evidence || [],
     appliesTo: record.appliesTo || [],
     reusability: record.reusability,
-    verification: record.verification
+    verification: record.verification,
+    adoptedAt: record.adoptedAt,
+    adoptedFrom: record.adoptedFrom,
+    deprecatedAt: record.deprecatedAt,
+    deprecationReason: record.deprecationReason
   };
 
   // Remove undefined values to avoid YAML serialization errors
@@ -481,7 +485,9 @@ function buildGeneratedSkillMarkdown(record: MemoryRecord, outputLanguage: Outpu
     adoptedFrom: record.adoptedFrom,
     source: record.source,
     status: record.status,
-    executionDirectives: record.executionDirectives || []
+    executionDirectives: record.executionDirectives || [],
+    evidence: record.evidence || [],
+    appliesTo: record.appliesTo || []
   };
 
   // Remove undefined values to avoid YAML serialization errors
@@ -939,6 +945,15 @@ function writeAdoptedLearningArtifact(projectRoot: string, slug: string, payload
   };
 }
 
+function updateAdoptedLearningRecord(projectRoot: string, slug: string, mutate: MemoryMutator): MemoryRecord {
+  const filePath = adoptedLearningFilePath(projectRoot, slug);
+  if (!fs.existsSync(filePath)) throw new Error(`Adopted learning not found: ${slug}`);
+  const current = parseMarkdownFile(filePath);
+  const nextRecord = typeof mutate === 'function' ? mutate({ ...current }) : { ...current, ...mutate };
+  fs.writeFileSync(filePath, buildLearningCandidateMarkdown(nextRecord, resolveMemoryOutputLanguage(projectRoot)), 'utf8');
+  return { filePath, record: nextRecord };
+}
+
 function listMarkdownRecordsFromDirectory(directoryPath: string): MemoryRecord[] {
   if (!fs.existsSync(directoryPath)) {
     return [];
@@ -998,6 +1013,7 @@ module.exports = {
   readSkillCandidateRecord,
   updateSkillCandidateRecord,
   writeAdoptedLearningArtifact,
+  updateAdoptedLearningRecord,
   writeGeneratedSkillArtifact,
   listLearningCandidateRecords,
   listAdoptedLearningRecords,

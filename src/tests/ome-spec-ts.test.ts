@@ -287,3 +287,33 @@ test('ome spec verify and archive are TypeScript-backed', () => {
   assert.match(memory.archivedPath, /\.ome[\/\\]omespec[\/\\]archive[\/\\]/);
 });
 
+test('ome spec verify runs configured commands on the current operating system', () => {
+  const workspace = createWorkspace();
+  const markerPath = path.join(workspace, 'verify-marker.txt');
+  fs.writeFileSync(
+    path.join(workspace, 'OME.md'),
+    `---\nworkflows:\n  spec:\n    provider: ome-spec\n    options:\n      verifyCommands:\n        - node -e "require('node:fs').writeFileSync('verify-marker.txt','verified')"\n---\n`,
+    'utf8'
+  );
+
+  runOme(['spec', 'propose', 'portable-verify', '--capability', 'portable'], workspace);
+  runOme(['spec', 'apply', 'portable-verify', '--all-tasks', '--all-acceptance'], workspace);
+  const changeDir = path.join(workspace, '.ome', 'omespec', 'changes', 'portable-verify');
+  fs.writeFileSync(
+    path.join(changeDir, 'proposal.md'),
+    '# Proposal\n\n## Acceptance Criteria\n- [x] Verification command runs.\n',
+    'utf8'
+  );
+  fs.writeFileSync(path.join(changeDir, 'design.md'), '# Design\n\nUse the configured command.\n', 'utf8');
+  fs.writeFileSync(
+    path.join(changeDir, 'specs', 'portable', 'spec.md'),
+    '# Spec Delta\n\n## Change Type\n- [x] Add\n- [ ] Modify\n- [ ] Remove\n\n## Requirements\nThe system MUST run verification commands on the host operating system.\n\n#### Scenario: Verify\n- **WHEN** verification starts\n- **THEN** the configured command executes successfully\n',
+    'utf8'
+  );
+
+  const output = runOme(['spec', 'verify', 'portable-verify'], workspace);
+
+  assert.match(output, /Verify commands run: 1/);
+  assert.equal(fs.readFileSync(markerPath, 'utf8'), 'verified');
+});
+

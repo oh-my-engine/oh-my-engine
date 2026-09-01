@@ -159,7 +159,12 @@ function buildLearningGroups(executionRecords: MemoryRecord[], thresholds: Evolu
       timestamp: record.timestamp,
       status: record.status,
       workflow: record.workflow,
-      phase: record.phase
+      phase: record.phase,
+      filesTouched: record.filesTouched || [],
+      testsRun: record.testsRun || [],
+      errors: record.errors || [],
+      rootCause: record.rootCause || '',
+      fixSummary: record.fixSummary || ''
     });
     groups.set(key, group);
   }
@@ -194,7 +199,12 @@ function buildSkillGroups(executionRecords: MemoryRecord[], thresholds: Evolutio
       timestamp: record.timestamp,
       status: record.status,
       workflow: record.workflow,
-      phase: record.phase
+      phase: record.phase,
+      filesTouched: record.filesTouched || [],
+      testsRun: record.testsRun || [],
+      errors: record.errors || [],
+      rootCause: record.rootCause || '',
+      fixSummary: record.fixSummary || ''
     });
     groups.set(patternId, group);
   }

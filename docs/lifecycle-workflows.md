@@ -62,6 +62,26 @@ ome comp → define (responsibility) → plan (props/types) → build → test �
 - `ome review "<target>"`: review correctness, readability, architecture, security, performance, and test coverage.
 - `ome ship "<change>"`: run readiness checks and prepare final handoff or commit notes.
 
+## Executable Delivery Runs
+
+Use `ome run` when a delivery needs machine-enforced stage transitions and durable evidence:
+
+```bash
+ome run start "add user login"
+ome run status
+ome run evidence requirement_summary "Goal, scope, and success criteria"
+ome run next
+```
+
+Each stage reports the evidence required before `ome run next` can advance it. Register descriptive artifacts with `ome run evidence <type> "<summary>"`. At the verification stage, execute the real check through OME:
+
+```bash
+ome run verify-command "npm test"
+ome run next
+```
+
+`ome run evidence verification_command "npm test passed"` records an asserted statement for audit purposes, but does not unlock the verification stage. Only a successful `verify-command` execution is accepted as verification evidence. Continue through review and ship, then use `ome run finish`; use `ome run cancel "<reason>"` when abandoning an active run.
+
 ## Workflow Mapping
 
 Existing commands map into these phases internally:

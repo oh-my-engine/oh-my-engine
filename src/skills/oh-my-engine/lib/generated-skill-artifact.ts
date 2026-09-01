@@ -52,10 +52,12 @@ function buildGeneratedSkillArtifact(record: MemoryRecord, adoptedAt: string): M
     summary: record.summary,
     evidenceCount: record.evidenceCount,
     adoptedAt,
-    adoptedFrom: `.ome/memory/skill-candidates/${record.slug}.json`,
+    adoptedFrom: `.ome/memory/skill-candidates/${record.slug}.md`,
     source: record.source,
     status: 'adopted',
-    executionDirectives
+    executionDirectives,
+    evidence: record.evidence || [],
+    appliesTo: record.appliesTo || []
   };
 }
 

@@ -1,6 +1,7 @@
-const fs = require('node:fs');
-const path = require('node:path');
-const { engineDirectory } = require('../../../core/paths');
+const {
+  listAdoptedLearningRecords,
+  listExecutionRecords
+} = require('./memory-store');
 
 type MemoryRecord = Record<string, any>;
 
@@ -16,55 +17,21 @@ export interface EffectivenessMetrics {
 }
 
 function loadAllExecutions(projectRoot: string): MemoryRecord[] {
-  const executionsDir = path.join(engineDirectory(projectRoot), 'memory', 'executions');
-
-  if (!fs.existsSync(executionsDir)) {
-    return [];
-  }
-
-  const executions: MemoryRecord[] = [];
-  const workflows = fs.readdirSync(executionsDir);
-
-  for (const workflow of workflows) {
-    const workflowDir = path.join(executionsDir, workflow);
-    if (!fs.statSync(workflowDir).isDirectory()) continue;
-
-    const files = fs.readdirSync(workflowDir).filter((f: string) => f.endsWith('.jsonl'));
-
-    for (const file of files) {
-      const filePath = path.join(workflowDir, file);
-      const content = fs.readFileSync(filePath, 'utf8');
-      const lines = content.trim().split('\n').filter((l: string) => l.trim());
-
-      for (const line of lines) {
-        try {
-          const record = JSON.parse(line);
-          executions.push(record);
-        } catch (error) {
-          // Skip invalid lines
-        }
-      }
-    }
-  }
-
-  return executions;
+  return listExecutionRecords(projectRoot);
 }
 
 function readAdoptedLearningRecord(projectRoot: string, slug: string): MemoryRecord {
-  const filePath = path.join(
-    engineDirectory(projectRoot),
-    'memory',
-    'learnings',
-    'adopted',
-    `${slug}.json`
-  );
+  const record = listAdoptedLearningRecords(projectRoot)
+    .find((item: MemoryRecord) => item.slug === slug);
+  if (!record) throw new Error(`Adopted learning ${slug} not found`);
+  return record;
+}
 
-  if (!fs.existsSync(filePath)) {
-    throw new Error(`Adopted learning ${slug} not found`);
-  }
-
-  const content = fs.readFileSync(filePath, 'utf8');
-  return JSON.parse(content);
+function appliesToLearning(execution: MemoryRecord, learning: MemoryRecord): boolean {
+  const appliesTo = Array.isArray(learning.appliesTo) ? learning.appliesTo : [];
+  if (appliesTo.length > 0) return appliesTo.includes(execution.workflow);
+  if (learning.workflow) return execution.workflow === learning.workflow;
+  return true;
 }
 
 function calculateErrorRate(executions: MemoryRecord[]): number {
@@ -81,7 +48,8 @@ export function trackEffectiveness(
   const appliedAt = adoptedRule.adoptedAt || new Date().toISOString();
 
   // 获取应用前后的执行记录
-  const allExecutions = loadAllExecutions(projectRoot);
+  const allExecutions = loadAllExecutions(projectRoot)
+    .filter((execution: MemoryRecord) => appliesToLearning(execution, adoptedRule));
   const executionsBefore = allExecutions.filter((e: MemoryRecord) => e.timestamp < appliedAt);
   const executionsAfter = allExecutions.filter((e: MemoryRecord) => e.timestamp >= appliedAt);
 

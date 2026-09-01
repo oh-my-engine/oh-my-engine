@@ -18,6 +18,13 @@ function createWorkspace(prefix: string): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
 }
 
+function createInitializedWorkspace(prefix: string): string {
+  const workspace = createWorkspace(prefix);
+  const result = runOmeInWorkspace(workspace, ['init']);
+  assert.equal(result.status, 0, result.stderr);
+  return workspace;
+}
+
 function runOmeInWorkspace(workspace: string, args: string[]): ReturnType<typeof spawnSync> {
   return spawnSync(OME_BIN, omeArgs(args), {
     cwd: workspace,
@@ -95,7 +102,10 @@ test('ome adapters list reports configured platforms', () => {
 });
 
 test('ome bug renders project workflow guidance', () => {
-  const output = runOme(['bug', 'login fails']);
+  const workspace = createInitializedWorkspace('ome-bug-guidance-');
+  const result = runOmeInWorkspace(workspace, ['bug', 'login fails']);
+  assert.equal(result.status, 0, result.stderr);
+  const output = result.stdout;
 
   assert.match(output, /Bug Analysis Workflow/);
   assert.match(output, /\.ome\/rules/);
@@ -103,9 +113,16 @@ test('ome bug renders project workflow guidance', () => {
 });
 
 test('ome lifecycle commands render structured guidance', () => {
-  const define = runOme(['define', 'add user login']);
-  const plan = runOme(['plan', 'add user login']);
-  const review = runOme(['review', 'current diff']);
+  const workspace = createInitializedWorkspace('ome-lifecycle-guidance-');
+  const defineResult = runOmeInWorkspace(workspace, ['define', 'add user login']);
+  const planResult = runOmeInWorkspace(workspace, ['plan', 'add user login']);
+  const reviewResult = runOmeInWorkspace(workspace, ['review', 'current diff']);
+  assert.equal(defineResult.status, 0, defineResult.stderr);
+  assert.equal(planResult.status, 0, planResult.stderr);
+  assert.equal(reviewResult.status, 0, reviewResult.stderr);
+  const define = defineResult.stdout;
+  const plan = planResult.stdout;
+  const review = reviewResult.stdout;
 
   assert.match(define, /Define Workflow/);
   assert.match(define, /Success criteria/);
@@ -192,7 +209,10 @@ test('ome run finish requires ship evidence and completes the active run', () =>
   ];
 
   for (const evidenceType of evidenceByStage) {
-    assert.equal(runOmeInWorkspace(workspace, ['run', 'evidence', evidenceType, `${evidenceType} done`]).status, 0);
+    const evidenceResult = evidenceType === 'verification_command'
+      ? runOmeInWorkspace(workspace, ['run', 'verify-command', 'node -e "process.exit(0)"'])
+      : runOmeInWorkspace(workspace, ['run', 'evidence', evidenceType, `${evidenceType} done`]);
+    assert.equal(evidenceResult.status, 0, evidenceResult.stderr);
     assert.equal(runOmeInWorkspace(workspace, ['run', 'next']).status, 0);
   }
 
@@ -206,6 +226,39 @@ test('ome run finish requires ship evidence and completes the active run', () =>
   assert.equal(finishPayload.stage, 'learn');
   assert.notEqual(statusAfterFinish.status, 0);
   assert.match(parseJsonOutput(statusAfterFinish).blockingIssues[0], /No active run/);
+});
+
+test('ome run verify stage requires an executed command instead of asserted text', () => {
+  const workspace = createWorkspace('ome-run-executed-verification-');
+  runOmeInWorkspace(workspace, ['run', 'start', 'add login']);
+  for (const evidenceType of ['requirement_summary', 'requirement_summary', 'plan_artifact', 'implementation_summary']) {
+    assert.equal(runOmeInWorkspace(workspace, ['run', 'evidence', evidenceType, `${evidenceType} done`]).status, 0);
+    assert.equal(runOmeInWorkspace(workspace, ['run', 'next']).status, 0);
+  }
+
+  const asserted = runOmeInWorkspace(workspace, [
+    'run',
+    'evidence',
+    'verification_command',
+    'npm test passed'
+  ]);
+  const blocked = runOmeInWorkspace(workspace, ['run', 'next']);
+  const executed = runOmeInWorkspace(workspace, [
+    'run',
+    'verify-command',
+    'node -e "require(\'node:fs\').writeFileSync(\'verified.txt\',\'yes\')"'
+  ]);
+  const advanced = runOmeInWorkspace(workspace, ['run', 'next']);
+
+  assert.equal(asserted.status, 0);
+  assert.notEqual(blocked.status, 0);
+  assert.match(parseJsonOutput(blocked).blockingIssues[0], /verification_command/);
+  assert.equal(executed.status, 0, executed.stderr);
+  const executedPayload = parseJsonOutput(executed);
+  assert.equal(executedPayload.evidence.at(-1).verificationStatus, 'executed');
+  assert.equal(fs.readFileSync(path.join(workspace, 'verified.txt'), 'utf8'), 'yes');
+  assert.equal(advanced.status, 0);
+  assert.equal(parseJsonOutput(advanced).stage, 'review');
 });
 
 test('ome run enforces a single active run until cancellation', () => {
@@ -249,6 +302,7 @@ test('ome unknown command exits non-zero with a clear error', () => {
 });
 
 test('ome update surfaces npm failure details before continuing project sync', () => {
+  const workspace = createInitializedWorkspace('ome-update-failure-');
   const env = { ...process.env };
   if (process.platform === 'win32') {
     env.Path = '';
@@ -259,7 +313,7 @@ test('ome update surfaces npm failure details before continuing project sync', (
   env.OME_REPO_ROOT = REPO_ROOT;
 
   const result = spawnSync(OME_BIN, omeArgs(['update', '--global']), {
-    cwd: REPO_ROOT,
+    cwd: workspace,
     encoding: 'utf8',
     env
   });
@@ -272,6 +326,7 @@ test('ome update surfaces npm failure details before continuing project sync', (
 });
 
 test('ome update preserves a local development engine by default', () => {
+  const workspace = createInitializedWorkspace('ome-update-local-dev-');
   const env: NodeJS.ProcessEnv = { ...process.env, OME_REPO_ROOT: REPO_ROOT };
   if (process.platform === 'win32') {
     env.Path = '';
@@ -281,7 +336,7 @@ test('ome update preserves a local development engine by default', () => {
   }
 
   const result = spawnSync(OME_BIN, omeArgs(['update']), {
-    cwd: REPO_ROOT,
+    cwd: workspace,
     encoding: 'utf8',
     env
   });
@@ -294,8 +349,9 @@ test('ome update preserves a local development engine by default', () => {
 });
 
 test('ome update supports project-only sync without global npm update', () => {
+  const workspace = createInitializedWorkspace('ome-update-project-only-');
   const result = spawnSync(OME_BIN, omeArgs(['update', '--project-only']), {
-    cwd: REPO_ROOT,
+    cwd: workspace,
     encoding: 'utf8',
     env: { ...process.env, OME_REPO_ROOT: REPO_ROOT }
   });
@@ -610,6 +666,7 @@ test('ome update force-rules overwrites rule sources after backing them up', () 
 test('ome update uses cmd wrapper for npm install on Windows', () => {
   if (process.platform !== 'win32') return;
 
+  const workspace = createInitializedWorkspace('ome-update-windows-wrapper-');
   const fakeBin = createWorkspace('ome-update-fake-npm-');
   const markerPath = path.join(fakeBin, 'npm-invocation.txt');
   fs.writeFileSync(
@@ -627,7 +684,7 @@ test('ome update uses cmd wrapper for npm install on Windows', () => {
   delete env.npm_config_user_agent;
 
   const result = spawnSync(OME_BIN, omeArgs(['update', '--global']), {
-    cwd: REPO_ROOT,
+    cwd: workspace,
     encoding: 'utf8',
     env
   });

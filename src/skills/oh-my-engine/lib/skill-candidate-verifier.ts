@@ -52,6 +52,23 @@ function countMatches(markdown: string, patterns: RegExp[]): number {
   return patterns.reduce((count, pattern) => count + (pattern.test(markdown) ? 1 : 0), 0);
 }
 
+function sectionBody(markdown: string, section: string): string {
+  const escaped = section.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const heading = new RegExp(`^##\\s+${escaped}\\s*\\r?$`, 'im').exec(markdown);
+  if (!heading) return '';
+  const remainder = markdown.slice(heading.index + heading[0].length);
+  const nextHeading = remainder.search(/^##\s+/m);
+  return (nextHeading >= 0 ? remainder.slice(0, nextHeading) : remainder).trim();
+}
+
+function listItemCount(body: string): number {
+  return (body.match(/^[-*]\s+\S+/gm) || []).length;
+}
+
+function numberedStepCount(body: string): number {
+  return (body.match(/^\d+\.\s+\S+/gm) || []).length;
+}
+
 export function assessSkillMarkdown(skillMarkdown: string): SkillMarkdownAssessment {
   const markdown = String(skillMarkdown || '');
   const missingSections = REQUIRED_SECTIONS.filter(section => !hasSection(markdown, section));
@@ -59,6 +76,26 @@ export function assessSkillMarkdown(skillMarkdown: string): SkillMarkdownAssessm
 
   if (missingSections.length > 0) {
     rejectionReasons.push(`missing required sections: ${missingSections.join(', ')}`);
+  }
+
+  const purpose = sectionBody(markdown, 'Purpose');
+  if (purpose.replace(/\s+/g, ' ').length < 30) {
+    rejectionReasons.push('Purpose must explain the concrete outcome in at least 30 characters');
+  }
+  for (const [section, minimum] of [
+    ['When to Use', 2],
+    ['Inputs', 2],
+    ['Red Flags', 2],
+    ['Common Rationalizations', 2],
+    ['Verification', 2],
+    ['Output Contract', 3]
+  ] as Array<[string, number]>) {
+    if (listItemCount(sectionBody(markdown, section)) < minimum) {
+      rejectionReasons.push(`${section} must contain at least ${minimum} concrete list items`);
+    }
+  }
+  if (numberedStepCount(sectionBody(markdown, 'Process')) < 3) {
+    rejectionReasons.push('Process must contain at least 3 numbered executable steps');
   }
 
   const score: SkillQualityScore = {

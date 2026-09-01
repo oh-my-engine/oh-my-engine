@@ -33,7 +33,11 @@ function createWorkspace() {
 function run(command: string, args: string[], cwd: string): string {
   return execFileSync(command, args, {
     cwd,
-    encoding: 'utf8'
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      NODE_PATH: repoPath('node_modules')
+    }
   });
 }
 
@@ -1663,6 +1667,12 @@ test('spec plan and apply load adopted engine memory context', () => {
   assert.equal(adoptedLearningView.records[0].status, 'adopted');
   assert.equal(generatedSkillView.summary.totalRecords, 1);
   assert.equal(generatedSkillView.records[0].slug, 'react-event-handler-invocation');
+  assert.match(generatedSkillView.records[0].adoptedFrom, /\.md$/);
+  assert.ok(
+    Array.isArray(generatedSkillView.records[0].evidence) &&
+      generatedSkillView.records[0].evidence.length > 0,
+    'expected generated skills viewer to preserve source evidence'
+  );
   assert.ok(
     Array.isArray(generatedSkillView.records[0].executionDirectives),
     'expected generated skills viewer to expose execution directives'

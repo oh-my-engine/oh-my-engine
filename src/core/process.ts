@@ -1,4 +1,4 @@
-const { execFileSync } = require('node:child_process');
+const { execFileSync, execSync } = require('node:child_process');
 
 export interface CommandResult {
   stdout: string;
@@ -18,5 +18,13 @@ export function runCommandInherit(command: string, args: string[], cwd: string =
   execFileSync(command, args, {
     cwd,
     stdio: 'inherit'
+  });
+}
+
+export function runShellCommandInherit(command: string, cwd: string = process.cwd()): void {
+  execSync(command, {
+    cwd,
+    stdio: 'inherit',
+    shell: process.platform === 'win32' ? process.env.ComSpec || 'cmd.exe' : '/bin/sh'
   });
 }

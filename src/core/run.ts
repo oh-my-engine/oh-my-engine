@@ -3,6 +3,7 @@ const path = require('node:path');
 
 const { ENGINE_DIR } = require('./paths');
 const { writeJsonFile } = require('./file-system');
+const { runShellCommandInherit } = require('./process');
 
 type RunStatus = 'active' | 'completed' | 'cancelled';
 type RunStage = 'validate' | 'define' | 'plan' | 'build' | 'verify' | 'review' | 'ship' | 'learn';
@@ -19,6 +20,7 @@ interface RunEvidence {
   stage: RunStage;
   summary: string;
   createdAt: string;
+  verificationStatus?: 'asserted' | 'executed';
 }
 
 interface RunState {
@@ -148,7 +150,14 @@ function evidenceForStage(state: RunState): RunEvidence[] {
 
 function missingEvidence(state: RunState): RunEvidenceType[] {
   const present = new Set(evidenceForStage(state).map(item => item.type));
-  return requiredEvidenceFor(state.stage).filter(type => !present.has(type));
+  return requiredEvidenceFor(state.stage).filter(type => {
+    if (type === 'verification_command') {
+      return !evidenceForStage(state).some(item =>
+        item.type === 'verification_command' && item.verificationStatus === 'executed'
+      );
+    }
+    return !present.has(type);
+  });
 }
 
 function responseFromState(state: RunState, statePath?: string, blockingIssues: string[] = []): RunResponse {
@@ -274,12 +283,58 @@ export function recordRunEvidence(projectRoot: string, type: string, summary: st
     type,
     stage: state.stage,
     summary: normalizedSummary,
-    createdAt: nowIso()
+    createdAt: nowIso(),
+    verificationStatus: type === 'verification_command' ? 'asserted' : undefined
   });
   writeRunState(projectRoot, state);
 
   return {
     response: responseFromState(state, active.statePath),
+    exitCode: 0
+  };
+}
+
+export function executeRunVerification(projectRoot: string, command: string): RunCommandResult {
+  const active = getActiveRunOrError(projectRoot);
+  if ('exitCode' in active) return active;
+  if (active.state.stage !== 'verify') {
+    return {
+      response: responseFromState(active.state, active.statePath, [
+        `Verification commands can only run during the verify stage; current stage is ${active.state.stage}.`
+      ]),
+      exitCode: 1
+    };
+  }
+
+  const normalizedCommand = command.trim();
+  if (!normalizedCommand) {
+    return {
+      response: responseFromState(active.state, active.statePath, ['Missing verification command.']),
+      exitCode: 1
+    };
+  }
+
+  try {
+    runShellCommandInherit(normalizedCommand, projectRoot);
+  } catch (error) {
+    return {
+      response: responseFromState(active.state, active.statePath, [
+        `Verification command failed: ${error instanceof Error ? error.message : String(error)}`
+      ]),
+      exitCode: 1
+    };
+  }
+
+  active.state.evidence.push({
+    type: 'verification_command',
+    stage: 'verify',
+    summary: normalizedCommand,
+    createdAt: nowIso(),
+    verificationStatus: 'executed'
+  });
+  writeRunState(projectRoot, active.state);
+  return {
+    response: responseFromState(active.state, active.statePath),
     exitCode: 0
   };
 }
@@ -415,6 +470,8 @@ export function runDeliveryCommand(args: string[], projectRoot: string = process
     result = nextRun(projectRoot);
   } else if (subcommand === 'evidence') {
     result = recordRunEvidence(projectRoot, filteredArgs[1] || '', filteredArgs.slice(2).join(' '));
+  } else if (subcommand === 'verify-command') {
+    result = executeRunVerification(projectRoot, filteredArgs.slice(1).join(' '));
   } else if (subcommand === 'finish') {
     result = finishRun(projectRoot);
   } else if (subcommand === 'cancel') {

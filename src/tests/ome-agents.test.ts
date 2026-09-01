@@ -84,7 +84,7 @@ test('ome agents install writes global short command entries', () => {
   assert.match(claudeCommand, /## Red Flags/);
   assert.match(claudeCommand, /## Output Contract/);
   assert.match(claudeCommand, /ome-bug/);
-  assert.match(fs.readFileSync(path.join(home, '.agents', 'skills', 'ome-review', 'SKILL.md'), 'utf8'), /^---\nname: ome-review\n/);
+  assert.match(fs.readFileSync(path.join(home, '.agents', 'skills', 'ome-review', 'SKILL.md'), 'utf8'), /^---\r?\nname: ome-review\r?\n/);
   assert.match(codexSkill, /## Purpose/);
   assert.match(codexSkill, /## When to Use/);
   assert.match(codexSkill, /## Process/);
@@ -102,7 +102,7 @@ test('ome agents install writes global short command entries', () => {
   assert.match(codexSkill, /## Workflow Completion \(SUBSTANTIVE WORK ONLY\)/);
   assert.match(legacyCodexSkill, /## Workflow Session Start \(MANDATORY\)/);
   assert.match(legacyCodexSkill, /ome bug \$ARGUMENTS/);
-  assert.match(initCommand, /^---\ndescription: Initialize \.ome project configuration and Agent rules\.\n---\n/);
+  assert.match(initCommand, /^---\r?\ndescription: Initialize \.ome project configuration and Agent rules\.\r?\n---\r?\n/);
   assert.match(initCommand, /\n# ome-init\r?\n/);
   assert.doesNotMatch(initCommand, /\nname: ome-init\r?\n/);
   assert.match(initRulesCommand, /## Purpose/);
@@ -110,9 +110,9 @@ test('ome agents install writes global short command entries', () => {
   assert.match(initRulesCommand, /Do not create UI, mobile, or design-token rules unless the repository signals them/);
   assert.match(initRulesCommand, /Sync platform rule files after editing the source rules/);
   assert.match(fs.readFileSync(path.join(home, '.codex', 'skills', 'ome-mcp', 'SKILL.md'), 'utf8'), /## Purpose/);
-  assert.match(codexSkill, /^---\nname: ome-bug\n/);
-  assert.match(codexSkill, /\ntags: \[ome, bug, debug, workflow\]\n---\n/);
-  assert.match(antigravityWorkflow, /^---\ndescription: Analyze, diagnose, and plan a bug fix using project rules\.\n---\n/);
+  assert.match(codexSkill, /^---\r?\nname: ome-bug\r?\n/);
+  assert.match(codexSkill, /\r?\ntags: \[ome, bug, debug, workflow\]\r?\n---\r?\n/);
+  assert.match(antigravityWorkflow, /^---\r?\ndescription: Analyze, diagnose, and plan a bug fix using project rules\.\r?\n---\r?\n/);
   assert.match(antigravityWorkflow, /Antigravity workflow notes:/);
 
   // Action-style commands (ome-memory, ome-evolve): Claude Code keeps the bang
@@ -151,7 +151,7 @@ test('ome agents install writes global short command entries', () => {
   assert.doesNotMatch(opencodeRemember, /^!ome memory remember/m);
 
   const codexRememberSkill = fs.readFileSync(path.join(home, '.codex', 'skills', 'ome-remember', 'SKILL.md'), 'utf8');
-  assert.match(codexRememberSkill, /^---\nname: ome-remember\n/);
+  assert.match(codexRememberSkill, /^---\r?\nname: ome-remember\r?\n/);
   assert.match(codexRememberSkill, /^!ome memory remember \$ARGUMENTS$/m);
   assert.match(codexRememberSkill, /allowed-tools:\s*Bash\(ome memory remember:\*\)/);
 
@@ -211,7 +211,7 @@ test('ome agents install --project writes project command entries', () => {
   assert.equal(fs.existsSync(path.join(workspace, '.qoder', 'commands', 'ome-bug.md')), true);
   assert.equal(fs.existsSync(path.join(workspace, '.opencode', 'command', 'ome-bug.md')), true);
   assert.equal(fs.existsSync(path.join(workspace, '.agent', 'workflows', 'ome-bug.md')), true);
-  assert.match(fs.readFileSync(path.join(workspace, '.agent', 'workflows', 'ome-bug.md'), 'utf8'), /^---\ndescription:/);
+  assert.match(fs.readFileSync(path.join(workspace, '.agent', 'workflows', 'ome-bug.md'), 'utf8'), /^---\r?\ndescription:/);
 });
 
 test('ome agents clean-project removes generated entries without deleting custom commands', () => {

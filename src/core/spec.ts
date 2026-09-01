@@ -1,5 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const { runShellCommandInherit } = require('./process');
 
 const { initializeProject, parseInitArgs } = require('./init');
 const { ENGINE_DIR, enginePath } = require('./paths');
@@ -861,7 +862,7 @@ export function runSpecVerify(args: string[]): void {
   for (const command of getVerifyCommands(projectRoot)) {
     verifyCommandCount += 1;
     process.stdout.write(`Running verify command [${verifyCommandCount}]: ${command}\n`);
-    require('node:child_process').execFileSync('/bin/sh', ['-c', command], { cwd: projectRoot, stdio: 'inherit' });
+    runShellCommandInherit(command, projectRoot);
   }
 
   const verified = updateMemoryState(memoryFile, memory, 'verified', 'verify', changeDirectory);

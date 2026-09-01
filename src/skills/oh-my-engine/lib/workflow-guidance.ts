@@ -23,13 +23,36 @@ const MIN_TOKEN_LENGTH = 3;
 
 function tokenize(value: unknown): string[] {
   if (typeof value !== 'string') return [];
-  const tokens = value
+  const normalized = value.toLowerCase();
+  const structuralTokens = normalized
     .toLowerCase()
     .split(/[^a-z0-9_.\/\\:-]+/i)
     .map(token => token.trim())
     .filter(token => token.length >= MIN_TOKEN_LENGTH);
 
-  return Array.from(new Set(tokens));
+  const Segmenter = (Intl as any).Segmenter;
+  const wordTokens: string[] = [];
+  if (Segmenter) {
+    const segmenter = new Segmenter(undefined, { granularity: 'word' });
+    for (const item of segmenter.segment(normalized)) {
+      const token = String(item.segment || '').trim();
+      if (!item.isWordLike || !token) continue;
+      const containsNonAscii = /[^\x00-\x7F]/.test(token);
+      if ((containsNonAscii && Array.from(token).length >= 2) || token.length >= MIN_TOKEN_LENGTH) {
+        wordTokens.push(token);
+      }
+    }
+  }
+
+  const cjkBigrams: string[] = [];
+  for (const match of normalized.matchAll(/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]+/gu)) {
+    const characters = Array.from(match[0]);
+    for (let index = 0; index < characters.length - 1; index += 1) {
+      cjkBigrams.push(characters[index] + characters[index + 1]);
+    }
+  }
+
+  return Array.from(new Set(structuralTokens.concat(wordTokens, cjkBigrams)));
 }
 
 function flattenSearchableValues(value: unknown): string[] {
@@ -127,8 +150,7 @@ function sortByRelevance(records: MemoryRecord[], context: GuidanceContext = {})
 function filterContextualMatches(records: MemoryRecord[], context: GuidanceContext = {}): MemoryRecord[] {
   if (tokenize(context.input || '').length === 0) return records;
 
-  const matches = records.filter(record => scoreRecord(record, context) >= MIN_CONTEXTUAL_RELEVANCE);
-  return matches.length > 0 ? matches : records;
+  return records.filter(record => scoreRecord(record, context) >= MIN_CONTEXTUAL_RELEVANCE);
 }
 
 function filterAdoptedLearnings(records: MemoryRecord[], workflow: string, context: GuidanceContext = {}): MemoryRecord[] {
@@ -145,7 +167,17 @@ function filterAdoptedLearnings(records: MemoryRecord[], workflow: string, conte
     );
   });
 
-  return sortByRelevance(filterContextualMatches(workflowMatches, context), context);
+  const contextualMatches = filterContextualMatches(workflowMatches, context);
+  if (contextualMatches.length > 0 || !context.input) {
+    return sortByRelevance(contextualMatches.length > 0 ? contextualMatches : workflowMatches, context);
+  }
+
+  const input = context.input.trim();
+  if (/^(https?:\/\/|\.?[\/\\])/.test(input)) {
+    return sortByEvidenceDescending(workflowMatches);
+  }
+
+  return [];
 }
 
 function buildExecutionDirectives(skills: MemoryRecord[]): MemoryRecord[] {
