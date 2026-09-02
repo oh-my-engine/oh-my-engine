@@ -121,6 +121,7 @@ export {
   cancelRun,
   finishRun,
   nextRun,
+  recordCompletedRun,
   recordRunEvidence,
   renderRunResponse,
   startRun,
@@ -128,6 +129,7 @@ export {
 } from './core/run';
 
 export type {
+  CompletionResult,
   RunCommandResult,
   RunEvidence,
   RunEvidenceType,
@@ -138,16 +140,38 @@ export type {
   RunStatus
 } from './core/run';
 
+export {
+  LEGACY_RUN_POLICY,
+  OME_ENGINEER_POLICY,
+  RUN_EVIDENCE_TYPES,
+  RUN_STAGES,
+  createRunState,
+  missingRunEvidence,
+  requiredEvidenceForStage,
+  runNextAction,
+  transitionRun
+} from './core/run-engine';
+
+export type {
+  CreateRunStateOptions,
+  RunAction,
+  RunPlanApproval,
+  RunPolicy,
+  RunTransition
+} from './core/run-engine';
+
 export type {
   WorkflowName
 } from './core/workflows';
 
 export {
   lifecycleWorkflowNames,
-  renderLifecycleGuidance
+  renderLifecycleGuidance,
+  renderLifecycleGuidanceText
 } from './core/lifecycle';
 
 export type {
+  LifecycleGuidanceTextOptions,
   LifecycleGuidanceOptions,
   LifecycleWorkflowName
 } from './core/lifecycle';

@@ -156,6 +156,31 @@ const plan = renderLifecycleGuidance({
 
 Supported lifecycle workflows are `define`, `plan`, `build`, `test`, `review`, and `ship`.
 
+For integrations that own their own persistence, use the pure lifecycle APIs. They do not write `.ome/.session` or run shell commands:
+
+```js
+const {
+  OME_ENGINEER_POLICY,
+  createRunState,
+  transitionRun,
+  renderLifecycleGuidanceText
+} = require('oh-my-engine');
+
+let state = createRunState('add user login', { policy: OME_ENGINEER_POLICY });
+const result = transitionRun(state, {
+  type: 'record-evidence',
+  evidence: {
+    type: 'requirement_summary',
+    stage: state.stage,
+    summary: 'Login scope and acceptance criteria',
+    createdAt: new Date().toISOString()
+  }
+}, OME_ENGINEER_POLICY);
+state = result.state;
+```
+
+`OME_ENGINEER_POLICY` starts at `define`, forbids stage skipping, requires a user-command plan approval, and requires executed verification evidence. `recordCompletedRun(projectRoot, completedState)` is the explicit compatibility bridge to OME Memory; evolution analysis remains candidate-only and best-effort. Existing CLI run commands continue to use their legacy policy and file-backed storage.
+
 ## Skill Candidate Quality
 
 Use `verifySkillCandidate(projectRoot, slug)` to apply the same evolve quality gate used by `ome evolve verify-skill`. The result includes verification metadata with a six-axis score and rejection reasons when a candidate is not adoption-ready.

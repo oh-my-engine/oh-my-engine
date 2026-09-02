@@ -4,38 +4,24 @@ const path = require('node:path');
 const { ENGINE_DIR } = require('./paths');
 const { writeJsonFile } = require('./file-system');
 const { runShellCommandInherit } = require('./process');
+const {
+  LEGACY_RUN_POLICY,
+  RUN_EVIDENCE_TYPES,
+  RUN_STAGES,
+  createRunState,
+  missingRunEvidence,
+  requiredEvidenceForStage,
+  runNextAction,
+  transitionRun
+} = require('./run-engine');
 
-type RunStatus = 'active' | 'completed' | 'cancelled';
-type RunStage = 'validate' | 'define' | 'plan' | 'build' | 'verify' | 'review' | 'ship' | 'learn';
-type RunEvidenceType =
-  | 'requirement_summary'
-  | 'plan_artifact'
-  | 'implementation_summary'
-  | 'verification_command'
-  | 'review_summary'
-  | 'ship_summary';
-
-interface RunEvidence {
-  type: RunEvidenceType;
-  stage: RunStage;
-  summary: string;
-  createdAt: string;
-  verificationStatus?: 'asserted' | 'executed';
-}
-
-interface RunState {
-  version: 1;
-  runId: string;
-  request: string;
-  status: RunStatus;
-  stage: RunStage;
-  createdAt: string;
-  updatedAt: string;
-  completedAt?: string;
-  cancelledAt?: string;
-  cancelReason?: string;
-  evidence: RunEvidence[];
-}
+import type {
+  RunEvidence,
+  RunEvidenceType,
+  RunStage,
+  RunState,
+  RunStatus
+} from './run-engine';
 
 interface RunResponse {
   runId?: string;
@@ -55,48 +41,18 @@ interface RunCommandResult {
   exitCode: number;
 }
 
+export interface CompletionResult {
+  persisted: boolean;
+  analyzed: boolean;
+  error?: string;
+}
+
 type RunOutputFormat = 'json' | 'text';
-
-const STAGES: RunStage[] = ['validate', 'define', 'plan', 'build', 'verify', 'review', 'ship', 'learn'];
-const EVIDENCE_TYPES: RunEvidenceType[] = [
-  'requirement_summary',
-  'plan_artifact',
-  'implementation_summary',
-  'verification_command',
-  'review_summary',
-  'ship_summary'
-];
-
-const STAGE_EVIDENCE: Record<RunStage, RunEvidenceType[]> = {
-  validate: ['requirement_summary'],
-  define: ['requirement_summary'],
-  plan: ['plan_artifact'],
-  build: ['implementation_summary'],
-  verify: ['verification_command'],
-  review: ['review_summary'],
-  ship: ['ship_summary'],
-  learn: []
-};
-
-const STAGE_ACTIONS: Record<RunStage, string> = {
-  validate: 'Clarify the request into a concrete goal, scope, and success criteria.',
-  define: 'Produce the requirement summary with scope, non-goals, assumptions, and open questions.',
-  plan: 'Create an implementation plan with interfaces, risks, and test strategy.',
-  build: 'Implement the planned change in small verified slices.',
-  verify: 'Register successful verification evidence such as a test command or manual acceptance.',
-  review: 'Register review findings or an explicit no-findings review summary.',
-  ship: 'Prepare the final delivery summary, known risks, and release or handoff evidence.',
-  learn: 'Finish the run and let OME summarize the completed delivery evidence.'
-};
 
 const EXIT_CODE_MEANING = '0 means stage is actionable or advanced; non-zero means blocked or invalid.';
 
 function nowIso(): string {
   return new Date().toISOString();
-}
-
-function generateRunId(): string {
-  return `run-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function runsDirectory(projectRoot: string): string {
@@ -108,7 +64,7 @@ function runStatePath(projectRoot: string, runId: string): string {
 }
 
 function isEvidenceType(value: string): value is RunEvidenceType {
-  return EVIDENCE_TYPES.includes(value as RunEvidenceType);
+  return RUN_EVIDENCE_TYPES.includes(value as RunEvidenceType);
 }
 
 function loadRunState(filePath: string): RunState {
@@ -141,23 +97,11 @@ function findActiveRun(projectRoot: string): { state: RunState; statePath: strin
 }
 
 function requiredEvidenceFor(stage: RunStage): RunEvidenceType[] {
-  return STAGE_EVIDENCE[stage];
-}
-
-function evidenceForStage(state: RunState): RunEvidence[] {
-  return state.evidence.filter(item => item.stage === state.stage);
+  return requiredEvidenceForStage(stage);
 }
 
 function missingEvidence(state: RunState): RunEvidenceType[] {
-  const present = new Set(evidenceForStage(state).map(item => item.type));
-  return requiredEvidenceFor(state.stage).filter(type => {
-    if (type === 'verification_command') {
-      return !evidenceForStage(state).some(item =>
-        item.type === 'verification_command' && item.verificationStatus === 'executed'
-      );
-    }
-    return !present.has(type);
-  });
+  return missingRunEvidence(state, LEGACY_RUN_POLICY);
 }
 
 function responseFromState(state: RunState, statePath?: string, blockingIssues: string[] = []): RunResponse {
@@ -166,7 +110,7 @@ function responseFromState(state: RunState, statePath?: string, blockingIssues: 
     request: state.request,
     status: state.status,
     stage: state.stage,
-    nextAction: STAGE_ACTIONS[state.stage],
+    nextAction: runNextAction(state.stage),
     requiredEvidence: requiredEvidenceFor(state.stage),
     blockingIssues,
     exitCodeMeaning: EXIT_CODE_MEANING,
@@ -190,11 +134,6 @@ function noActiveRunResult(): RunCommandResult {
     response: errorResponse('No active run found. Start one with `ome run start "<request>"`.'),
     exitCode: 1
   };
-}
-
-function advanceStage(stage: RunStage): RunStage {
-  const index = STAGES.indexOf(stage);
-  return STAGES[Math.min(index + 1, STAGES.length - 1)];
 }
 
 function getActiveRunOrError(projectRoot: string): RunCommandResult | { state: RunState; statePath: string } {
@@ -233,17 +172,7 @@ export function startRun(projectRoot: string, request: string): RunCommandResult
     };
   }
 
-  const timestamp = nowIso();
-  const state: RunState = {
-    version: 1,
-    runId: generateRunId(),
-    request: normalizedRequest,
-    status: 'active',
-    stage: 'validate',
-    createdAt: timestamp,
-    updatedAt: timestamp,
-    evidence: []
-  };
+  const state = createRunState(normalizedRequest, { policy: LEGACY_RUN_POLICY });
 
   writeRunState(projectRoot, state);
   return { response: responseFromState(state, runStatePath(projectRoot, state.runId)), exitCode: 0 };
@@ -262,7 +191,7 @@ export function statusRun(projectRoot: string): RunCommandResult {
 export function recordRunEvidence(projectRoot: string, type: string, summary: string): RunCommandResult {
   if (!isEvidenceType(type)) {
     return {
-      response: errorResponse(`Unknown evidence type: ${type}. Expected one of: ${EVIDENCE_TYPES.join(', ')}.`),
+      response: errorResponse(`Unknown evidence type: ${type}. Expected one of: ${RUN_EVIDENCE_TYPES.join(', ')}.`),
       exitCode: 1
     };
   }
@@ -278,14 +207,17 @@ export function recordRunEvidence(projectRoot: string, type: string, summary: st
     };
   }
 
-  const state = active.state;
-  state.evidence.push({
-    type,
-    stage: state.stage,
-    summary: normalizedSummary,
-    createdAt: nowIso(),
-    verificationStatus: type === 'verification_command' ? 'asserted' : undefined
-  });
+  const transition = transitionRun(active.state, {
+    type: 'record-evidence',
+    evidence: {
+      type,
+      stage: active.state.stage,
+      summary: normalizedSummary,
+      createdAt: nowIso(),
+      verificationStatus: type === 'verification_command' ? 'asserted' : undefined
+    }
+  }, LEGACY_RUN_POLICY);
+  const state = transition.state;
   writeRunState(projectRoot, state);
 
   return {
@@ -325,13 +257,17 @@ export function executeRunVerification(projectRoot: string, command: string): Ru
     };
   }
 
-  active.state.evidence.push({
-    type: 'verification_command',
-    stage: 'verify',
-    summary: normalizedCommand,
-    createdAt: nowIso(),
-    verificationStatus: 'executed'
-  });
+  const transition = transitionRun(active.state, {
+    type: 'record-evidence',
+    evidence: {
+      type: 'verification_command',
+      stage: 'verify',
+      summary: normalizedCommand,
+      createdAt: nowIso(),
+      verificationStatus: 'executed'
+    }
+  }, LEGACY_RUN_POLICY);
+  active.state = transition.state;
   writeRunState(projectRoot, active.state);
   return {
     response: responseFromState(active.state, active.statePath),
@@ -359,13 +295,70 @@ export function nextRun(projectRoot: string): RunCommandResult {
     };
   }
 
-  state.stage = advanceStage(state.stage);
-  writeRunState(projectRoot, state);
+  const transition = transitionRun(state, { type: 'advance' }, LEGACY_RUN_POLICY);
+  writeRunState(projectRoot, transition.state);
 
   return {
-    response: responseFromState(state, active.statePath),
+    response: responseFromState(transition.state, active.statePath),
     exitCode: 0
   };
+}
+
+export function recordCompletedRun(projectRoot: string, state: RunState): CompletionResult {
+  if (state.status !== 'completed' || !state.completedAt) {
+    return { persisted: false, analyzed: false, error: 'Run state must be completed before recording memory.' };
+  }
+
+  try {
+    const { recordExecutionMemory } = require('../skills/oh-my-engine/lib/memory-store');
+    const memoryResult = recordExecutionMemory(projectRoot, {
+      id: `exec-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      timestamp: state.completedAt,
+      source: 'workflow_command',
+      workflow: 'run',
+      phase: 'ship',
+      changeId: state.runId,
+      changeSlug: state.runId,
+      capability: 'delivery-runtime',
+      captureLevel: 'summary',
+      whyStored: 'Delivery run completed',
+      summary: state.request,
+      status: 'success',
+      complexity: 'medium',
+      filesTouched: [],
+      testsRun: state.evidence
+        .filter(item => item.type === 'verification_command' && item.verificationStatus === 'executed')
+        .map(item => item.summary),
+      durationMs: Math.max(0, new Date(state.completedAt).getTime() - new Date(state.createdAt).getTime()),
+      errors: [],
+      evidence: state.evidence.map(item => `${item.stage}:${item.type}:${item.summary}`),
+      fixSummary: state.evidence.find(item => item.type === 'implementation_summary')?.summary || '',
+      verificationSummary: state.evidence.find(item =>
+        item.type === 'verification_command' && item.verificationStatus === 'executed'
+      )?.summary || '',
+      metadata: {
+        evidenceCount: state.evidence.length,
+        stages: RUN_STAGES
+      }
+    });
+
+    let analyzed = false;
+    try {
+      const { autoAnalyzeEvolution } = require('../skills/oh-my-engine/lib/auto-evolution');
+      autoAnalyzeEvolution(projectRoot);
+      analyzed = true;
+    } catch {
+      // Evolution analysis remains best-effort and never changes run completion.
+    }
+
+    return { persisted: Boolean(memoryResult?.persisted), analyzed };
+  } catch (error) {
+    return {
+      persisted: false,
+      analyzed: false,
+      error: error instanceof Error ? error.message : String(error)
+    };
+  }
 }
 
 export function finishRun(projectRoot: string): RunCommandResult {
@@ -380,43 +373,12 @@ export function finishRun(projectRoot: string): RunCommandResult {
     };
   }
 
-  state.status = 'completed';
-  state.completedAt = nowIso();
-  writeRunState(projectRoot, state);
-
-  try {
-    const { recordExecutionMemory } = require('../skills/oh-my-engine/lib/memory-store');
-    recordExecutionMemory(projectRoot, {
-      id: `exec-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      timestamp: state.completedAt,
-      source: 'workflow_command',
-      workflow: 'run',
-      phase: 'ship',
-      changeId: state.runId,
-      changeSlug: state.runId,
-      capability: 'delivery-runtime',
-      captureLevel: 'summary',
-      whyStored: 'Delivery run completed',
-      summary: state.request,
-      status: 'success',
-      filesTouched: [],
-      testsRun: state.evidence.filter(item => item.type === 'verification_command').map(item => item.summary),
-      durationMs: Math.max(0, new Date(state.completedAt).getTime() - new Date(state.createdAt).getTime()),
-      errors: [],
-      metadata: {
-        evidenceCount: state.evidence.length,
-        stages: STAGES
-      }
-    });
-
-    const { autoAnalyzeEvolution } = require('../skills/oh-my-engine/lib/auto-evolution');
-    autoAnalyzeEvolution(projectRoot);
-  } catch (error) {
-    // Memory and evolution capture are best-effort; the run state remains the source of truth.
-  }
+  const transition = transitionRun(state, { type: 'finish', completedAt: nowIso() }, LEGACY_RUN_POLICY);
+  writeRunState(projectRoot, transition.state);
+  recordCompletedRun(projectRoot, transition.state);
 
   return {
-    response: responseFromState(state, active.statePath),
+    response: responseFromState(transition.state, active.statePath),
     exitCode: 0
   };
 }
@@ -425,14 +387,11 @@ export function cancelRun(projectRoot: string, reason: string): RunCommandResult
   const active = getActiveRunOrError(projectRoot);
   if ('exitCode' in active) return active;
 
-  const state = active.state;
-  state.status = 'cancelled';
-  state.cancelReason = reason.trim() || 'No reason provided.';
-  state.cancelledAt = nowIso();
-  writeRunState(projectRoot, state);
+  const transition = transitionRun(active.state, { type: 'cancel', reason, cancelledAt: nowIso() }, LEGACY_RUN_POLICY);
+  writeRunState(projectRoot, transition.state);
 
   return {
-    response: responseFromState(state, active.statePath),
+    response: responseFromState(transition.state, active.statePath),
     exitCode: 0
   };
 }

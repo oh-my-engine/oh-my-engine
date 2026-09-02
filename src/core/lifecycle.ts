@@ -100,6 +100,11 @@ export interface LifecycleGuidanceOptions {
   cwd?: string;
 }
 
+export interface LifecycleGuidanceTextOptions extends LifecycleGuidanceOptions {
+  sessionId?: string;
+  now?: Date;
+}
+
 export function lifecycleWorkflowNames(): LifecycleWorkflowName[] {
   return Object.keys(LIFECYCLE_WORKFLOWS) as LifecycleWorkflowName[];
 }
@@ -108,17 +113,15 @@ export function isLifecycleWorkflow(value: string): value is LifecycleWorkflowNa
   return Object.prototype.hasOwnProperty.call(LIFECYCLE_WORKFLOWS, value);
 }
 
-export function renderLifecycleGuidance(options: LifecycleGuidanceOptions): string {
+export function renderLifecycleGuidanceText(options: LifecycleGuidanceTextOptions): string {
   const workflow = options.workflow;
   const meta = LIFECYCLE_WORKFLOWS[workflow];
   const input = (options.input || '').trim() || '(no input provided)';
-  const projectRoot = options.cwd || process.cwd();
-  const session = createSession(workflow, input, projectRoot);
 
   const sections: string[] = [
     `# ${meta.title}`,
+    ...(options.sessionId ? ['', `Session ID: ${options.sessionId}`] : []),
     '',
-    `Session ID: ${session.id}`,
     `Usage: ${meta.usage}`,
     `Input: ${input}`,
     '',
@@ -145,7 +148,7 @@ export function renderLifecycleGuidance(options: LifecycleGuidanceOptions): stri
 
   // Plan 工作流：强制要求将计划保存为文件
   if (workflow === 'plan') {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = (options.now || new Date()).toISOString().slice(0, 10);
     const slug = input.replace(/[^a-zA-Z0-9\u4e00-\u9fff]+/g, '-').replace(/^-|-$/g, '').toLowerCase().slice(0, 60) || 'plan';
     const suggestedFile = `${ENGINE_DIR}/plans/${today}-${slug}.md`;
 
@@ -169,8 +172,17 @@ export function renderLifecycleGuidance(options: LifecycleGuidanceOptions): stri
   return sections.join('\n') + '\n';
 }
 
+export function renderLifecycleGuidance(options: LifecycleGuidanceOptions): string {
+  const workflow = options.workflow;
+  const input = (options.input || '').trim() || '(no input provided)';
+  const projectRoot = options.cwd || process.cwd();
+  const session = createSession(workflow, input, projectRoot);
+  return renderLifecycleGuidanceText({ ...options, input, sessionId: session.id });
+}
+
 module.exports = {
   lifecycleWorkflowNames,
   isLifecycleWorkflow,
+  renderLifecycleGuidanceText,
   renderLifecycleGuidance
 };
