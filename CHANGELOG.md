@@ -5,6 +5,21 @@ All notable changes to Oh My Engine will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-09-02
+
+### Added
+- Reusable pure Run lifecycle APIs for creating state, applying policy-gated transitions, rendering lifecycle guidance, and recording completed runs.
+- `OME_ENGINEER_POLICY` for Define, Plan approval, Build, executed verification, Review, Ship, and Learn delivery stages.
+- Public types for Run policies, actions, transitions, evidence, stages, and completion snapshots.
+
+### Changed
+- Existing Run CLI commands now reuse the public lifecycle engine while preserving their prior storage behavior and default policy.
+- Package publication metadata now links npm consumers to the canonical repository, issue tracker, license, and changelog.
+
+### Compatibility
+- The package remains CommonJS for existing consumers.
+- Existing Agent platform IDs, default platform selections, generated command formats, and synchronization targets are unchanged.
+
 ## [0.4.10] - 2026-06-04
 
 ### Added

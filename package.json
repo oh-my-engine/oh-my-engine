@@ -2,6 +2,26 @@
   "name": "oh-my-engine",
   "version": "0.5.0",
   "description": "Cross-agent workflow engine for rules, memory, specs, and skills.",
+  "license": "MIT",
+  "keywords": [
+    "ai-agent",
+    "agent-workflow",
+    "engineering-workflow",
+    "memory",
+    "ome"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/oh-my-engine/oh-my-engine.git"
+  },
+  "homepage": "https://github.com/oh-my-engine/oh-my-engine#readme",
+  "bugs": {
+    "url": "https://github.com/oh-my-engine/oh-my-engine/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "type": "commonjs",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -53,6 +73,8 @@
     "docs/skill-quality-gate.md",
     "docs/evaluation.md",
     "docs/generated-artifacts.md",
+    "CHANGELOG.md",
+    "LICENSE",
     ".ome/rules/",
     ".ome/platforms.json",
     "README.md"
